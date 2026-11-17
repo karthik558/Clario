@@ -100,7 +100,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 rel="noreferrer"
                 className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-clario-border rounded-md text-xs font-medium text-clario-text hover:bg-clario-ivory transition-colors shadow-xs"
               >
-                <Download className="w-3.5 h-3.5 text-clario-teal" />
+                <Download className="w-3.5 h-3.5 text-clario-text-secondary" />
                 <span>Download Original</span>
               </a>
             </div>
@@ -124,7 +124,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-clario-border/60 text-xs">
                       <div className="flex items-center space-x-2">
                         <span className="font-semibold text-clario-navy flex items-center space-x-1">
-                          <Layers className="w-3 h-3 text-clario-teal" />
+                          <Layers className="w-3 h-3 text-clario-text-secondary" />
                           <span>Chunk #{chunk.chunk_index + 1}</span>
                         </span>
                         <Badge variant="sage" size="sm">

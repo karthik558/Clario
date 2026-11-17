@@ -10,8 +10,47 @@ from app.services.search_service import search_service
 
 class AskService:
     @staticmethod
+    def _is_greeting(query: str) -> bool:
+        norm = re.sub(r'[^\w\s]', ' ', query.strip().lower())
+        tokens = [t for t in norm.split() if t]
+        if not tokens:
+            return True
+        first = tokens[0]
+        if first in ("hi", "hello", "hey", "howdy", "greetings", "hola"):
+            if len(tokens) <= 3:
+                return True
+        if tokens in (["who", "are", "you"], ["what", "can", "you", "do"], ["what", "is", "clario"], ["help"]):
+            return True
+        if len(tokens) <= 2 and tokens[0] == "good" and tokens[-1] in ("morning", "afternoon", "evening", "day"):
+            return True
+        return False
+
+    @staticmethod
     def answer_question(request: AskRequest, db: Session) -> AskResponse:
         t0 = time.perf_counter()
+
+        # Instant check for conversational greetings / orientation
+        if AskService._is_greeting(request.query):
+            return AskResponse(
+                query=request.query,
+                answer=(
+                    "Hello, I am Clario, your AI document intelligence research assistant.\n\n"
+                    "I analyze, search, and verify clauses across your uploaded documents. "
+                    "Every answer I provide is cross-referenced with exact citations.\n\n"
+                    "**Suggested questions for your workspace documents:**\n"
+                    "- *What is the data retention policy for API interactions?*\n"
+                    "- *Compare the liability limits between the 2023 and 2024 policies.*\n"
+                    "- *What is the incident notification timeline after a security breach?*\n"
+                    "- *Are customer inputs used to train foundation models?*\n\n"
+                    "You can also use the Compare view to inspect side-by-side differences, or the Search Lab to evaluate retrieval performance."
+                ),
+                mode="conversational_assistant",
+                citations=[],
+                retrieval_latency_ms=0.5,
+                synthesis_latency_ms=0.5,
+                has_conflicting_evidence=False,
+                conflict_notes=None
+            )
 
         # Step 1: Retrieval via Hybrid Search
         results, ret_latency_ms = search_service.search(
@@ -134,16 +173,17 @@ class AskService:
     @staticmethod
     def _generate_ollama_answer(query: str, citations: List[CitationItem]) -> str:
         url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
+        top_citations = citations[:4]
         context_str = "\n\n".join([
-            f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet}"
-            for c in citations
+            f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:600]}"
+            for c in top_citations
         ])
 
         system_prompt = (
             "You are Clario, an elite document intelligence research assistant. "
-            "Answer the user's question clearly, comprehensively, and objectively using ONLY the retrieved document passages below. "
-            "Provide full explanations rather than brief summaries. Cite every claim with bracketed source numbers like [1], [2]. "
-            "If the documents state different policies or contain conflicts, explicitly contrast them."
+            "Answer the user's question directly, clearly, and concisely using ONLY the retrieved document passages below. "
+            "Cite key claims with bracketed numbers like [1], [2]. "
+            "Provide complete, informative sentences without unnecessary filler, and keep the answer focused under 250 words."
         )
 
         prompt = f"""{system_prompt}
@@ -153,7 +193,7 @@ Retrieved Document Context:
 
 User Question: {query}
 
-Comprehensive Answer with source citations [1], [2]:"""
+Direct Cited Answer:"""
 
         with httpx.Client(timeout=120.0) as client:
             model = AskService._get_active_ollama_model(client)
@@ -162,7 +202,10 @@ Comprehensive Answer with source citations [1], [2]:"""
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.2
+                    "temperature": 0.2,
+                    "num_predict": 350,
+                    "top_p": 0.9,
+                    "stop": ["User Question:", "Retrieved Document Context:"]
                 }
             }
             resp = client.post(url, json=payload)
@@ -211,7 +254,7 @@ Comprehensive Answer with source citations [1], [2]:"""
 
         # 3. Contradiction / Discrepancy Note if present
         if has_conflict and conflict_notes:
-            lines.append(f"\n#### 3. ⚠️ Policy Divergence & Contradiction Alert")
+            lines.append(f"\n#### 3. Policy Divergence & Contradiction Alert")
             lines.append(f"> {conflict_notes}\n> *Note: Please review the conflicting terms above before finalizing compliance decisions.*")
 
         lines.append("\n---")

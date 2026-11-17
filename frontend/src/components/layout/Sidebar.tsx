@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-clario-navy/40 md:hidden" />}
       <aside ref={sidebarRef} id="workspace-navigation" aria-label="Workspace navigation" className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-open' : ''}`}>
         <div className="flex h-20 shrink-0 items-center gap-3 px-5 border-b border-white/10">
-          <Layers className="w-7 h-7 text-clario-sage shrink-0" aria-hidden="true" />
+          <Layers className="w-7 h-7 text-slate-200 shrink-0" aria-hidden="true" />
           <div className="sidebar-label"><span className="text-xl font-semibold tracking-tight">Clario</span><p className="text-xs text-slate-400">Document intelligence</p></div>
           <button aria-label="Close navigation" onClick={onCloseMobile} className="md:hidden ml-auto p-2"><X className="w-5 h-5" /></button>
         </div>

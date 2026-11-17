@@ -31,9 +31,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch }) => {
         <button
           aria-label="Search documents"
           onClick={onOpenSearch}
-          className="flex items-center space-x-3 bg-clario-ivory hover:bg-clario-ivory-muted text-clario-text-secondary px-3.5 py-1.5 rounded-md border border-clario-border transition-all hover:border-clario-teal/40 text-xs shadow-xs"
+          className="flex items-center space-x-3 bg-clario-ivory hover:bg-clario-ivory-muted text-clario-text-secondary px-3.5 py-1.5 rounded-md border border-clario-border transition-all hover:border-clario-navy/30 text-xs shadow-xs"
         >
-          <Search className="w-4 h-4 text-clario-teal" />
+          <Search className="w-4 h-4 text-clario-text-secondary" />
           <span className="hidden sm:inline">Search documents...</span>
           <kbd className="hidden sm:inline px-1.5 py-0.5 bg-white border border-clario-border rounded text-[10px] font-mono text-clario-text-secondary shadow-xs">
             ⌘K / Ctrl K

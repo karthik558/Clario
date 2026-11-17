@@ -235,7 +235,7 @@ export const ComparePage: React.FC = () => {
           {/* Executive Comparative Summary */}
           <Card className="p-4 bg-clario-ivory-card border-clario-border">
             <div className="flex items-start space-x-3">
-              <SearchCheck className="w-5 h-5 text-clario-gold shrink-0 mt-0.5" />
+              <SearchCheck className="w-5 h-5 text-clario-navy shrink-0 mt-0.5" />
               <div>
                 <h4 className="font-semibold text-xs text-clario-navy uppercase tracking-wider mb-1">
                   Automated Comparative Synthesis
@@ -252,7 +252,7 @@ export const ComparePage: React.FC = () => {
             <Card className="p-5 border-amber-200 bg-amber-50/15">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-amber-200">
                 <div className="flex items-center space-x-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                  <AlertTriangle className="w-5 h-5 text-clario-navy" />
                   <h3 className="font-semibold text-sm text-clario-navy">
                     Substantive Discrepancy Candidates ({comparison.contradiction_candidates.length})
                   </h3>
@@ -281,7 +281,7 @@ export const ComparePage: React.FC = () => {
                       >
                         {promotedIndices.includes(idx) ? (
                           <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-clario-navy mr-1" />
                             <span>Promoted to Findings</span>
                           </>
                         ) : (

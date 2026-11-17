@@ -78,10 +78,10 @@ export const OverviewPage: React.FC = () => {
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <Card className="p-4 flex flex-col justify-between hover:border-clario-teal/40 transition-all shadow-subtle rounded-md">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Total Documents</span>
-            <div className="p-1.5 rounded-md bg-clario-teal/10 text-clario-teal">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
               <Files className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -89,21 +89,21 @@ export const OverviewPage: React.FC = () => {
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Uploaded & stored</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-emerald-300 transition-all shadow-subtle rounded-md">
-          <div className="flex items-center justify-between text-emerald-800 mb-3">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Indexed Ready</span>
-            <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-600">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
               <FileCheck2 className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-emerald-700">{loading ? '…' : stats?.indexed_documents ?? '—'}</span>
-          <span className="text-[10px] text-emerald-600 font-semibold mt-1">Available for review</span>
+          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.indexed_documents ?? '—'}</span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Available for review</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-clario-teal/40 transition-all shadow-subtle rounded-md">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Searchable Passages</span>
-            <div className="p-1.5 rounded-md bg-clario-teal/10 text-clario-teal">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -111,32 +111,32 @@ export const OverviewPage: React.FC = () => {
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Dense vector chunks</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-clario-gold/50 transition-all shadow-subtle rounded-md">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Analyses Run</span>
-            <div className="p-1.5 rounded-md bg-clario-gold/15 text-clario-gold">
-              <SearchCheck className="w-3.5 h-3.5 text-clario-gold-dark" />
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+              <SearchCheck className="w-3.5 h-3.5 text-clario-navy" />
             </div>
           </div>
           <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.recent_analyses_count ?? '—'}</span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Searches & diffs</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between border-amber-200 bg-amber-50/20 shadow-subtle rounded-md">
-          <div className="flex items-center justify-between text-amber-800 mb-3">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Conflicts Flagged</span>
-            <div className="p-1.5 rounded-md bg-amber-100 text-amber-700">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-amber-700">{loading ? '…' : stats?.potential_conflicts_count ?? '—'}</span>
-          <span className="text-[10px] text-amber-700 font-semibold mt-1">Candidate differences</span>
+          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.potential_conflicts_count ?? '—'}</span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Candidate differences</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-clario-teal/40 transition-all shadow-subtle rounded-md">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Avg Latency</span>
-            <div className="p-1.5 rounded-md bg-clario-teal/10 text-clario-teal">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -255,7 +255,7 @@ export const OverviewPage: React.FC = () => {
                   className="hover:bg-clario-ivory cursor-pointer transition-colors group"
                 >
                   <td className="py-3 px-3 font-semibold text-clario-navy flex items-center space-x-2.5">
-                    <div className="p-1.5 rounded-md bg-clario-teal/10 text-clario-teal">
+                    <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
                       <FileText className="w-3.5 h-3.5" />
                     </div>
                     <span className="truncate max-w-sm">{doc.title}</span>

@@ -104,11 +104,11 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
               }
             }}
           />
-          <div className="w-12 h-12 rounded-md bg-clario-teal/10 text-clario-teal flex items-center justify-center mx-auto mb-3 shadow-xs">
+          <div className="w-12 h-12 rounded-md bg-clario-navy/5 text-clario-navy flex items-center justify-center mx-auto mb-3 shadow-xs">
             <UploadCloud className="w-6 h-6" />
           </div>
           <h4 className="text-sm font-semibold text-clario-text tracking-tight mb-1">
-            Drag & drop documents here, or <span className="text-clario-teal underline">browse</span>
+            Drag & drop documents here, or <span className="text-clario-navy underline font-medium">browse</span>
           </h4>
           <p className="text-xs text-clario-text-secondary">
             Supported formats: PDF, DOCX, TXT, Markdown (Max 50MB per file)
@@ -118,7 +118,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
         <div className="border border-clario-teal/40 rounded-md p-5 bg-clario-ivory-card shadow-subtle animate-in fade-in">
           <div className="flex items-center justify-between pb-3 border-b border-clario-border mb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-md bg-clario-teal/15 text-clario-teal flex items-center justify-center">
+              <div className="w-9 h-9 rounded-md bg-clario-navy/10 text-clario-navy flex items-center justify-center">
                 <FileText className="w-5 h-5" />
               </div>
               <div>

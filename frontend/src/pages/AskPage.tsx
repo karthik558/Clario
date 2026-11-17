@@ -33,6 +33,8 @@ export const AskPage: React.FC = () => {
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [engineLabel, setEngineLabel] = useState('');
+  const [llmProvider, setLlmProvider] = useState<'ollama' | 'extractive' | string>('ollama');
+  const [switchingEngine, setSwitchingEngine] = useState(false);
   const [error, setError] = useState('');
   const [pendingQuery, setPendingQuery] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -42,7 +44,10 @@ export const AskPage: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     api.getSettings().then(config => {
-      if (!cancelled) setEngineLabel(config.llm_provider === 'ollama' ? `Ollama · ${config.ollama_model}` : config.llm_provider === 'extractive' ? 'Extractive · retrieved passages' : config.llm_provider);
+      if (!cancelled) {
+        setLlmProvider(config.llm_provider || 'ollama');
+        setEngineLabel(config.llm_provider === 'ollama' ? `Ollama · ${config.ollama_model}` : config.llm_provider === 'extractive' ? 'Extractive · retrieved passages' : config.llm_provider);
+      }
     }).catch(() => {});
     api.getAnswerHistory().then(saved => { if (!cancelled) setHistory(saved); })
       .catch(() => { if (!cancelled) setError('Saved answers could not be loaded. You can still ask a new question.'); })
@@ -59,6 +64,21 @@ export const AskPage: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
+  const handleSwitchEngine = async (provider: 'ollama' | 'extractive') => {
+    if (switchingEngine || loading) return;
+    setSwitchingEngine(true);
+    try {
+      await api.updateSettings({ llm_provider: provider });
+      setLlmProvider(provider);
+      const conf = await api.getSettings();
+      setEngineLabel(provider === 'ollama' ? `Ollama · ${conf.ollama_model}` : 'Extractive · retrieved passages');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSwitchingEngine(false);
+    }
+  };
+
   const handleAsk = async (userQuery?: string) => {
     const q = (userQuery || query).trim();
     if (!q || loading || loadingHistory) return;
@@ -67,12 +87,12 @@ export const AskPage: React.FC = () => {
     setPendingQuery(q);
     setLoading(true);
     setResponse(null);
+    setQuery('');
     try {
       const docIds = selectedDocIds.length > 0 ? selectedDocIds : undefined;
       const res = await api.ask(q, docIds);
       setResponse(res);
       setHistory((prev) => [...prev, { query: q, response: res }]);
-      setQuery('');
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
@@ -146,7 +166,36 @@ export const AskPage: React.FC = () => {
       <p className="text-xs text-clario-text-secondary">Completed answers and source citations are saved in this workspace. The latest 50 answers appear below.</p>
       {error && <p role="alert" className="p-3 border border-rose-200 bg-rose-50 text-rose-800 rounded-md text-sm">{error}</p>}
       {loadingHistory && <p role="status" className="text-sm text-clario-text-secondary">Loading saved answers…</p>}
-      {engineLabel && <p className="text-xs text-clario-text-secondary">Answer engine: <span className="font-medium text-clario-navy">{engineLabel}</span></p>}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-white rounded-md border border-clario-border text-xs">
+        <div className="flex items-center space-x-2">
+          <span className="text-clario-text-secondary font-medium">Generation Engine:</span>
+          <button
+            type="button"
+            onClick={() => handleSwitchEngine('ollama')}
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+              llmProvider === 'ollama'
+                ? 'bg-clario-teal text-white'
+                : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
+            }`}
+          >
+            Ollama Local ({engineLabel.includes('mimo') ? 'mimo-v2.6' : 'Local LLM'})
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSwitchEngine('extractive')}
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+              llmProvider === 'extractive'
+                ? 'bg-clario-navy text-white'
+                : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
+            }`}
+          >
+            Extractive Synthesis (Instant)
+          </button>
+        </div>
+        <span className="text-[11px] text-clario-text-muted">
+          {llmProvider === 'ollama' ? 'Neural model with cited answers' : 'Direct synthesis with instant response'}
+        </span>
+      </div>
       {/* Scope Selector */}
       {documents.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-clario-border text-xs">
@@ -198,8 +247,8 @@ export const AskPage: React.FC = () => {
               onClick={() => handleAsk(p)}
               className="p-3.5 rounded-md border border-clario-border bg-white hover:border-clario-teal/50 hover:bg-clario-ivory transition-all text-left group flex items-start space-x-3 shadow-subtle"
             >
-              <SearchCheck className="w-4 h-4 text-clario-gold shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-medium text-clario-text group-hover:text-clario-teal transition-colors">
+              <SearchCheck className="w-4 h-4 text-clario-navy shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-medium text-clario-text group-hover:text-clario-navy transition-colors">
                 "{p}"
               </span>
             </button>
@@ -223,15 +272,15 @@ export const AskPage: React.FC = () => {
               {/* Answer Header Bar */}
               <div className="flex flex-wrap gap-3 items-center justify-between pb-3 border-b border-clario-border text-xs">
                 <div className="flex flex-wrap gap-2 items-center">
-                  <div className="w-6 h-6 rounded-md bg-clario-teal text-white flex items-center justify-center font-bold text-[10px]">
+                  <div className="w-6 h-6 rounded-md bg-clario-navy text-white flex items-center justify-center font-bold text-[10px]">
                     CL
                   </div>
                   <span className="font-semibold text-clario-navy">Clario Synthesized Answer</span>
                   <Badge variant="sage" size="sm">{item.response.mode}</Badge>
                 </div>
                 <div className="flex items-center space-x-3 text-clario-text-secondary">
-                  <span className="text-[11px] font-mono flex items-center space-x-1 text-clario-teal">
-                    <Clock className="w-3 h-3" />
+                  <span className="text-[11px] font-mono flex items-center space-x-1 text-clario-text-secondary">
+                    <Clock className="w-3 h-3 text-clario-text-secondary" />
                     <span>{item.response.retrieval_latency_ms}ms</span>
                   </span>
                   <button
@@ -239,7 +288,7 @@ export const AskPage: React.FC = () => {
                     className="p-1 rounded text-clario-text-secondary hover:text-clario-text hover:bg-clario-ivory transition-colors"
                     title="Copy Answer"
                   >
-                    {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-clario-navy" /> : <Copy className="w-3.5 h-3.5 text-clario-text-secondary" />}
                   </button>
                 </div>
               </div>
@@ -247,7 +296,7 @@ export const AskPage: React.FC = () => {
               {/* Contradiction Alert if detected */}
               {item.response.has_conflicting_evidence && (
                 <div className="p-3.5 rounded-md bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2.5">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-clario-navy shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold block mb-0.5">Divergent Terms Detected Across Sources</span>
                     <span className="text-[11px] text-amber-800 leading-relaxed">
@@ -267,7 +316,7 @@ export const AskPage: React.FC = () => {
                 <div className="pt-4 border-t border-clario-border">
                   <div className="flex items-center justify-between mb-2.5">
                     <span className="text-[11px] font-semibold text-clario-navy uppercase tracking-wider flex items-center space-x-1.5">
-                      <Bookmark className="w-3.5 h-3.5 text-clario-gold" />
+                      <Bookmark className="w-3.5 h-3.5 text-clario-navy" />
                       <span>Source citations ({item.response.citations.length})</span>
                     </span>
                     <span className="text-[10px] text-clario-text-muted">Click to open source page & passage</span>
@@ -278,11 +327,11 @@ export const AskPage: React.FC = () => {
                       <button type="button"
                         key={cit.citation_id}
                         onClick={() => setSelectedCitation(cit)}
-                        className="text-left p-3 rounded-md border border-clario-border bg-clario-ivory/60 hover:border-clario-teal/50 hover:bg-clario-ivory transition-all cursor-pointer group flex flex-col justify-between"
+                        className="text-left p-3 rounded-md border border-clario-border bg-clario-ivory/60 hover:border-clario-navy/30 hover:bg-clario-ivory transition-all cursor-pointer group flex flex-col justify-between"
                       >
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center space-x-2 truncate">
-                            <span className="w-4 h-4 rounded bg-clario-teal text-white text-[10px] flex items-center justify-center font-bold shrink-0">
+                            <span className="w-4 h-4 rounded bg-clario-navy text-white text-[10px] flex items-center justify-center font-bold shrink-0">
                               {cit.citation_id}
                             </span>
                             <span className="font-semibold text-xs text-clario-navy truncate max-w-[180px]">
@@ -298,9 +347,9 @@ export const AskPage: React.FC = () => {
                         </p>
                         <div className="mt-2 flex items-center justify-between text-[10px] text-clario-text-muted">
                           <span className="font-mono">Relevance: {cit.relevance_score}</span>
-                          <span className="text-clario-teal font-medium group-hover:underline flex items-center space-x-1">
+                          <span className="text-clario-navy font-medium group-hover:underline flex items-center space-x-1">
                             <span>View Passage</span>
-                            <ChevronRight className="w-3 h-3" />
+                            <ChevronRight className="w-3 h-3 text-clario-navy" />
                           </span>
                         </div>
                       </button>
@@ -315,7 +364,7 @@ export const AskPage: React.FC = () => {
         {pendingQuery && <div className="flex justify-end"><p className="max-w-xl whitespace-pre-wrap break-words bg-clario-navy text-white p-4 rounded-md text-sm">{pendingQuery}</p></div>}
         {loading && (
           <div className="bg-white rounded-md border border-clario-border p-6 shadow-subtle flex items-center space-x-3 text-xs text-clario-text-secondary animate-pulse">
-            <SearchCheck className="w-5 h-5 text-clario-teal animate-spin" />
+            <SearchCheck className="w-5 h-5 text-clario-navy animate-spin" />
             <span>Retrieving relevant passages and synthesizing evidence...</span>
           </div>
         )}

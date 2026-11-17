@@ -103,7 +103,7 @@ export const SearchLabPage: React.FC = () => {
             <form onSubmit={handleRunSearchComparison} className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-clario-teal absolute left-3.5 top-3" />
+                  <Search className="w-4 h-4 text-clario-text-secondary absolute left-3.5 top-3" />
                   <input
                     type="text"
                     value={query}
@@ -247,7 +247,7 @@ export const SearchLabPage: React.FC = () => {
                 <div className="bg-white rounded-md border-2 border-clario-teal p-4 shadow-card flex flex-col">
                   <div className="flex items-center justify-between pb-3 border-b border-clario-teal/30 mb-3">
                     <div className="flex items-center space-x-2">
-                      <SearchCheck className="w-4 h-4 text-clario-gold" />
+                      <SearchCheck className="w-4 h-4 text-clario-navy" />
                       <h3 className="font-semibold text-xs text-clario-navy">C. Hybrid Reciprocal Fusion</h3>
                     </div>
                     <Badge variant="gold" size="sm">RRF (k=60)</Badge>
@@ -363,7 +363,7 @@ export const SearchLabPage: React.FC = () => {
 
                         <tr className="bg-clario-sage-light/20 font-semibold border-t-2 border-clario-teal">
                           <td className="p-3 text-clario-navy flex items-center space-x-1.5">
-                            <SearchCheck className="w-3.5 h-3.5 text-clario-gold" />
+                            <SearchCheck className="w-3.5 h-3.5 text-clario-navy" />
                             <span>Hybrid RRF (Combined)</span>
                           </td>
                           <td className="p-3 font-mono font-bold text-clario-teal">

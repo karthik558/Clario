@@ -61,7 +61,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Search documents" maxWidth="2xl">
         {/* Search Input Bar */}
         <div className="flex flex-wrap gap-y-3 items-center px-4 py-3.5 border-b border-clario-border bg-clario-ivory-card">
-          <Search className="w-5 h-5 text-clario-teal shrink-0 mr-3" />
+          <Search className="w-5 h-5 text-clario-text-secondary shrink-0 mr-3" />
           <input
             type="text"
             value={query}
@@ -141,7 +141,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center space-x-2">
-                      <FileText className="w-3.5 h-3.5 text-clario-teal shrink-0" />
+                      <FileText className="w-3.5 h-3.5 text-clario-text-secondary shrink-0" />
                       <span className="font-semibold text-xs text-clario-navy">{r.document_title}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-clario-sage-light text-clario-navy font-medium">
                         Page {r.page_number}
@@ -167,7 +167,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
           {!query && (
             <div className="py-6 text-center">
-              <SearchCheck className="w-6 h-6 text-clario-gold mx-auto mb-2" />
+              <SearchCheck className="w-6 h-6 text-clario-text-secondary mx-auto mb-2" />
               <p className="text-xs font-medium text-clario-text">Instant Cross-Document Retrieval</p>
               <p className="text-[11px] text-clario-text-secondary max-w-sm mx-auto mt-1">
                 Type queries such as "retention period", "limitation of liability", or "differential privacy".

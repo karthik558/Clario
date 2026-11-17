@@ -191,7 +191,7 @@ export const SettingsPage: React.FC = () => {
 
       {successMsg && (
         <div className="p-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2.5 animate-in fade-in shadow-xs">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-clario-navy" />
           <span className="font-medium">{successMsg}</span>
         </div>
       )}
@@ -200,7 +200,7 @@ export const SettingsPage: React.FC = () => {
       <Card className="rounded-md p-6 border-clario-teal/30 bg-white shadow-card space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-clario-border">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-md bg-clario-teal/15 text-clario-teal">
+            <div className="p-2.5 rounded-md bg-clario-navy/5 text-clario-navy">
               <Bot className="w-5 h-5" />
             </div>
             <div>
@@ -240,9 +240,9 @@ export const SettingsPage: React.FC = () => {
         }`}>
           <div className="flex items-center space-x-2 mb-1">
             {ollamaStatus?.running ? (
-              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+              <Check className="w-4 h-4 text-clario-navy shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-clario-navy shrink-0" />
             )}
             <span className="font-bold">
               {checkingOllama ? 'Checking the saved server address…' : ollamaStatus?.running ? 'Ollama connected' : 'Ollama is unavailable'}
@@ -314,7 +314,7 @@ export const SettingsPage: React.FC = () => {
       <Card className="rounded-md p-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-clario-border">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-md bg-clario-teal/10 text-clario-teal">
+            <div className="p-2.5 rounded-md bg-clario-navy/5 text-clario-navy">
               <Database className="w-5 h-5" />
             </div>
             <div>
