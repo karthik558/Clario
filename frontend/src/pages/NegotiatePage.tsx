@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Scale,
-  Sparkles,
   Copy,
   Check,
   Shield,
@@ -282,7 +281,7 @@ export const NegotiatePage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 mr-2" />
+                  <Scale className="w-4 h-4 mr-2" />
                   <span>Generate AI Redline Amendment</span>
                 </>
               )}
@@ -363,7 +362,7 @@ export const NegotiatePage: React.FC = () => {
                   Select a detected finding or paste contradictory clauses on the left, choose your preferred bargaining stance, and generate a harmonized clause.
                 </p>
                 <Button variant="outline" size="sm" onClick={handleGenerate}>
-                  <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                  <Scale className="w-3.5 h-3.5 mr-1.5" />
                   Run Demo Synthesis
                 </Button>
               </div>

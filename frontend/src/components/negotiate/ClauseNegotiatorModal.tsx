@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, Sparkles, Scale, Shield, AlertTriangle, FileText, BookmarkCheck } from 'lucide-react';
+import { Copy, Check, Scale, Shield, AlertTriangle, FileText, BookmarkCheck } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';

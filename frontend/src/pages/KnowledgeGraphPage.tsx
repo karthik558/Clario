@@ -12,7 +12,6 @@ import {
   ArrowRight,
   ExternalLink,
   Search,
-  Sparkles,
   Scale,
   CheckCircle2,
   Maximize2
@@ -491,14 +490,14 @@ export const KnowledgeGraphPage: React.FC = () => {
       {/* Main Canvas + Inspector Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* SVG Network Visualizer */}
-        <div className="lg:col-span-3 border border-slate-800 rounded-xl bg-[#0B1120] overflow-hidden shadow-md relative h-[460px] sm:h-[540px] lg:h-[640px] select-none">
+        <div className="lg:col-span-3 border border-slate-200 rounded-xl bg-white overflow-hidden shadow-xs relative h-[460px] sm:h-[540px] lg:h-[640px] select-none">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
-              <div className="w-6 h-6 border-2 border-slate-600 border-t-white rounded-full animate-spin" />
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2">
+              <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin" />
               <p className="text-xs">Constructing semantic relationship graph...</p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-full text-rose-400 p-6">
+            <div className="flex flex-col items-center justify-center h-full text-rose-500 p-6">
               <AlertTriangle className="w-8 h-8 mb-2" />
               <p className="text-xs">{error}</p>
             </div>
@@ -514,7 +513,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               <defs>
                 {/* Subtle Dot Grid */}
                 <pattern id="graphGrid" width="32" height="32" patternUnits="userSpaceOnUse">
-                  <circle cx="2" cy="2" r="1" fill="#1E293B" />
+                  <circle cx="2" cy="2" r="1" fill="#E2E8F0" />
                 </pattern>
 
                 {/* Node Color Gradients */}
@@ -561,10 +560,10 @@ export const KnowledgeGraphPage: React.FC = () => {
                         y1={source.y}
                         x2={target.x}
                         y2={target.y}
-                        stroke={isHighlighted ? '#38BDF8' : edge.color || '#334155'}
+                        stroke={isHighlighted ? '#0F172A' : edge.color || '#CBD5E1'}
                         strokeWidth={isHighlighted ? 2.5 : edge.weight || 1.2}
                         strokeDasharray={edge.dashed ? '4,4' : undefined}
-                        opacity={isDimmed ? 0.12 : isHighlighted ? 1 : 0.65}
+                        opacity={isDimmed ? 0.15 : isHighlighted ? 1 : 0.75}
                         className="transition-all duration-150"
                       />
                     </g>
@@ -601,10 +600,10 @@ export const KnowledgeGraphPage: React.FC = () => {
                         <circle
                           r={nodeRadius + 6}
                           fill="none"
-                          stroke={node.type === 'finding' ? '#F43F5E' : '#38BDF8'}
+                          stroke={node.type === 'finding' ? '#E11D48' : '#0F172A'}
                           strokeWidth={2}
                           strokeDasharray={isSelected ? undefined : '3,3'}
-                          opacity={0.9}
+                          opacity={0.85}
                         />
                       )}
 
@@ -625,11 +624,11 @@ export const KnowledgeGraphPage: React.FC = () => {
                         y={nodeRadius + 14}
                         textAnchor="middle"
                         fontSize={node.type === 'document' ? '12px' : '10px'}
-                        fontWeight={node.type === 'document' || isSelected ? 'bold' : 'normal'}
-                        fill="#F8FAFC"
-                        className="pointer-events-none select-none font-medium"
+                        fontWeight={node.type === 'document' || isSelected ? '600' : '500'}
+                        fill="#0F172A"
+                        className="pointer-events-none select-none"
                         style={{
-                          textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.9)',
+                          textShadow: '0 1px 3px rgba(255,255,255,0.9), 0 -1px 3px rgba(255,255,255,0.9)',
                         }}
                       >
                         {node.label.length > 22 ? `${node.label.slice(0, 20)}…` : node.label}
@@ -642,30 +641,30 @@ export const KnowledgeGraphPage: React.FC = () => {
           )}
 
           {/* Quick Graph Legend Overlay */}
-          <div className="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-2 text-[10px] space-y-1 shadow-md pointer-events-none text-slate-200">
-            <div className="font-semibold text-slate-100 uppercase tracking-wider text-[9px]">Topology Legend</div>
+          <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg px-3 py-2 text-[10px] space-y-1 shadow-xs pointer-events-none text-slate-700">
+            <div className="font-semibold text-slate-900 uppercase tracking-wider text-[9px]">Topology Legend</div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-600 inline-block" />
-                <span>Document</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-900 inline-block" />
+                <span className="text-slate-600">Document</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" />
-                <span>Topic</span>
+                <span className="text-slate-600">Topic</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" />
-                <span>Contradiction</span>
+                <span className="text-slate-600">Contradiction</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block" />
-                <span>Citation</span>
+                <span className="text-slate-600">Citation</span>
               </span>
             </div>
           </div>
 
           {/* Canvas Navigation Hint */}
-          <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-2 bg-slate-900/80 backdrop-blur-sm border border-slate-800 text-[10px] text-slate-400 px-2.5 py-1 rounded-md pointer-events-none">
+          <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-slate-200 text-[10px] text-slate-500 px-2.5 py-1 rounded-md pointer-events-none shadow-xs">
             <span>Drag to pan</span>
             <span>•</span>
             <span>Scroll to zoom</span>

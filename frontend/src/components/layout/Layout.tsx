@@ -52,19 +52,6 @@ export const Layout: React.FC = () => {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
           <Outlet />
         </main>
-
-        <footer className="py-4 px-4 sm:px-6 lg:px-8 border-t border-slate-200 text-center text-xs text-slate-500">
-          © 2026{' '}
-          <a
-            href="https://karthiklal.in"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-slate-700 hover:text-slate-900 underline transition-colors"
-          >
-            Clario
-          </a>
-          . All rights reserved.
-        </footer>
       </div>
 
       {/* Global Search Dialog (⌘K) */}

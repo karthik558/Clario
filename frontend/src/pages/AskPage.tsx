@@ -14,7 +14,6 @@ import {
   Copy,
   Check,
   RotateCcw,
-  Sparkles,
   Cpu,
   Brain,
   Radio

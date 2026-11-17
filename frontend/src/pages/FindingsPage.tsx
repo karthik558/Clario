@@ -3,6 +3,7 @@ import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
 import {
   AlertTriangle,
+  AlertCircle,
   CheckCircle2,
   Filter,
   Search,
@@ -197,29 +198,56 @@ export const FindingsPage: React.FC = () => {
       </div>
 
       {/* Findings Stat Ribbon */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-3.5 rounded-md border border-clario-border shadow-xs">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Total Flagged</span>
-          <span className="text-xl font-bold text-clario-navy">{findings.length}</span>
-        </div>
-        <div className="bg-rose-50/60 p-3.5 rounded-md border border-rose-200 shadow-xs">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 block">Critical & High</span>
-          <span className="text-xl font-bold text-rose-900">
-            {findings.filter(f => f.severity === 'critical' || f.severity === 'high').length}
-          </span>
-        </div>
-        <div className="bg-amber-50/60 p-3.5 rounded-md border border-amber-200 shadow-xs">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 block">Under Review</span>
-          <span className="text-xl font-bold text-amber-900">
-            {findings.filter(f => f.status === 'under_review').length}
-          </span>
-        </div>
-        <div className="bg-emerald-50/60 p-3.5 rounded-md border border-emerald-200 shadow-xs">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">Resolved / Confirmed</span>
-          <span className="text-xl font-bold text-emerald-900">
-            {findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length}
-          </span>
-        </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Total Flagged</span>
+            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">{findings.length}</span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">Discovered issues</span>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Critical & High</span>
+            <span className="text-2xl font-bold text-rose-600 font-mono mt-0.5 block">
+              {findings.filter(f => f.severity === 'critical' || f.severity === 'high').length}
+            </span>
+            <span className="text-[10px] text-rose-500 mt-0.5 block">Immediate attention</span>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Under Review</span>
+            <span className="text-2xl font-bold text-amber-700 font-mono mt-0.5 block">
+              {findings.filter(f => f.status === 'under_review').length}
+            </span>
+            <span className="text-[10px] text-amber-600 mt-0.5 block">Pending resolution</span>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-700 shrink-0">
+            <Clock className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Resolved / Confirmed</span>
+            <span className="text-2xl font-bold text-emerald-700 font-mono mt-0.5 block">
+              {findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length}
+            </span>
+            <span className="text-[10px] text-emerald-600 mt-0.5 block">Verified & addressed</span>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+        </Card>
       </div>
 
       {/* Filter Ribbon */}
