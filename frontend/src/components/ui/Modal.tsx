@@ -80,28 +80,28 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-clario-navy/50 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`bg-white w-full ${maxWidthStyles[maxWidth]} rounded-md shadow-elevated border border-clario-border overflow-hidden flex flex-col max-h-[90dvh] animate-in fade-in zoom-in-95 duration-150`}
+        className={`bg-white w-full ${maxWidthStyles[maxWidth]} rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90dvh] animate-in fade-in zoom-in-95 duration-150`}
       >
-        <div className="shrink-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-clario-border bg-clario-ivory-card">
-          <h3 id={titleId} className="font-semibold text-base text-clario-text tracking-tight">
+        <div className="shrink-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 bg-white">
+          <h3 id={titleId} className="font-semibold text-base text-slate-900 tracking-tight">
             {title}
           </h3>
           <button
             aria-label="Close dialog"
             onClick={onClose}
-            className="p-1 rounded-md text-clario-text-secondary hover:text-clario-text hover:bg-clario-ivory transition-colors"
+            className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="min-h-0 p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
+        <div className="min-h-0 p-4 sm:p-6 overflow-y-auto flex-1 bg-white">{children}</div>
       </div>
     </div>,
     document.body

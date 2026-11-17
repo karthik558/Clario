@@ -59,130 +59,131 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Search documents" maxWidth="2xl">
-        {/* Search Input Bar */}
-        <div className="flex flex-wrap gap-y-3 items-center px-4 py-3.5 border-b border-clario-border bg-clario-ivory-card">
-          <Search className="w-5 h-5 text-clario-text-secondary shrink-0 mr-3" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Search keywords, clauses, obligations, or research..."
-            autoFocus
-            aria-label="Search passages"
-            className="min-w-0 flex-1 bg-transparent text-sm text-clario-text placeholder-clario-text-muted focus:outline-none"
-          />
-          {query && (
-            <button aria-label="Clear search" onClick={() => handleSearch('')} className="p-1 text-clario-text-muted hover:text-clario-text mr-2">
-              <X className="w-4 h-4" />
-            </button>
-          )}
+      {/* Search Input Bar */}
+      <div className="flex flex-wrap gap-y-3 items-center px-4 py-3 border-b border-slate-200 bg-white">
+        <Search className="w-5 h-5 text-slate-400 shrink-0 mr-3" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => handleSearch(e.target.value)}
+          placeholder="Search keywords, clauses, obligations, or research..."
+          autoFocus
+          aria-label="Search passages"
+          className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none"
+        />
+        {query && (
+          <button aria-label="Clear search" onClick={() => handleSearch('')} className="p-1 text-slate-400 hover:text-slate-600 mr-2">
+            <X className="w-4 h-4" />
+          </button>
+        )}
 
-          {/* Mode Switcher */}
-          <div className="flex bg-white rounded-md p-0.5 border border-clario-border text-xs">
-            <button
-              aria-pressed={mode === 'hybrid'}
-              onClick={() => { setMode('hybrid'); if (query) handleSearch(query, 'hybrid'); }}
-              className={`px-2 py-0.5 rounded-md font-medium transition-colors ${
-                mode === 'hybrid' ? 'bg-clario-teal text-white' : 'text-clario-text-secondary hover:text-clario-text'
-              }`}
-            >
-              Hybrid
-            </button>
-            <button
-              aria-pressed={mode === 'bm25'}
-              onClick={() => { setMode('bm25'); if (query) handleSearch(query, 'bm25'); }}
-              className={`px-2 py-0.5 rounded-md font-medium transition-colors ${
-                mode === 'bm25' ? 'bg-clario-teal text-white' : 'text-clario-text-secondary hover:text-clario-text'
-              }`}
-            >
-              BM25
-            </button>
-            <button
-              aria-pressed={mode === 'vector'}
-              onClick={() => { setMode('vector'); if (query) handleSearch(query, 'vector'); }}
-              className={`px-2 py-0.5 rounded-md font-medium transition-colors ${
-                mode === 'vector' ? 'bg-clario-teal text-white' : 'text-clario-text-secondary hover:text-clario-text'
-              }`}
-            >
-              Vector
-            </button>
-          </div>
+        {/* Mode Switcher */}
+        <div className="flex bg-slate-100 rounded-md p-0.5 border border-slate-200 text-xs">
+          <button
+            aria-pressed={mode === 'hybrid'}
+            onClick={() => { setMode('hybrid'); if (query) handleSearch(query, 'hybrid'); }}
+            className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+              mode === 'hybrid' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Hybrid
+          </button>
+          <button
+            aria-pressed={mode === 'bm25'}
+            onClick={() => { setMode('bm25'); if (query) handleSearch(query, 'bm25'); }}
+            className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+              mode === 'bm25' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            BM25
+          </button>
+          <button
+            aria-pressed={mode === 'vector'}
+            onClick={() => { setMode('vector'); if (query) handleSearch(query, 'vector'); }}
+            className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+              mode === 'vector' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Vector
+          </button>
         </div>
+      </div>
 
-        {/* Results Body */}
-        <div className="max-h-96 overflow-y-auto p-4 space-y-3">
-          {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
-          {loading && (
-            <div className="text-center py-8 text-xs text-clario-text-secondary">
-              Searching passage index...
+      {/* Results Body */}
+      <div className="max-h-96 overflow-y-auto p-4 space-y-3 bg-white">
+        {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
+        {loading && (
+          <div className="text-center py-8 text-xs text-slate-500">
+            Searching passage index...
+          </div>
+        )}
+
+        {!loading && results.length > 0 && (
+          <>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+              <span>{results.length} passages retrieved</span>
+              {latency !== null && (
+                <span className="flex items-center space-x-1 font-mono text-slate-700">
+                  <Clock className="w-3 h-3" />
+                  <span>{latency} ms</span>
+                </span>
+              )}
             </div>
-          )}
 
-          {!loading && results.length > 0 && (
-            <>
-              <div className="flex items-center justify-between text-[11px] text-clario-text-secondary px-1">
-                <span>{results.length} passages retrieved</span>
-                {latency !== null && (
-                  <span className="flex items-center space-x-1 font-mono text-clario-teal">
-                    <Clock className="w-3 h-3" />
-                    <span>{latency} ms</span>
-                  </span>
-                )}
-              </div>
-
-              {results.map((r) => (
-                <button type="button"
-                  key={r.chunk_id}
-                  onClick={() => {
-                    if (onSelectResult) onSelectResult(r);
-                    onClose();
-                  }}
-                  className="w-full text-left p-3 rounded-md border border-clario-border hover:border-clario-teal/50 hover:bg-clario-ivory transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="w-3.5 h-3.5 text-clario-text-secondary shrink-0" />
-                      <span className="font-semibold text-xs text-clario-navy">{r.document_title}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-clario-sage-light text-clario-navy font-medium">
-                        Page {r.page_number}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-clario-text-secondary">
-                      Score: {r.score}
+            {results.map((r) => (
+              <button
+                type="button"
+                key={r.chunk_id}
+                onClick={() => {
+                  if (onSelectResult) onSelectResult(r);
+                  onClose();
+                }}
+                className="w-full text-left p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer group bg-white"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="font-semibold text-xs text-slate-900">{r.document_title}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                      Page {r.page_number}
                     </span>
                   </div>
-                  <p className="text-xs text-clario-text leading-relaxed line-clamp-2">
-                    {r.snippet}
-                  </p>
-                </button>
-              ))}
-            </>
-          )}
+                  <span className="text-[10px] font-mono text-slate-400">
+                    Score: {r.score}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                  {r.snippet}
+                </p>
+              </button>
+            ))}
+          </>
+        )}
 
-          {!loading && !error && query && results.length === 0 && (
-            <div className="text-center py-8 text-xs text-clario-text-secondary">
-              No matching passages found for "{query}".
-            </div>
-          )}
-
-          {!query && (
-            <div className="py-6 text-center">
-              <SearchCheck className="w-6 h-6 text-clario-text-secondary mx-auto mb-2" />
-              <p className="text-xs font-medium text-clario-text">Instant Cross-Document Retrieval</p>
-              <p className="text-[11px] text-clario-text-secondary max-w-sm mx-auto mt-1">
-                Type queries such as "retention period", "limitation of liability", or "differential privacy".
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-4 py-2.5 bg-clario-ivory border-t border-clario-border flex items-center justify-between text-[11px] text-clario-text-secondary">
-          <div className="flex items-center space-x-3">
-            <span>Press <kbd className="px-1 py-0.5 bg-white border border-clario-border rounded font-mono">ESC</kbd> to close</span>
+        {!loading && !error && query && results.length === 0 && (
+          <div className="text-center py-8 text-xs text-slate-500">
+            No matching passages found for "{query}".
           </div>
-          <span className="text-clario-teal font-medium">Clario Universal Index</span>
+        )}
+
+        {!query && (
+          <div className="py-6 text-center">
+            <SearchCheck className="w-6 h-6 text-slate-400 mx-auto mb-2" />
+            <p className="text-xs font-medium text-slate-800">Instant Cross-Document Retrieval</p>
+            <p className="text-[11px] text-slate-500 max-w-sm mx-auto mt-1">
+              Type queries such as "retention period", "limitation of liability", or "differential privacy".
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
+        <div className="flex items-center space-x-3">
+          <span>Press <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-slate-600">ESC</kbd> to close</span>
         </div>
+        <span className="text-slate-700 font-medium">Clario Universal Index</span>
+      </div>
     </Modal>
   );
 };

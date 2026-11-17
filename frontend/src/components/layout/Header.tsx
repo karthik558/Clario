@@ -23,13 +23,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onOpenNavigation }
       <button
         aria-label="Search documents"
         onClick={onOpenSearch}
-        className="flex items-center justify-between w-full max-w-sm sm:max-w-md bg-clario-ivory hover:bg-clario-ivory-muted text-clario-text-secondary px-3.5 py-1.5 rounded-md border border-clario-border transition-all hover:border-clario-navy/30 text-xs shadow-xs"
+        className="flex items-center justify-between w-full max-w-sm sm:max-w-md bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 px-3.5 py-1.5 rounded-md border border-slate-200 hover:border-slate-300 transition-all text-xs shadow-xs"
       >
         <span className="flex items-center gap-2.5 min-w-0">
-          <Search className="w-4 h-4 text-clario-text-secondary shrink-0" />
+          <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <span className="truncate">Search documents...</span>
         </span>
-        <kbd className="hidden sm:inline px-1.5 py-0.5 bg-white border border-clario-border rounded text-[10px] font-mono text-clario-text-secondary shadow-xs shrink-0">
+        <kbd className="hidden sm:inline px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[10px] font-mono text-slate-500 shadow-xs shrink-0">
           ⌘K / Ctrl K
         </kbd>
       </button>

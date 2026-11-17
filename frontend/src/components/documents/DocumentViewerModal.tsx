@@ -78,18 +78,18 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
       {doc && !loading && (
         <div className="space-y-4">
           {/* Header Metadata Bar */}
-          <div className="p-4 rounded-md bg-clario-ivory border border-clario-border flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="p-4 rounded-md bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex flex-wrap items-center gap-3 min-w-0">
               <Badge variant="navy" size="md">
                 {doc.file_type.toUpperCase()}
               </Badge>
-              <span className="text-clario-text-secondary font-mono break-all">{doc.filename}</span>
-              <span className="text-clario-text-muted">&bull;</span>
-              <span className="text-clario-text font-medium">{doc.page_count} Pages</span>
-              <span className="text-clario-text-muted">&bull;</span>
-              <span className="text-clario-text font-medium">{doc.word_count} Words</span>
-              <span className="text-clario-text-muted">&bull;</span>
-              <span className="text-clario-teal font-semibold">{doc.chunk_count} Chunks Indexed</span>
+              <span className="text-slate-500 font-mono break-all">{doc.filename}</span>
+              <span className="text-slate-300">&bull;</span>
+              <span className="text-slate-700 font-medium">{doc.page_count} Pages</span>
+              <span className="text-slate-300">&bull;</span>
+              <span className="text-slate-700 font-medium">{doc.word_count} Words</span>
+              <span className="text-slate-300">&bull;</span>
+              <span className="text-slate-900 font-semibold">{doc.chunk_count} Chunks Indexed</span>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -98,9 +98,9 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 download={doc.filename}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-clario-border rounded-md text-xs font-medium text-clario-text hover:bg-clario-ivory transition-colors shadow-xs"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs font-medium text-slate-800 hover:bg-slate-100 transition-colors shadow-xs"
               >
-                <Download className="w-3.5 h-3.5 text-clario-text-secondary" />
+                <Download className="w-3.5 h-3.5 text-slate-500" />
                 <span>Download Original</span>
               </a>
             </div>
@@ -117,8 +117,8 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     id={`chunk-${chunk.id}`}
                     className={`p-4 rounded-md border transition-all ${
                       isTarget
-                        ? 'border-clario-gold bg-amber-50/50 ring-2 ring-clario-gold/20 shadow-card'
-                        : 'border-clario-border bg-white hover:border-clario-teal/30'
+                        ? 'border-amber-400 bg-amber-50/50 ring-2 ring-amber-200 shadow-card'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-clario-border/60 text-xs">

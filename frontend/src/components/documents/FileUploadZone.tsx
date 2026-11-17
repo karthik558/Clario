@@ -89,8 +89,8 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
             compact ? 'p-6' : 'p-8'
           } ${
             isDragging
-              ? 'border-clario-teal bg-clario-sage-light/20 scale-[1.01]'
-              : 'border-clario-border hover:border-clario-teal/50 hover:bg-clario-ivory-card'
+              ? 'border-slate-900 bg-slate-100 scale-[1.01]'
+              : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
           }`}
         >
           <input
@@ -104,18 +104,18 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
               }
             }}
           />
-          <div className="w-12 h-12 rounded-md bg-clario-navy/5 text-clario-navy flex items-center justify-center mx-auto mb-3 shadow-xs">
+          <div className="w-12 h-12 rounded-md bg-slate-100 text-slate-800 flex items-center justify-center mx-auto mb-3 shadow-xs">
             <UploadCloud className="w-6 h-6" />
           </div>
-          <h4 className="text-sm font-semibold text-clario-text tracking-tight mb-1">
-            Drag & drop documents here, or <span className="text-clario-navy underline font-medium">browse</span>
+          <h4 className="text-sm font-semibold text-slate-900 tracking-tight mb-1">
+            Drag & drop documents here, or <span className="text-slate-900 underline font-medium">browse</span>
           </h4>
-          <p className="text-xs text-clario-text-secondary">
+          <p className="text-xs text-slate-500">
             Supported formats: PDF, DOCX, TXT, Markdown, Excel (.xlsx, .xls), CSV (Max 50MB per file)
           </p>
         </div>
       ) : (
-        <div className="border border-clario-teal/40 rounded-md p-5 bg-clario-ivory-card shadow-subtle animate-in fade-in">
+        <div className="border border-slate-200 rounded-md p-5 bg-white shadow-subtle animate-in fade-in">
           <div className="flex items-center justify-between pb-3 border-b border-clario-border mb-4">
             <div className="flex items-center space-x-3">
               <div className="w-9 h-9 rounded-md bg-clario-navy/10 text-clario-navy flex items-center justify-center">
@@ -146,11 +146,11 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+                className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-clario-text-secondary mb-1">
+              <label className="block text-[11px] font-medium text-slate-500 mb-1">
                 Collection
               </label>
               <input
@@ -158,11 +158,11 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
                 value={collection}
                 onChange={(e) => setCollection(e.target.value)}
                 placeholder="e.g. Policies, Contracts"
-                className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+                className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-clario-text-secondary mb-1">
+              <label className="block text-[11px] font-medium text-slate-500 mb-1">
                 Tags (comma separated)
               </label>
               <input
@@ -170,7 +170,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="compliance, 2024, audit"
-                className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+                className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
               />
             </div>
           </div>

@@ -124,7 +124,7 @@ export const DocumentsPage: React.FC = () => {
 
       {/* Collapsible Upload Zone */}
       {showUploadZone && (
-        <Card className="animate-in fade-in border-clario-teal/30 bg-clario-ivory-card">
+        <Card className="animate-in fade-in border-slate-200 bg-white">
           <FileUploadZone
             onUploadSuccess={() => {
               fetchDocuments();
@@ -139,13 +139,13 @@ export const DocumentsPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Search Input */}
           <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-clario-text-muted absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search documents by name..."
-              className="w-full text-xs pl-9 pr-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal text-clario-text"
+              className="w-full text-xs pl-9 pr-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
             />
           </div>
 
@@ -229,29 +229,29 @@ export const DocumentsPage: React.FC = () => {
                   {doc.filename}
                 </p>
 
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-clario-text-secondary bg-clario-ivory p-2.5 rounded-md border border-clario-border mb-3">
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-md border border-slate-200 mb-3">
                   <div>
-                    <span className="text-clario-text-muted block text-[10px]">PAGES</span>
-                    <span className="font-semibold text-clario-text">{doc.page_count}</span>
+                    <span className="text-slate-400 block text-[10px]">PAGES</span>
+                    <span className="font-semibold text-slate-800">{doc.page_count}</span>
                   </div>
                   <div>
-                    <span className="text-clario-text-muted block text-[10px]">CHUNKS</span>
-                    <span className="font-semibold text-clario-teal">{doc.chunk_count}</span>
+                    <span className="text-slate-400 block text-[10px]">CHUNKS</span>
+                    <span className="font-semibold text-slate-900">{doc.chunk_count}</span>
                   </div>
                   <div>
-                    <span className="text-clario-text-muted block text-[10px]">WORDS</span>
-                    <span className="font-semibold text-clario-text">{doc.word_count}</span>
+                    <span className="text-slate-400 block text-[10px]">WORDS</span>
+                    <span className="font-semibold text-slate-800">{doc.word_count}</span>
                   </div>
                   <div>
-                    <span className="text-clario-text-muted block text-[10px]">SIZE</span>
-                    <span className="font-semibold text-clario-text">{(doc.file_size / 1024).toFixed(1)} KB</span>
+                    <span className="text-slate-400 block text-[10px]">SIZE</span>
+                    <span className="font-semibold text-slate-800">{(doc.file_size / 1024).toFixed(1)} KB</span>
                   </div>
                 </div>
 
                 {doc.tags && doc.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-3">
                     {doc.tags.map((t, idx) => (
-                      <span key={idx} className="text-[10px] px-1.5 py-0.5 rounded bg-white border border-clario-border text-clario-text-secondary">
+                      <span key={idx} className="text-[10px] px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
                         #{t}
                       </span>
                     ))}
@@ -261,31 +261,31 @@ export const DocumentsPage: React.FC = () => {
 
               {/* Bottom Actions */}
               <div
-                className="pt-3 border-t border-clario-border flex items-center justify-between text-xs"
+                className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs"
                 onClick={(e) => e.stopPropagation()}
               >
-                <span className="text-[10px] text-clario-text-muted">
+                <span className="text-[10px] text-slate-400">
                   {workspaceDate(doc.created_at).toLocaleDateString()}
                 </span>
                 <div className="flex items-center space-x-1.5">
                   <a
                     href={api.getDocumentFileUrl(doc.id)}
                     download={doc.filename}
-                    className="p-1.5 rounded-md text-clario-text-secondary hover:text-clario-teal hover:bg-clario-ivory transition-colors"
+                    className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     title="Download original file"
                   >
                     <Download className="w-3.5 h-3.5" />
                   </a>
                   <button
                     onClick={() => setSelectedDocId(doc.id)}
-                    className="p-1.5 rounded-md text-clario-text-secondary hover:text-clario-teal hover:bg-clario-ivory transition-colors"
+                    className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     title="View passages"
                   >
                     <Eye className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(doc.id, doc.title)}
-                    className="p-1.5 rounded-md text-clario-text-secondary hover:text-rose-600 hover:bg-clario-ivory transition-colors"
+                    className="p-1.5 rounded-md text-slate-500 hover:text-rose-600 hover:bg-slate-100 transition-colors"
                     title="Delete document"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

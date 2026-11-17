@@ -283,7 +283,7 @@ export const FindingsPage: React.FC = () => {
           </div>
         ) : findings.length === 0 ? (
           <Card className="p-8 text-center bg-white">
-            <ShieldCheck className="w-8 h-8 text-clario-sage mx-auto mb-2" />
+            <ShieldCheck className="w-8 h-8 text-slate-400 mx-auto mb-2" />
             <h4 className="text-sm font-semibold text-clario-text mb-1">No findings matching criteria</h4>
             <p className="text-xs text-clario-text-secondary max-w-sm mx-auto mb-3">
               Run an automated contradiction scan or modify filter selections.
@@ -322,7 +322,7 @@ export const FindingsPage: React.FC = () => {
                   <Select
                     aria-label={`Review status for ${f.title}`} value={f.status}
                     onChange={(e) => handleStatusChange(f.id, e.target.value)}
-                    className="text-xs bg-clario-ivory font-semibold text-clario-navy border border-clario-border rounded-md px-2.5 py-1 focus:outline-none cursor-pointer"
+                    className="text-xs bg-white font-semibold text-slate-800 border border-slate-200 rounded-md px-2.5 py-1 focus:outline-none cursor-pointer"
                   >
                     <option value="open">Open</option>
                     <option value="under_review">Under Review</option>
@@ -350,11 +350,11 @@ export const FindingsPage: React.FC = () => {
               {(f.doc_a_quote || f.doc_b_quote) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
                   {f.doc_a_quote && (
-                    <div className="p-3 rounded-md bg-clario-ivory border border-clario-border">
-                      <span className="text-[10px] font-semibold text-clario-navy uppercase block mb-1">
+                    <div className="p-3 rounded-md bg-slate-50 border border-slate-200">
+                      <span className="text-[10px] font-semibold text-slate-900 uppercase block mb-1">
                         Source A: {f.doc_a_title} {f.doc_a_page ? `(Page ${f.doc_a_page})` : ''}
                       </span>
-                      <p className="text-[11px] text-clario-text leading-relaxed italic">
+                      <p className="text-[11px] text-slate-700 leading-relaxed italic">
                         "{f.doc_a_quote}"
                       </p>
                     </div>
@@ -387,27 +387,27 @@ export const FindingsPage: React.FC = () => {
                       />
                       <button
                         onClick={() => handleSaveNotes(f.id)}
-                        className="p-1 rounded bg-clario-teal text-white hover:bg-clario-teal-light"
+                        className="p-1 rounded bg-slate-900 text-white hover:bg-slate-800"
                       >
                         <Check className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setEditingNotesId(null)}
-                        className="p-1 rounded text-clario-text-secondary hover:text-clario-text"
+                        className="p-1 rounded text-slate-500 hover:text-slate-800"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center space-x-2 text-[11px] text-clario-text-secondary">
-                      <span className="font-semibold text-clario-navy">Notes:</span>
+                    <div className="flex items-center space-x-2 text-[11px] text-slate-600">
+                      <span className="font-semibold text-slate-900">Notes:</span>
                       <span className="italic">{f.reviewer_notes || 'No reviewer notes recorded.'}</span>
                       <button
                         onClick={() => {
                           setEditingNotesId(f.id);
                           setNotesInput(f.reviewer_notes || '');
                         }}
-                        className="text-clario-teal hover:underline text-[10px]"
+                        className="text-slate-900 font-medium hover:underline text-[10px]"
                       >
                         (Edit)
                       </button>

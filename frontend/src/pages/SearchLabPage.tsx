@@ -120,15 +120,15 @@ export const SearchLabPage: React.FC = () => {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Enter query to evaluate across BM25, Vector, and Hybrid..."
-                    className="w-full text-xs pl-10 pr-4 py-2.5 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+                    className="w-full text-xs pl-10 pr-4 py-2.5 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
                   />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-clario-text-secondary whitespace-nowrap">Top-K:</span>
+                  <span className="text-xs text-slate-500 whitespace-nowrap">Top-K:</span>
                   <Select
                     aria-label="Number of search results" value={topK}
                     onChange={(e) => setTopK(Number(e.target.value))}
-                    className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-2"
+                    className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-2 text-slate-800"
                   >
                     <option value={3}>3</option>
                     <option value={5}>5</option>
@@ -141,7 +141,7 @@ export const SearchLabPage: React.FC = () => {
               </div>
 
               {/* Sample Queries */}
-              <div className="flex flex-wrap items-center gap-2 pt-2 text-[11px] text-clario-text-secondary">
+              <div className="flex flex-wrap items-center gap-2 pt-2 text-[11px] text-slate-500">
                 <span className="font-medium">Test queries:</span>
                 {[
                   'data retention zero data retention ZDR 30 days vs 60 days audit',
@@ -158,7 +158,7 @@ export const SearchLabPage: React.FC = () => {
                       setQuery(sq);
                       executeComparison(sq, topK);
                     }}
-                    className="px-2 py-0.5 rounded bg-clario-ivory hover:bg-clario-ivory-muted border border-clario-border text-clario-text truncate max-w-[240px]"
+                    className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 truncate max-w-[240px]"
                   >
                     "{sq}"
                   </button>
@@ -172,36 +172,36 @@ export const SearchLabPage: React.FC = () => {
             <div className="space-y-6 animate-in fade-in">
               {/* Overlap & Performance Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="p-4 text-center">
-                  <span className="text-[10px] text-clario-text-muted uppercase tracking-wider block">BM25 Latency</span>
-                  <span className="text-xl font-bold text-clario-navy font-mono">
+                <Card className="p-4 text-center bg-white border border-slate-200">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">BM25 Latency</span>
+                  <span className="text-xl font-bold text-slate-900 font-mono">
                     {comparison.latency_bm25_ms} ms
                   </span>
-                  <span className="text-[10px] text-clario-text-secondary block mt-0.5">Lexical Inverted Index</span>
+                  <span className="text-[10px] text-slate-500 block mt-0.5">Lexical Inverted Index</span>
                 </Card>
 
-                <Card className="p-4 text-center">
-                  <span className="text-[10px] text-clario-text-muted uppercase tracking-wider block">Vector Latency</span>
-                  <span className="text-xl font-bold text-clario-navy font-mono">
+                <Card className="p-4 text-center bg-white border border-slate-200">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Vector Latency</span>
+                  <span className="text-xl font-bold text-slate-900 font-mono">
                     {comparison.latency_vector_ms} ms
                   </span>
-                  <span className="text-[10px] text-clario-text-secondary block mt-0.5">Dense Cosine Similarity</span>
+                  <span className="text-[10px] text-slate-500 block mt-0.5">Dense Cosine Similarity</span>
                 </Card>
 
-                <Card className="p-4 text-center">
-                  <span className="text-[10px] text-clario-text-muted uppercase tracking-wider block">Hybrid RRF Latency</span>
-                  <span className="text-xl font-bold text-clario-teal font-mono">
+                <Card className="p-4 text-center bg-white border border-slate-200">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Hybrid RRF Latency</span>
+                  <span className="text-xl font-bold text-slate-900 font-mono">
                     {comparison.latency_hybrid_ms} ms
                   </span>
-                  <span className="text-[10px] text-clario-text-secondary block mt-0.5">Rank Fusion (k=60)</span>
+                  <span className="text-[10px] text-slate-500 block mt-0.5">Rank Fusion (k=60)</span>
                 </Card>
 
-                <Card className="p-4 text-center bg-clario-sage-light/20 border-clario-sage">
-                  <span className="text-[10px] text-clario-navy uppercase tracking-wider block">Method Overlap (Jaccard)</span>
-                  <span className="text-xl font-bold text-clario-navy font-mono">
+                <Card className="p-4 text-center bg-slate-50 border border-slate-200">
+                  <span className="text-[10px] text-slate-600 uppercase tracking-wider block">Method Overlap (Jaccard)</span>
+                  <span className="text-xl font-bold text-slate-900 font-mono">
                     {(comparison.jaccard_similarity * 100).toFixed(1)}%
                   </span>
-                  <span className="text-[10px] text-clario-navy/80 block mt-0.5">
+                  <span className="text-[10px] text-slate-600 block mt-0.5">
                     {comparison.overlap_count} shared top-{topK} passages
                   </span>
                 </Card>
@@ -210,28 +210,28 @@ export const SearchLabPage: React.FC = () => {
               {/* 3-Column Method Comparison Table */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Method A: BM25 */}
-                <div className="bg-white rounded-md border border-clario-border p-4 shadow-subtle flex flex-col">
-                  <div className="flex items-center justify-between pb-3 border-b border-clario-border mb-3">
+                <div className="bg-white rounded-md border border-slate-200 p-4 shadow-subtle flex flex-col">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                      <h3 className="font-semibold text-xs text-clario-navy">A. BM25 Lexical</h3>
+                      <h3 className="font-semibold text-xs text-slate-900">A. BM25 Lexical</h3>
                     </div>
                     <Badge variant="navy" size="sm">k1=1.5, b=0.75</Badge>
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                     {comparison.bm25_results.map((r) => (
-                      <div key={r.chunk_id} className="p-3 rounded-md border border-clario-border bg-clario-ivory/50">
+                      <div key={r.chunk_id} className="p-3 rounded-md border border-slate-200 bg-slate-50/70">
                         <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="font-semibold text-clario-navy truncate max-w-[140px]">{r.document_title}</span>
+                          <span className="font-semibold text-slate-900 truncate max-w-[140px]">{r.document_title}</span>
                           <span className="font-mono text-blue-700">Rank #{r.rank} &bull; {r.score}</span>
                         </div>
-                        <p className="text-xs text-clario-text line-clamp-3 leading-relaxed">
+                        <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
                           {r.snippet}
                         </p>
                         <button
                           type="button"
                           onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
-                          className="mt-2 text-[10px] text-clario-navy hover:text-clario-teal font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                          className="mt-2 text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
                         >
                           <BookOpen className="w-3 h-3" />
                           <span>Page {r.page_number} in Viewer</span>
@@ -242,28 +242,28 @@ export const SearchLabPage: React.FC = () => {
                 </div>
 
                 {/* Method B: Semantic Vector */}
-                <div className="bg-white rounded-md border border-clario-border p-4 shadow-subtle flex flex-col">
-                  <div className="flex items-center justify-between pb-3 border-b border-clario-border mb-3">
+                <div className="bg-white rounded-md border border-slate-200 p-4 shadow-subtle flex flex-col">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                      <h3 className="font-semibold text-xs text-clario-navy">B. Dense Semantic Vector</h3>
+                      <h3 className="font-semibold text-xs text-slate-900">B. Dense Semantic Vector</h3>
                     </div>
-                    <Badge variant="teal" size="sm">Cosine Sim</Badge>
+                    <Badge variant="gray" size="sm">Cosine Sim</Badge>
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                     {comparison.vector_results.map((r) => (
-                      <div key={r.chunk_id} className="p-3 rounded-md border border-clario-border bg-clario-ivory/50">
+                      <div key={r.chunk_id} className="p-3 rounded-md border border-slate-200 bg-slate-50/70">
                         <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="font-semibold text-clario-navy truncate max-w-[140px]">{r.document_title}</span>
+                          <span className="font-semibold text-slate-900 truncate max-w-[140px]">{r.document_title}</span>
                           <span className="font-mono text-purple-700">Rank #{r.rank} &bull; {r.score}</span>
                         </div>
-                        <p className="text-xs text-clario-text line-clamp-3 leading-relaxed">
+                        <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
                           {r.snippet}
                         </p>
                         <button
                           type="button"
                           onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
-                          className="mt-2 text-[10px] text-clario-navy hover:text-clario-teal font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                          className="mt-2 text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
                         >
                           <BookOpen className="w-3 h-3" />
                           <span>Page {r.page_number} in Viewer</span>
@@ -274,28 +274,28 @@ export const SearchLabPage: React.FC = () => {
                 </div>
 
                 {/* Method C: Hybrid RRF */}
-                <div className="bg-white rounded-md border-2 border-clario-teal p-4 shadow-card flex flex-col">
-                  <div className="flex items-center justify-between pb-3 border-b border-clario-teal/30 mb-3">
+                <div className="bg-white rounded-md border-2 border-slate-900 p-4 shadow-subtle flex flex-col">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
                     <div className="flex items-center space-x-2">
-                      <SearchCheck className="w-4 h-4 text-clario-navy" />
-                      <h3 className="font-semibold text-xs text-clario-navy">C. Hybrid Reciprocal Fusion</h3>
+                      <SearchCheck className="w-4 h-4 text-slate-900" />
+                      <h3 className="font-semibold text-xs text-slate-900">C. Hybrid Reciprocal Fusion</h3>
                     </div>
-                    <Badge variant="gold" size="sm">RRF (k=60)</Badge>
+                    <Badge variant="navy" size="sm">RRF (k=60)</Badge>
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                     {comparison.hybrid_results.map((r) => (
-                      <div key={r.chunk_id} className="p-3 rounded-md border border-clario-teal/40 bg-clario-teal/5">
+                      <div key={r.chunk_id} className="p-3 rounded-md border border-slate-200 bg-slate-50/70">
                         <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="font-semibold text-clario-navy truncate max-w-[140px]">{r.document_title}</span>
-                          <span className="font-mono text-clario-teal font-bold">Rank #{r.rank} &bull; {r.score}</span>
+                          <span className="font-semibold text-slate-900 truncate max-w-[140px]">{r.document_title}</span>
+                          <span className="font-mono text-slate-900 font-bold">Rank #{r.rank} &bull; {r.score}</span>
                         </div>
-                        <p className="text-xs text-clario-text line-clamp-3 leading-relaxed">
+                        <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
                           {r.snippet}
                         </p>
                         <button
                           type="button"
                           onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
-                          className="mt-2 text-[10px] text-clario-navy hover:text-clario-teal font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                          className="mt-2 text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
                         >
                           <BookOpen className="w-3 h-3" />
                           <span>Page {r.page_number} in Viewer</span>
@@ -343,8 +343,8 @@ export const SearchLabPage: React.FC = () => {
                   </h4>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border border-clario-border rounded-md overflow-hidden">
-                      <thead className="bg-clario-ivory text-clario-navy font-semibold">
+                    <table className="w-full text-xs text-left border border-slate-200 rounded-md overflow-hidden">
+                      <thead className="bg-slate-50 text-slate-900 font-semibold border-b border-slate-200">
                         <tr>
                           <th className="p-3">Retrieval Engine</th>
                           <th className="p-3">Precision@3</th>
@@ -354,9 +354,9 @@ export const SearchLabPage: React.FC = () => {
                           <th className="p-3">nDCG@5</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-clario-border">
-                        <tr className="hover:bg-clario-ivory/50">
-                          <td className="p-3 font-medium text-clario-navy flex items-center space-x-1.5">
+                      <tbody className="divide-y divide-slate-200">
+                        <tr className="hover:bg-slate-50">
+                          <td className="p-3 font-medium text-slate-900 flex items-center space-x-1.5">
                             <span className="w-2 h-2 rounded-full bg-blue-500" />
                             <span>BM25 Lexical</span>
                           </td>
@@ -377,7 +377,7 @@ export const SearchLabPage: React.FC = () => {
                           </td>
                         </tr>
 
-                        <tr className="hover:bg-clario-ivory/50">
+                        <tr className="hover:bg-slate-50">
                           <td className="p-3 font-medium text-clario-navy flex items-center space-x-1.5">
                             <span className="w-2 h-2 rounded-full bg-purple-500" />
                             <span>Dense Semantic Vector</span>
@@ -399,24 +399,24 @@ export const SearchLabPage: React.FC = () => {
                           </td>
                         </tr>
 
-                        <tr className="bg-clario-sage-light/20 font-semibold border-t-2 border-clario-teal">
-                          <td className="p-3 text-clario-navy flex items-center space-x-1.5">
-                            <SearchCheck className="w-3.5 h-3.5 text-clario-navy" />
+                        <tr className="bg-slate-100 font-semibold border-t-2 border-slate-900">
+                          <td className="p-3 text-slate-900 flex items-center space-x-1.5">
+                            <SearchCheck className="w-3.5 h-3.5 text-slate-900" />
                             <span>Hybrid RRF (Combined)</span>
                           </td>
-                          <td className="p-3 font-mono font-bold text-clario-teal">
+                          <td className="p-3 font-mono font-bold text-slate-900">
                             {(benchmark.hybrid_mean.precision_at_3 * 100).toFixed(1)}%
                           </td>
-                          <td className="p-3 font-mono font-bold text-clario-teal">
+                          <td className="p-3 font-mono font-bold text-slate-900">
                             {(benchmark.hybrid_mean.precision_at_5 * 100).toFixed(1)}%
                           </td>
-                          <td className="p-3 font-mono font-bold text-clario-teal">
+                          <td className="p-3 font-mono font-bold text-slate-900">
                             {(benchmark.hybrid_mean.recall_at_5 * 100).toFixed(1)}%
                           </td>
-                          <td className="p-3 font-mono font-bold text-clario-teal">
+                          <td className="p-3 font-mono font-bold text-slate-900">
                             {benchmark.hybrid_mean.mrr.toFixed(3)}
                           </td>
-                          <td className="p-3 font-mono font-bold text-clario-teal">
+                          <td className="p-3 font-mono font-bold text-slate-900">
                             {benchmark.hybrid_mean.ndcg_at_5.toFixed(3)}
                           </td>
                         </tr>

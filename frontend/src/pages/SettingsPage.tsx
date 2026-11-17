@@ -197,7 +197,7 @@ export const SettingsPage: React.FC = () => {
       )}
 
       {/* Ollama Local Integration Card */}
-      <Card className="rounded-md p-6 border-clario-teal/30 bg-white shadow-card space-y-5">
+      <Card className="rounded-md p-6 border-slate-200 bg-white shadow-card space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-clario-border">
           <div className="flex items-center space-x-3">
             <div className="p-2.5 rounded-md bg-clario-navy/5 text-clario-navy">
@@ -263,7 +263,7 @@ export const SettingsPage: React.FC = () => {
             </label>
             <Select id="llmProvider" value={llmProvider}
               onChange={(e) => setLlmProvider(e.target.value)}
-              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 font-semibold text-clario-navy focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs bg-white border border-slate-200 rounded-md px-3 py-2.5 font-semibold text-slate-900 focus:outline-none focus:border-slate-900"
             >
               <option value="extractive">Extractive · retrieved passages</option>
               <option value="ollama">Ollama · local model</option>
@@ -273,14 +273,14 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="ollamaUrl" className="block text-[11px] font-bold text-clario-navy uppercase tracking-wider mb-1.5">
+            <label htmlFor="ollamaUrl" className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1.5">
               Ollama Daemon URL
             </label>
             <input id="ollamaUrl" type="text"
               value={ollamaUrl}
               onChange={(e) => setOllamaUrl(e.target.value)}
               placeholder="http://localhost:11434"
-              className="w-full text-xs font-mono bg-white border border-clario-border rounded-md px-3 py-2.5 text-clario-text focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs font-mono bg-white border border-slate-200 rounded-md px-3 py-2.5 text-slate-900 focus:outline-none focus:border-slate-900"
             />
           </div>
 
@@ -295,9 +295,9 @@ export const SettingsPage: React.FC = () => {
 
         <details className="border-t border-clario-border pt-4 text-sm">
           <summary className="cursor-pointer font-medium text-clario-navy">Set up Ollama or a custom model</summary>
-          <div className="mt-4 space-y-3 text-clario-text-secondary">
-            <p>Install <a href="https://ollama.com/download" target="_blank" rel="noreferrer" className="text-clario-teal underline">Ollama</a>, open the app, and download a model in your terminal:</p>
-            <pre className="bg-clario-ivory border border-clario-border rounded p-3 overflow-x-auto text-xs text-clario-text">ollama pull llama3.2</pre>
+          <div className="mt-4 space-y-3 text-slate-600">
+            <p>Install <a href="https://ollama.com/download" target="_blank" rel="noreferrer" className="text-slate-900 underline font-medium">Ollama</a>, open the app, and download a model in your terminal:</p>
+            <pre className="bg-slate-50 border border-slate-200 rounded p-3 overflow-x-auto text-xs text-slate-800">ollama pull llama3.2</pre>
             <p>Choose Ollama above, enter the exact installed model name, and save the configuration. Custom models created in Ollama work in the same field.</p>
             <p className="text-xs">These are setup instructions. Commands are run in your own terminal.</p>
           </div>
@@ -312,20 +312,20 @@ export const SettingsPage: React.FC = () => {
 
       {/* Database Explorer Section */}
       <Card className="rounded-md p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-clario-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-md bg-clario-navy/5 text-clario-navy">
+            <div className="p-2.5 rounded-md bg-slate-100 text-slate-800">
               <Database className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-clario-navy">Interactive Database Explorer</h3>
-              <p className="text-xs text-clario-text-secondary mt-0.5">
+              <h3 className="font-bold text-sm text-slate-900">Interactive Database Explorer</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
                 Inspect raw SQLite tables, document chunks, comparisons, and audit records directly
               </p>
             </div>
           </div>
 
-          <div className="text-[11px] font-mono text-clario-text-secondary bg-clario-ivory px-3 py-1.5 rounded-md border border-clario-border">
+          <div className="text-[11px] font-mono text-slate-600 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200">
             File: backend/data/clario.db
           </div>
         </div>
@@ -339,13 +339,13 @@ export const SettingsPage: React.FC = () => {
               onClick={() => inspectTable(t.name)}
               className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center space-x-2 ${
                 selectedTable === t.name
-                  ? 'bg-clario-navy text-white shadow-xs'
-                  : 'bg-clario-ivory text-clario-text-secondary hover:text-clario-navy hover:bg-clario-ivory-muted border border-clario-border'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-50 text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               <span>{t.name}</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded ${
-                selectedTable === t.name ? 'bg-white/20 text-white' : 'bg-clario-border text-clario-text-secondary'
+                selectedTable === t.name ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
               }`}>
                 {t.row_count}
               </span>
@@ -354,28 +354,28 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* Data Table Preview */}
-        {loadingTable && <p role="status" className="text-sm text-clario-text-secondary">Loading table…</p>}
+        {loadingTable && <p role="status" className="text-sm text-slate-500">Loading table…</p>}
         {tableData && (
-          <div className="border border-clario-border rounded-md overflow-hidden text-xs">
-            <div className="p-3 bg-clario-ivory border-b border-clario-border flex items-center justify-between">
-              <span className="font-bold text-clario-navy font-mono">Table: {tableData.table}</span>
-              <span className="text-[11px] text-clario-text-secondary">Showing top {tableData.rows.length} rows</span>
+          <div className="border border-slate-200 rounded-md overflow-hidden text-xs">
+            <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <span className="font-bold text-slate-900 font-mono">Table: {tableData.table}</span>
+              <span className="text-[11px] text-slate-500">Showing top {tableData.rows.length} rows</span>
             </div>
 
             <div className="overflow-x-auto max-h-72 overflow-y-auto">
               <table className="w-full text-left">
-                <thead className="bg-clario-ivory-card border-b border-clario-border text-[10px] font-bold text-clario-text-secondary uppercase tracking-wider sticky top-0">
+                <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-600 uppercase tracking-wider sticky top-0">
                   <tr>
                     {tableData.columns.map((c) => (
                       <th key={c} className="p-2.5 whitespace-nowrap">{c}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-clario-border font-mono text-[11px]">
+                <tbody className="divide-y divide-slate-200 font-mono text-[11px]">
                   {tableData.rows.map((row, rIdx) => (
-                    <tr key={rIdx} className="hover:bg-clario-ivory transition-colors">
+                    <tr key={rIdx} className="hover:bg-slate-50 transition-colors">
                       {tableData.columns.map((c) => (
-                        <td key={c} className="p-2.5 whitespace-nowrap text-clario-text max-w-xs truncate" title={String(row[c])}>
+                        <td key={c} className="p-2.5 whitespace-nowrap text-slate-800 max-w-xs truncate" title={String(row[c])}>
                           {row[c] !== null && row[c] !== undefined ? String(row[c]) : <span className="text-slate-400">NULL</span>}
                         </td>
                       ))}

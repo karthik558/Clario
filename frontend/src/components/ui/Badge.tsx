@@ -14,11 +14,11 @@ export const Badge: React.FC<BadgeProps> = ({
   className = '',
 }) => {
   const variantStyles = {
-    sage: 'bg-clario-sage-light/70 text-clario-navy border border-clario-sage',
-    teal: 'bg-clario-teal/10 text-clario-teal border border-clario-teal/30',
-    gold: 'bg-clario-gold-light/60 text-clario-gold-dark border border-clario-gold/40',
-    navy: 'bg-clario-navy text-white border border-clario-navy',
-    gray: 'bg-clario-ivory text-clario-text-secondary border border-clario-border',
+    sage: 'bg-slate-100 text-slate-700 border border-slate-200',
+    teal: 'bg-slate-100 text-slate-800 border border-slate-200',
+    gold: 'bg-amber-50 text-amber-800 border border-amber-200',
+    navy: 'bg-slate-900 text-white border border-slate-900',
+    gray: 'bg-slate-100 text-slate-700 border border-slate-200',
     red: 'bg-rose-50 text-rose-700 border border-rose-200',
   };
 

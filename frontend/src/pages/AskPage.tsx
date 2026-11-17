@@ -332,7 +332,7 @@ export const AskPage: React.FC = () => {
               onClick={() => handleSwitchProvider('extractive')}
               className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
                 llmProvider === 'extractive'
-                  ? 'bg-clario-teal text-white border-clario-teal'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
             >
@@ -468,7 +468,7 @@ export const AskPage: React.FC = () => {
             <button
               key={idx}
               onClick={() => handleAsk(p)}
-              className="p-3.5 rounded-md border border-clario-border bg-white hover:border-clario-teal/50 hover:bg-clario-ivory transition-all text-left group flex items-start space-x-3 shadow-subtle"
+              className="p-3.5 rounded-md border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-all text-left group flex items-start space-x-3 shadow-subtle"
             >
               <SearchCheck className="w-4 h-4 text-clario-navy shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-medium text-clario-text group-hover:text-clario-navy transition-colors">
@@ -508,7 +508,7 @@ export const AskPage: React.FC = () => {
                   </span>
                   <button
                     onClick={() => handleCopy(item.response.answer, idx)}
-                    className="p-1 rounded text-clario-text-secondary hover:text-clario-text hover:bg-clario-ivory transition-colors"
+                    className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
                     title="Copy Answer"
                   >
                     {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-clario-navy" /> : <Copy className="w-3.5 h-3.5 text-clario-text-secondary" />}
@@ -573,20 +573,20 @@ export const AskPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => toggleCitations(idx)}
-                      className="inline-flex items-center space-x-1.5 text-[11px] font-semibold text-clario-navy hover:text-clario-teal px-2.5 py-1 rounded bg-clario-ivory hover:bg-clario-ivory-muted border border-clario-border transition-colors cursor-pointer"
+                      className="inline-flex items-center space-x-1.5 text-[11px] font-semibold text-slate-800 hover:text-slate-900 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
                     >
-                      <Bookmark className="w-3.5 h-3.5 text-clario-navy" />
+                      <Bookmark className="w-3.5 h-3.5 text-slate-700" />
                       <span>
                         {expandedCitations[idx] ? 'Hide' : 'View'} source citations ({item.response.citations.length})
                       </span>
                       <ChevronRight
-                        className={`w-3.5 h-3.5 text-clario-text-secondary transition-transform duration-200 ${
+                        className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${
                           expandedCitations[idx] ? 'rotate-90' : ''
                         }`}
                       />
                     </button>
                     {expandedCitations[idx] && (
-                      <span className="text-[10px] text-clario-text-muted">Click any citation to inspect page & passage</span>
+                      <span className="text-[10px] text-slate-400">Click any citation to inspect page & passage</span>
                     )}
                   </div>
 
@@ -597,7 +597,7 @@ export const AskPage: React.FC = () => {
                           type="button"
                           key={cit.citation_id}
                           onClick={() => setSelectedCitation(cit)}
-                          className="text-left p-3 rounded-md border border-clario-border bg-clario-ivory/60 hover:border-clario-navy/30 hover:bg-clario-ivory transition-all cursor-pointer group flex flex-col justify-between"
+                          className="text-left p-3 rounded-md border border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100/70 transition-all cursor-pointer group flex flex-col justify-between"
                         >
                           <div className="flex items-center justify-between mb-1.5">
                             <div className="flex items-center space-x-2 truncate">
@@ -691,7 +691,7 @@ export const AskPage: React.FC = () => {
           <div className="bg-white rounded-md border border-clario-border p-5 shadow-subtle space-y-3.5 animate-in fade-in">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-clario-teal animate-ping" />
+                <div className="w-2 h-2 rounded-full bg-slate-900 animate-ping" />
                 <span className="text-xs font-semibold text-clario-navy">
                   Synthesizing Evidence & Verifying Sources
                 </span>
@@ -702,15 +702,15 @@ export const AskPage: React.FC = () => {
             {/* Progress Bar Line */}
             <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden relative">
               <div
-                className="h-full bg-gradient-to-r from-clario-teal via-clario-navy to-clario-teal rounded-full animate-pulse"
+                className="h-full bg-slate-900 rounded-full animate-pulse"
                 style={{ width: '75%' }}
               />
             </div>
 
             {/* Staged Research Pipeline Milestones */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
-              <div className="flex items-center gap-2 p-2 rounded bg-clario-ivory/70 border border-slate-100 text-slate-700">
-                <Check className="w-3.5 h-3.5 text-clario-teal shrink-0" />
+              <div className="flex items-center gap-2 p-2 rounded bg-slate-50 border border-slate-200 text-slate-700">
+                <Check className="w-3.5 h-3.5 text-slate-900 shrink-0" />
                 <span className="truncate">1. Lexical & Vector Recall</span>
               </div>
               <div className="flex items-center gap-2 p-2 rounded bg-navy-50/60 border border-navy-100 text-clario-navy font-medium">
@@ -729,7 +729,7 @@ export const AskPage: React.FC = () => {
       </div>
 
       {/* Input Form Bar */}
-      <Card className="sticky bottom-4 z-10 p-3 shadow-elevated border-clario-teal/30 bg-white">
+      <Card className="sticky bottom-4 z-10 p-3 shadow-elevated border-slate-200 bg-white">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -750,7 +750,7 @@ export const AskPage: React.FC = () => {
             }}
             placeholder="Ask anything about policies, contracts, findings, or research... (Press Enter to send, Shift+Enter for newline)"
             aria-label="Question about your documents"
-            className="min-w-0 flex-1 text-xs px-3.5 py-2.5 rounded-md border border-clario-border bg-clario-ivory focus:outline-none focus:border-clario-teal text-clario-text resize-none"
+            className="min-w-0 flex-1 text-xs px-3.5 py-2.5 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900 resize-none"
           />
           <Button
             type="submit"

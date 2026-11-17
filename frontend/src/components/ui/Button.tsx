@@ -18,11 +18,11 @@ export const Button: React.FC<ButtonProps> = ({
   const base = 'inline-flex items-center justify-center font-medium rounded-md transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed shadow-xs';
 
   const variants = {
-    primary: 'bg-clario-navy text-white hover:bg-clario-navy-light active:bg-clario-navy-dark',
-    secondary: 'bg-clario-teal text-white hover:bg-clario-teal-light',
-    outline: 'border border-clario-border bg-white text-clario-text hover:bg-clario-ivory hover:border-clario-teal/50',
+    primary: 'bg-clario-navy text-white hover:bg-slate-800 active:bg-slate-950',
+    secondary: 'bg-slate-800 text-white hover:bg-slate-700',
+    outline: 'border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-300',
     danger: 'bg-rose-600 text-white hover:bg-rose-700',
-    ghost: 'text-clario-text-secondary hover:text-clario-text hover:bg-clario-ivory shadow-none',
+    ghost: 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 shadow-none',
   };
 
   const sizes = {

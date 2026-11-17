@@ -508,7 +508,7 @@ export const OverviewPage: React.FC = () => {
                 <tr
                   key={doc.id}
                   onClick={() => setSelectedDocId(doc.id)}
-                  className="hover:bg-clario-ivory cursor-pointer transition-colors group"
+                  className="hover:bg-slate-50 cursor-pointer transition-colors group"
                 >
                   <td className="py-3 px-3 font-semibold text-clario-navy flex items-center space-x-2.5">
                     <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
@@ -524,7 +524,7 @@ export const OverviewPage: React.FC = () => {
                   <td className="py-3 px-3 text-clario-text-secondary font-medium">
                     {doc.collection}
                   </td>
-                  <td className="py-3 px-3 font-mono text-clario-teal font-bold">
+                  <td className="py-3 px-3 font-mono text-slate-900 font-bold">
                     {doc.chunk_count} chunks
                   </td>
                   <td className="py-3 px-3">
@@ -535,7 +535,7 @@ export const OverviewPage: React.FC = () => {
                   <td className="py-3 px-3 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setSelectedDocId(doc.id)}
-                      className="p-1.5 rounded-md text-clario-text-secondary hover:text-clario-teal hover:bg-white transition-colors"
+                      className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-white transition-colors"
                       title="Inspect chunks"
                     >
                       <Eye className="w-4 h-4" />

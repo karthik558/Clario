@@ -139,7 +139,7 @@ export const ComparePage: React.FC = () => {
             <Select id="docAId" value={docAId}
               disabled={loading || promoting}
               onChange={(e) => changeDocument('a', e.target.value)}
-              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium text-clario-text h-[42px]"
+              className="w-full text-xs bg-white border border-slate-200 rounded-md px-3 py-2.5 focus:outline-none focus:border-slate-900 font-medium text-slate-900 h-[42px]"
             >
               <option value="">Select Document A</option>
               {documents.map((d) => (
@@ -173,7 +173,7 @@ export const ComparePage: React.FC = () => {
             <Select id="docBId" value={docBId}
               disabled={loading || promoting}
               onChange={(e) => changeDocument('b', e.target.value)}
-              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium text-clario-text h-[42px]"
+              className="w-full text-xs bg-white border border-slate-200 rounded-md px-3 py-2.5 focus:outline-none focus:border-slate-900 font-medium text-slate-900 h-[42px]"
             >
               <option value="">Select Document B</option>
               {documents.map((d) => (
@@ -201,7 +201,7 @@ export const ComparePage: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Card className="p-3 text-center">
               <span className="text-[10px] text-clario-text-muted uppercase tracking-wider block">Similarity Ratio</span>
-              <span className="text-xl font-bold text-clario-teal font-mono">
+              <span className="text-xl font-bold text-slate-900 font-mono">
                 {(comparison.similarity_score * 100).toFixed(1)}%
               </span>
             </Card>
@@ -227,16 +227,16 @@ export const ComparePage: React.FC = () => {
               </span>
             </Card>
 
-            <Card className="p-3 text-center border-clario-gold/50 bg-amber-50/30">
-              <span className="text-[10px] text-clario-gold-dark uppercase tracking-wider block">Contradictions Flagged</span>
-              <span className="text-xl font-bold text-clario-gold-dark font-mono">
+            <Card className="p-3 text-center border-amber-200 bg-amber-50/30">
+              <span className="text-[10px] text-amber-800 uppercase tracking-wider block">Contradictions Flagged</span>
+              <span className="text-xl font-bold text-amber-800 font-mono">
                 {comparison.contradiction_candidates.length}
               </span>
             </Card>
           </div>
 
           {/* Executive Comparative Summary */}
-          <Card className="p-4 bg-clario-ivory-card border-clario-border">
+          <Card className="p-4 bg-white border border-slate-200">
             <div className="flex items-start space-x-3">
               <SearchCheck className="w-5 h-5 text-clario-navy shrink-0 mt-0.5" />
               <div>
@@ -398,7 +398,7 @@ export const ComparePage: React.FC = () => {
 
               {/* Right Column: Doc B */}
               <div className="border border-clario-border rounded-md bg-white overflow-hidden shadow-subtle flex flex-col">
-                <div className="p-3 bg-clario-teal text-white text-xs font-semibold flex items-center justify-between">
+                <div className="p-3 bg-slate-900 text-white text-xs font-semibold flex items-center justify-between">
                   <span className="truncate max-w-xs">{comparison.doc_b.title}</span>
                   <Badge variant="navy" size="sm">{comparison.doc_b.file_type.toUpperCase()}</Badge>
                 </div>

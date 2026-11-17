@@ -213,7 +213,7 @@ export const ReportsPage: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setSelectedReport(rep)}
-                    className="p-1.5 rounded text-clario-text-secondary hover:text-clario-teal hover:bg-clario-ivory transition-colors"
+                    className="p-1.5 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     title="View Interactive Preview"
                   >
                     <Eye className="w-4 h-4" />
@@ -262,17 +262,17 @@ export const ReportsPage: React.FC = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
             />
           </div>
 
           <div>
-            <label htmlFor="reportType" className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
+            <label htmlFor="reportType" className="block text-[11px] font-semibold text-slate-900 uppercase mb-1">
               Report Template Type
             </label>
             <Select id="reportType" value={reportType}
               onChange={(e) => setReportType(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
             >
               <option value="comparative">Comparative Version Analysis</option>
               <option value="summary">Document Intelligence Summary</option>
@@ -283,10 +283,10 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-slate-900 uppercase mb-1">
               Document scope (none selected = all documents)
             </label>
-            <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-md border border-clario-border bg-clario-ivory">
+            <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-md border border-slate-200 bg-slate-50">
               {documents.map((d) => {
                 const isChecked = selectedDocIds.includes(d.id);
                 return (
@@ -301,9 +301,9 @@ export const ReportsPage: React.FC = () => {
                           setSelectedDocIds([...selectedDocIds, d.id]);
                         }
                       }}
-                      className="rounded text-clario-teal focus:ring-clario-teal"
+                      className="rounded text-slate-900 focus:ring-slate-900"
                     />
-                    <span className="text-xs text-clario-text truncate">{d.title}</span>
+                    <span className="text-xs text-slate-700 truncate">{d.title}</span>
                   </label>
                 );
               })}
@@ -311,14 +311,14 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="customNotes" className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
+            <label htmlFor="customNotes" className="block text-[11px] font-semibold text-slate-900 uppercase mb-1">
               Custom Auditor Notes / Context
             </label>
             <textarea id="customNotes" value={customNotes}
               onChange={(e) => setCustomNotes(e.target.value)}
               rows={2}
               placeholder="e.g. Conducted ahead of 2024 compliance audit review."
-              className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
             />
           </div>
 
@@ -368,7 +368,7 @@ export const ReportsPage: React.FC = () => {
               <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider mb-1">
                 Executive Summary
               </h4>
-              <p className="text-xs text-clario-text leading-relaxed bg-clario-ivory p-3.5 rounded-md border border-clario-border">
+              <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-md border border-slate-200">
                 {selectedReport.executive_summary}
               </p>
             </div>
