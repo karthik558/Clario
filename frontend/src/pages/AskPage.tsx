@@ -1,3 +1,4 @@
+import { Select } from '../components/ui/Select';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Send,
@@ -353,24 +354,27 @@ export const AskPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium">Model:</span>
               {availableModels.length > 0 ? (
-                <select
-                  value={localModel}
-                  onChange={(e) => setLocalModel(e.target.value)}
-                  className="text-xs px-2.5 py-1 border border-slate-300 rounded bg-white text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-clario-navy"
-                >
-                  {availableModels.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                <div className="w-52">
+                  <Select
+                    aria-label="Active Model"
+                    value={localModel}
+                    onChange={(e) => setLocalModel(e.target.value)}
+                    className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-1.5 focus:outline-none font-medium text-clario-navy"
+                  >
+                    {availableModels.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               ) : (
                 <input
                   type="text"
                   value={localModel}
                   onChange={(e) => setLocalModel(e.target.value)}
                   placeholder="e.g. gemma3:latest, deepseek-r1:8b"
-                  className="text-xs px-2.5 py-1 border border-slate-300 rounded bg-white text-slate-800 w-44 focus:outline-none"
+                  className="text-xs px-2.5 py-1.5 border border-slate-300 rounded bg-white text-slate-800 w-44 focus:outline-none"
                 />
               )}
               <button
@@ -658,9 +662,40 @@ export const AskPage: React.FC = () => {
         )}
 
         {loading && !streaming && (
-          <div className="bg-white rounded-md border border-clario-border p-6 shadow-subtle flex items-center space-x-3 text-xs text-clario-text-secondary animate-pulse">
-            <SearchCheck className="w-5 h-5 text-clario-navy animate-spin" />
-            <span>Retrieving relevant passages and synthesizing evidence...</span>
+          <div className="bg-white rounded-md border border-clario-border p-5 shadow-subtle space-y-3.5 animate-in fade-in">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-clario-teal animate-ping" />
+                <span className="text-xs font-semibold text-clario-navy">
+                  Synthesizing Evidence & Verifying Sources
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-slate-400">Hybrid Pipeline Active</span>
+            </div>
+
+            {/* Progress Bar Line */}
+            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden relative">
+              <div
+                className="h-full bg-gradient-to-r from-clario-teal via-clario-navy to-clario-teal rounded-full animate-pulse"
+                style={{ width: '75%' }}
+              />
+            </div>
+
+            {/* Staged Research Pipeline Milestones */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+              <div className="flex items-center gap-2 p-2 rounded bg-clario-ivory/70 border border-slate-100 text-slate-700">
+                <Check className="w-3.5 h-3.5 text-clario-teal shrink-0" />
+                <span className="truncate">1. Lexical & Vector Recall</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded bg-navy-50/60 border border-navy-100 text-clario-navy font-medium">
+                <span className="w-3 h-3 rounded-full border-2 border-clario-navy border-t-transparent animate-spin shrink-0" />
+                <span className="truncate">2. Citation Relevance Match</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded bg-slate-50 border border-slate-100 text-slate-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                <span className="truncate">3. Neural Synthesis & Verification</span>
+              </div>
+            </div>
           </div>
         )}
 

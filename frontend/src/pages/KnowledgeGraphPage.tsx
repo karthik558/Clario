@@ -12,14 +12,18 @@ import {
   ArrowRight,
   ExternalLink,
   Search,
-  Sparkles
+  Sparkles,
+  Scale,
+  CheckCircle2,
+  Maximize2
 } from 'lucide-react';
 import { api } from '../services/api';
-import { GraphDataResponse, GraphNode, GraphEdge } from '../types';
+import { GraphDataResponse, GraphNode, GraphEdge, DocumentItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
+import { ClauseNegotiatorModal } from '../components/negotiate/ClauseNegotiatorModal';
 
 interface LayoutNode extends GraphNode {
   x: number;
@@ -30,6 +34,8 @@ interface LayoutNode extends GraphNode {
 
 export const KnowledgeGraphPage: React.FC = () => {
   const [data, setData] = useState<GraphDataResponse | null>(null);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +52,7 @@ export const KnowledgeGraphPage: React.FC = () => {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewerDocId, setViewerDocId] = useState<string | null>(null);
+  const [negotiateNode, setNegotiateNode] = useState<GraphNode | null>(null);
 
   // Pan & Zoom
   const [zoom, setZoom] = useState(1);
@@ -55,11 +62,11 @@ export const KnowledgeGraphPage: React.FC = () => {
 
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const fetchGraph = async () => {
+  const fetchGraph = async (docIds?: string[]) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.getKnowledgeGraph();
+      const res = await api.getKnowledgeGraph(docIds && docIds.length > 0 ? docIds : undefined);
       setData(res);
     } catch (err: any) {
       setError(err.message || 'Failed to load knowledge graph');
@@ -69,8 +76,24 @@ export const KnowledgeGraphPage: React.FC = () => {
   };
 
   useEffect(() => {
+    api.getDocuments().then(docs => setDocuments(docs)).catch(() => {});
     fetchGraph();
   }, []);
+
+  const toggleDocumentScope = (docId: string) => {
+    const next = selectedDocIds.includes(docId)
+      ? selectedDocIds.filter(id => id !== docId)
+      : [...selectedDocIds, docId];
+    setSelectedDocIds(next);
+    setSelectedNodeId(null);
+    fetchGraph(next);
+  };
+
+  const selectAllDocuments = () => {
+    setSelectedDocIds([]);
+    setSelectedNodeId(null);
+    fetchGraph([]);
+  };
 
   // Filter nodes & edges
   const filteredNodes = useMemo(() => {
@@ -101,11 +124,11 @@ export const KnowledgeGraphPage: React.FC = () => {
     );
   }, [data, nodeMap]);
 
-  // Compute positions using deterministic layout
+  // Compute positions using radial layout
   const layoutNodes = useMemo<LayoutNode[]>(() => {
     if (!filteredNodes.length) return [];
     const width = 900;
-    const height = 600;
+    const height = 620;
     const centerX = width / 2;
     const centerY = height / 2;
 
@@ -116,10 +139,10 @@ export const KnowledgeGraphPage: React.FC = () => {
 
     const result: LayoutNode[] = [];
 
-    // Documents placed around center
+    // Documents placed at core center
     docs.forEach((doc, idx) => {
       const angle = (idx / Math.max(docs.length, 1)) * 2 * Math.PI - Math.PI / 2;
-      const radius = docs.length === 1 ? 0 : 120;
+      const radius = docs.length === 1 ? 0 : 130;
       result.push({
         ...doc,
         x: centerX + radius * Math.cos(angle),
@@ -130,7 +153,7 @@ export const KnowledgeGraphPage: React.FC = () => {
     // Topics in mid orbit
     topics.forEach((topic, idx) => {
       const angle = (idx / Math.max(topics.length, 1)) * 2 * Math.PI;
-      const radius = 240;
+      const radius = 250;
       result.push({
         ...topic,
         x: centerX + radius * Math.cos(angle),
@@ -141,7 +164,7 @@ export const KnowledgeGraphPage: React.FC = () => {
     // Findings in outer lower/upper arcs
     findings.forEach((finding, idx) => {
       const angle = (idx / Math.max(findings.length, 1)) * 2 * Math.PI + Math.PI / 4;
-      const radius = 330;
+      const radius = 340;
       result.push({
         ...finding,
         x: centerX + radius * Math.cos(angle),
@@ -149,10 +172,10 @@ export const KnowledgeGraphPage: React.FC = () => {
       });
     });
 
-    // Chunks clustered near outer edges
+    // Chunks clustered near outer perimeter
     chunks.forEach((chunk, idx) => {
       const angle = (idx / Math.max(chunks.length, 1)) * 2 * Math.PI - Math.PI / 4;
-      const radius = 380;
+      const radius = 390;
       result.push({
         ...chunk,
         x: centerX + radius * Math.cos(angle),
@@ -225,16 +248,16 @@ export const KnowledgeGraphPage: React.FC = () => {
     setVisibleTypes((prev) => ({ ...prev, [type]: !prev[type] }));
   };
 
-  const getNodeColor = (type: string) => {
+  const getNodeFill = (type: string) => {
     switch (type) {
       case 'document':
-        return '#14263D'; // Midnight Navy
+        return 'url(#gradNavy)';
       case 'topic':
-        return '#477E88'; // Muted Teal
+        return 'url(#gradTeal)';
       case 'finding':
-        return '#BE185D'; // Rose
+        return 'url(#gradRose)';
       case 'chunk':
-        return '#64748B'; // Slate
+        return 'url(#gradSlate)';
       default:
         return '#94A3B8';
     }
@@ -265,14 +288,56 @@ export const KnowledgeGraphPage: React.FC = () => {
         )}
       </div>
 
+      {/* Multi-Document Scope Selector Bar */}
+      {documents.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-clario-border text-xs shadow-xs">
+          <span className="text-clario-navy font-semibold flex items-center gap-1.5 mr-1">
+            <FileText className="w-3.5 h-3.5 text-clario-navy" />
+            Document Scope:
+          </span>
+          <button
+            type="button"
+            aria-pressed={selectedDocIds.length === 0}
+            onClick={selectAllDocuments}
+            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+              selectedDocIds.length === 0
+                ? 'bg-clario-navy text-white shadow-xs'
+                : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
+            }`}
+          >
+            All Workspace Documents ({documents.length})
+          </button>
+          {documents.map((d) => {
+            const isSelected = selectedDocIds.includes(d.id);
+            return (
+              <button
+                key={d.id}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => toggleDocumentScope(d.id)}
+                className={`px-2.5 py-1 rounded text-xs transition-colors truncate max-w-[220px] flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-clario-teal text-white font-medium shadow-xs'
+                    : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
+                }`}
+                title={d.title}
+              >
+                <span>{d.title}</span>
+                <span className="text-[10px] opacity-75 font-mono">({d.file_type.toUpperCase()})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Control Toolbar */}
-      <Card className="p-3.5 bg-white">
+      <Card className="p-3.5 bg-white shadow-subtle">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Node Filter Toggles */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mr-1 flex items-center gap-1">
               <Filter className="w-3.5 h-3.5" />
-              Filter:
+              Node Layers:
             </span>
 
             <button
@@ -280,7 +345,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               onClick={() => toggleType('document')}
               className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
                 visibleTypes.document
-                  ? 'bg-navy-900 text-white border-navy-900'
+                  ? 'bg-navy-900 text-white border-navy-900 shadow-xs'
                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
               }`}
             >
@@ -293,7 +358,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               onClick={() => toggleType('topic')}
               className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
                 visibleTypes.topic
-                  ? 'bg-teal-700 text-white border-teal-700'
+                  ? 'bg-teal-700 text-white border-teal-700 shadow-xs'
                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
               }`}
             >
@@ -306,7 +371,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               onClick={() => toggleType('finding')}
               className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
                 visibleTypes.finding
-                  ? 'bg-rose-700 text-white border-rose-700'
+                  ? 'bg-rose-700 text-white border-rose-700 shadow-xs'
                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
               }`}
             >
@@ -319,12 +384,12 @@ export const KnowledgeGraphPage: React.FC = () => {
               onClick={() => toggleType('chunk')}
               className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
                 visibleTypes.chunk
-                  ? 'bg-slate-700 text-white border-slate-700'
+                  ? 'bg-slate-700 text-white border-slate-700 shadow-xs'
                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-slate-300" />
-              Citations / Chunks
+              Citations
             </button>
           </div>
 
@@ -337,7 +402,7 @@ export const KnowledgeGraphPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Find node or topic..."
-                className="text-xs pl-8 pr-2.5 py-1 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-clario-navy w-44"
+                className="text-xs pl-8 pr-2.5 py-1 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-clario-navy w-44 bg-white"
               />
             </div>
 
@@ -374,7 +439,7 @@ export const KnowledgeGraphPage: React.FC = () => {
       {/* Main Canvas + Inspector Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* SVG Network Visualizer */}
-        <div className="lg:col-span-3 border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm relative h-[620px] select-none">
+        <div className="lg:col-span-3 border border-slate-200 rounded-lg bg-[#FAF9F5] overflow-hidden shadow-sm relative h-[620px] select-none">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2">
               <div className="w-6 h-6 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin" />
@@ -394,6 +459,37 @@ export const KnowledgeGraphPage: React.FC = () => {
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
             >
+              <defs>
+                {/* Subtle Dot Grid */}
+                <pattern id="graphGrid" width="28" height="28" patternUnits="userSpaceOnUse">
+                  <circle cx="2" cy="2" r="0.9" fill="#E2E8F0" />
+                </pattern>
+
+                {/* Node Color Gradients */}
+                <linearGradient id="gradNavy" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#1E3A5F" />
+                  <stop offset="100%" stopColor="#14263D" />
+                </linearGradient>
+
+                <linearGradient id="gradTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#5A9BA6" />
+                  <stop offset="100%" stopColor="#477E88" />
+                </linearGradient>
+
+                <linearGradient id="gradRose" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#E11D48" />
+                  <stop offset="100%" stopColor="#BE185D" />
+                </linearGradient>
+
+                <linearGradient id="gradSlate" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#94A3B8" />
+                  <stop offset="100%" stopColor="#64748B" />
+                </linearGradient>
+              </defs>
+
+              {/* Background Canvas */}
+              <rect width="100%" height="100%" fill="url(#graphGrid)" />
+
               <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
                 {/* Edge Lines */}
                 {filteredEdges.map((edge) => {
@@ -407,18 +503,19 @@ export const KnowledgeGraphPage: React.FC = () => {
                   const isDimmed = selectedNodeId && !isHighlighted;
 
                   return (
-                    <line
-                      key={edge.id}
-                      x1={source.x}
-                      y1={source.y}
-                      x2={target.x}
-                      y2={target.y}
-                      stroke={edge.color || '#CBD5E1'}
-                      strokeWidth={isHighlighted ? 2.5 : edge.weight || 1.2}
-                      strokeDasharray={edge.dashed ? '4,4' : undefined}
-                      opacity={isDimmed ? 0.15 : isHighlighted ? 1 : 0.6}
-                      className="transition-all duration-150"
-                    />
+                    <g key={edge.id}>
+                      <line
+                        x1={source.x}
+                        y1={source.y}
+                        x2={target.x}
+                        y2={target.y}
+                        stroke={edge.color || '#CBD5E1'}
+                        strokeWidth={isHighlighted ? 2.5 : edge.weight || 1.2}
+                        strokeDasharray={edge.dashed ? '4,4' : undefined}
+                        opacity={isDimmed ? 0.12 : isHighlighted ? 1 : 0.55}
+                        className="transition-all duration-150"
+                      />
+                    </g>
                   );
                 })}
 
@@ -429,8 +526,8 @@ export const KnowledgeGraphPage: React.FC = () => {
                   const isDimmed = selectedNodeId && !isSelected && !isConnected;
                   const isHovered = node.id === hoveredNodeId;
 
-                  const nodeRadius = node.size ? Math.max(node.size * 0.8, 12) : 16;
-                  const fillColor = getNodeColor(node.type);
+                  const nodeRadius = node.size ? Math.max(node.size * 0.85, 12) : 16;
+                  const fill = getNodeFill(node.type);
 
                   return (
                     <g
@@ -443,30 +540,30 @@ export const KnowledgeGraphPage: React.FC = () => {
                       onMouseEnter={() => setHoveredNodeId(node.id)}
                       onMouseLeave={() => setHoveredNodeId(null)}
                       className="cursor-pointer transition-transform duration-100"
-                      opacity={isDimmed ? 0.2 : 1}
+                      opacity={isDimmed ? 0.18 : 1}
                     >
                       {/* Selection Ring */}
                       {(isSelected || isHovered) && (
                         <circle
-                          r={nodeRadius + 5}
+                          r={nodeRadius + 6}
                           fill="none"
-                          stroke={fillColor}
+                          stroke={node.type === 'finding' ? '#E11D48' : '#14263D'}
                           strokeWidth={2}
-                          strokeDasharray={isSelected ? undefined : '2,2'}
+                          strokeDasharray={isSelected ? undefined : '3,3'}
                           opacity={0.8}
                         />
                       )}
 
-                      {/* Node Circle */}
+                      {/* Main Node Circle */}
                       <circle
                         r={nodeRadius}
-                        fill={fillColor}
+                        fill={fill}
                         stroke="#FFFFFF"
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         className="shadow-sm"
                       />
 
-                      {/* Node Center Icon/Indicator */}
+                      {/* Inner Indicator Point */}
                       <circle r={2.5} fill="#FFFFFF" />
 
                       {/* Node Label Text */}
@@ -476,9 +573,9 @@ export const KnowledgeGraphPage: React.FC = () => {
                         fontSize={node.type === 'document' ? '12px' : '10px'}
                         fontWeight={node.type === 'document' || isSelected ? 'bold' : 'normal'}
                         fill="#1E293B"
-                        className="pointer-events-none select-none bg-white"
+                        className="pointer-events-none select-none"
                         style={{
-                          textShadow: '0 1px 2px rgba(255,255,255,0.9), 0 -1px 2px rgba(255,255,255,0.9)',
+                          textShadow: '0 1px 3px rgba(255,255,255,0.9), 0 -1px 3px rgba(255,255,255,0.9)',
                         }}
                       >
                         {node.label.length > 22 ? `${node.label.slice(0, 20)}…` : node.label}
@@ -491,7 +588,7 @@ export const KnowledgeGraphPage: React.FC = () => {
           )}
 
           {/* Quick Graph Legend Overlay */}
-          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur border border-slate-200 rounded-md px-3 py-2 text-[10px] space-y-1 shadow-sm">
+          <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur border border-slate-200 rounded-md px-3 py-2 text-[10px] space-y-1 shadow-sm">
             <div className="font-semibold text-slate-700">Topology Legend</div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
@@ -508,7 +605,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#64748B] inline-block" />
-                <span>Chunk</span>
+                <span>Citation</span>
               </span>
             </div>
           </div>
@@ -516,7 +613,7 @@ export const KnowledgeGraphPage: React.FC = () => {
 
         {/* Selected Node Inspector Side Panel */}
         <div className="lg:col-span-1 space-y-4">
-          <Card className="p-4 bg-white">
+          <Card className="p-4 bg-white shadow-subtle">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <span className="text-xs font-semibold text-clario-navy">Node Inspector</span>
               {selectedNode && (
@@ -567,16 +664,28 @@ export const KnowledgeGraphPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Action for Documents */}
-                {selectedNode.type === 'document' && (
+                {/* Actions */}
+                {selectedNode.type === 'document' && selectedNode.metadata?.document_id && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setViewerDocId(selectedNode.id)}
+                    onClick={() => setViewerDocId(selectedNode.metadata?.document_id)}
                     className="w-full text-xs flex items-center justify-center gap-1.5"
                   >
                     <BookOpen className="w-3.5 h-3.5" />
                     <span>Open in Document Viewer</span>
+                  </Button>
+                )}
+
+                {selectedNode.type === 'finding' && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setNegotiateNode(selectedNode)}
+                    className="w-full text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Scale className="w-3.5 h-3.5" />
+                    <span>Draft Redline Amendment</span>
                   </Button>
                 )}
 
@@ -630,6 +739,21 @@ export const KnowledgeGraphPage: React.FC = () => {
         <DocumentViewerModal
           documentId={viewerDocId}
           onClose={() => setViewerDocId(null)}
+        />
+      )}
+
+      {/* Clause Negotiator Modal */}
+      {negotiateNode && (
+        <ClauseNegotiatorModal
+          isOpen={!!negotiateNode}
+          onClose={() => setNegotiateNode(null)}
+          findingId={negotiateNode.metadata?.finding_id}
+          topic={negotiateNode.label}
+          statementA={negotiateNode.metadata?.description}
+          statementB={negotiateNode.metadata?.description}
+          docATitle={negotiateNode.metadata?.doc_a_title}
+          docBTitle={negotiateNode.metadata?.doc_b_title}
+          onSaved={() => fetchGraph(selectedDocIds)}
         />
       )}
     </div>

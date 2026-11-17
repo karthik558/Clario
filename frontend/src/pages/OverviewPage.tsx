@@ -16,10 +16,13 @@ import {
   Trash2,
   FileText,
   ShieldCheck,
-  Bot
+  Bot,
+  BarChart3,
+  Network,
+  Activity
 } from 'lucide-react';
 import { api } from '../services/api';
-import { DashboardStats, DocumentItem } from '../types';
+import { DashboardStats, DocumentItem, FindingItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -29,6 +32,7 @@ import { DocumentViewerModal } from '../components/documents/DocumentViewerModal
 export const OverviewPage: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [findings, setFindings] = useState<FindingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
@@ -37,8 +41,12 @@ export const OverviewPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const data = await api.getDashboard();
+      const [data, findingsData] = await Promise.all([
+        api.getDashboard(),
+        api.getFindings().catch(() => [])
+      ]);
       setStats(data);
+      setFindings(findingsData);
     } catch (err) {
       setError('Could not load workspace metrics. Check the API connection and retry.');
     } finally {
@@ -231,6 +239,220 @@ export const OverviewPage: React.FC = () => {
 
           </Card>
         </div>
+      </div>
+
+      {/* Visual Analytics & Intelligence Graphs Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Graph 1: Document Chunk & Volume Topology */}
+        <Card className="rounded-md p-5 bg-white shadow-subtle flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-clario-border">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-clario-navy" />
+                <h4 className="text-xs font-bold text-clario-navy uppercase tracking-wider">
+                  Corpus Passage Distribution
+                </h4>
+              </div>
+              <span className="text-[10px] font-mono text-slate-400">
+                {stats?.total_searchable_passages || 0} Chunks Total
+              </span>
+            </div>
+
+            <p className="text-xs text-clario-text-secondary mb-3">
+              Passage density across ingested regulatory and enterprise policy documents:
+            </p>
+
+            <div className="space-y-3">
+              {stats?.recent_documents && stats.recent_documents.length > 0 ? (
+                stats.recent_documents.slice(0, 4).map((doc) => {
+                  const maxChunks = Math.max(...stats.recent_documents.map(d => d.chunk_count), 1);
+                  const pct = Math.round((doc.chunk_count / maxChunks) * 100);
+                  return (
+                    <div key={doc.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-clario-navy truncate max-w-[180px]">
+                          {doc.title}
+                        </span>
+                        <span className="font-mono text-[11px] text-clario-teal font-semibold">
+                          {doc.chunk_count} chunks
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-clario-navy to-clario-teal rounded-full"
+                          style={{ width: `${Math.max(pct, 12)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-xs text-slate-400 py-6 text-center">
+                  Upload documents to view passage density.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Vector Chunk Size: 1,000 chars</span>
+            <button
+              onClick={() => navigate('/documents')}
+              className="text-clario-teal font-semibold hover:underline flex items-center gap-1"
+            >
+              <span>Manage Docs</span>
+              <ArrowUpRight className="w-3 h-3" />
+            </button>
+          </div>
+        </Card>
+
+        {/* Graph 2: Contradiction Severity & Risk Matrix */}
+        <Card className="rounded-md p-5 bg-white shadow-subtle flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-clario-border">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+                <h4 className="text-xs font-bold text-clario-navy uppercase tracking-wider">
+                  Contradiction Severity Matrix
+                </h4>
+              </div>
+              <span className="text-[10px] font-mono text-slate-400">
+                {findings.length} Discrepancies
+              </span>
+            </div>
+
+            <p className="text-xs text-clario-text-secondary mb-3">
+              Automated breakdown of contractual inconsistencies by severity level:
+            </p>
+
+            {/* Severity Stacked Metrics */}
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="p-2.5 rounded bg-rose-50 border border-rose-200">
+                <span className="text-[10px] uppercase font-bold text-rose-700 block">Critical & High</span>
+                <span className="text-lg font-extrabold text-rose-900">
+                  {findings.filter(f => f.severity === 'critical' || f.severity === 'high').length}
+                </span>
+                <span className="text-[10px] text-rose-600 block">Mandatory review</span>
+              </div>
+              <div className="p-2.5 rounded bg-amber-50 border border-amber-200">
+                <span className="text-[10px] uppercase font-bold text-amber-700 block">Medium & Low</span>
+                <span className="text-lg font-extrabold text-amber-900">
+                  {findings.filter(f => f.severity === 'medium' || f.severity === 'low').length}
+                </span>
+                <span className="text-[10px] text-amber-600 block">Informational</span>
+              </div>
+            </div>
+
+            {/* Status Breakdown Bar */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-[11px] text-slate-600">
+                <span>Resolution Progress</span>
+                <span className="font-mono">
+                  {findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length} / {findings.length || 1} Evaluated
+                </span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
+                <div
+                  className="bg-emerald-500 h-full"
+                  style={{
+                    width: `${Math.round(
+                      (findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length /
+                        Math.max(findings.length, 1)) *
+                        100
+                    )}%`,
+                  }}
+                  title="Resolved / Confirmed"
+                />
+                <div
+                  className="bg-amber-400 h-full"
+                  style={{
+                    width: `${Math.round(
+                      (findings.filter(f => f.status === 'under_review').length /
+                        Math.max(findings.length, 1)) *
+                        100
+                    )}%`,
+                  }}
+                  title="Under Review"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Human-in-the-Loop Audit</span>
+            <button
+              onClick={() => navigate('/findings')}
+              className="text-clario-teal font-semibold hover:underline flex items-center gap-1"
+            >
+              <span>Review Findings</span>
+              <ArrowUpRight className="w-3 h-3" />
+            </button>
+          </div>
+        </Card>
+
+        {/* Graph 3: Mini Knowledge Graph Topology Preview */}
+        <Card className="rounded-md p-5 bg-white shadow-subtle flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-clario-border">
+              <div className="flex items-center gap-2">
+                <Network className="w-4 h-4 text-clario-teal" />
+                <h4 className="text-xs font-bold text-clario-navy uppercase tracking-wider">
+                  Knowledge Topology
+                </h4>
+              </div>
+              <Badge variant="teal" size="sm">2D Semantic Graph</Badge>
+            </div>
+
+            <p className="text-xs text-clario-text-secondary mb-2">
+              Cross-document semantic clusters linking policies, obligations, and contradictions:
+            </p>
+
+            {/* Embedded SVG Mini Topology */}
+            <div className="w-full h-32 rounded bg-[#FAF9F5] border border-slate-200 relative overflow-hidden flex items-center justify-center">
+              <svg width="100%" height="100%" viewBox="0 0 280 120" className="pointer-events-none">
+                {/* Edges */}
+                <line x1="140" y1="60" x2="60" y2="35" stroke="#CBD5E1" strokeWidth="1.2" />
+                <line x1="140" y1="60" x2="220" y2="35" stroke="#CBD5E1" strokeWidth="1.2" />
+                <line x1="140" y1="60" x2="80" y2="90" stroke="#CBD5E1" strokeWidth="1.2" />
+                <line x1="140" y1="60" x2="200" y2="90" stroke="#CBD5E1" strokeWidth="1.2" />
+                <line x1="60" y1="35" x2="220" y2="35" stroke="#E11D48" strokeWidth="1.5" strokeDasharray="3,3" />
+
+                {/* Nodes */}
+                {/* Core Document Node */}
+                <circle cx="140" cy="60" r="14" fill="#14263D" stroke="#FFFFFF" strokeWidth="2" />
+                <text x="140" y="63" textAnchor="middle" fontSize="7" fill="#FFFFFF" fontWeight="bold">CORPUS</text>
+
+                {/* Topic Node 1 */}
+                <circle cx="60" cy="35" r="10" fill="#477E88" stroke="#FFFFFF" strokeWidth="1.5" />
+                <text x="60" y="38" textAnchor="middle" fontSize="6" fill="#FFFFFF">ZDR</text>
+
+                {/* Topic Node 2 */}
+                <circle cx="220" cy="35" r="10" fill="#477E88" stroke="#FFFFFF" strokeWidth="1.5" />
+                <text x="220" y="38" textAnchor="middle" fontSize="6" fill="#FFFFFF">SLA</text>
+
+                {/* Finding Node 1 */}
+                <circle cx="80" cy="90" r="9" fill="#BE185D" stroke="#FFFFFF" strokeWidth="1.5" />
+                <text x="80" y="93" textAnchor="middle" fontSize="6" fill="#FFFFFF">DIFF</text>
+
+                {/* Finding Node 2 */}
+                <circle cx="200" cy="90" r="9" fill="#F59E0B" stroke="#FFFFFF" strokeWidth="1.5" />
+                <text x="200" y="93" textAnchor="middle" fontSize="6" fill="#FFFFFF">REV</text>
+              </svg>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/graph')}
+              className="w-full text-xs flex items-center justify-center gap-1.5 font-medium"
+            >
+              <Network className="w-3.5 h-3.5 text-clario-navy" />
+              <span>Explore Full 2D Knowledge Graph</span>
+            </Button>
+          </div>
+        </Card>
       </div>
 
       {/* Recent Documents Table */}

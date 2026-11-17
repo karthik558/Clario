@@ -15,7 +15,8 @@ import {
   X,
   FileText,
   Trash2,
-  Scale
+  Scale,
+  Download
 } from 'lucide-react';
 import { api } from '../services/api';
 import { FindingItem } from '../types';
@@ -60,6 +61,28 @@ export const FindingsPage: React.FC = () => {
         setClearing(false);
       }
     }
+  };
+
+  const handleDeleteSingle = async (findingId: string, title: string) => {
+    if (window.confirm(`Delete finding "${title}"?`)) {
+      try {
+        await api.deleteFinding(findingId);
+        setFindings((prev) => prev.filter((f) => f.id !== findingId));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  const handleExportFindings = () => {
+    const jsonStr = JSON.stringify(findings, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clario_findings_audit_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -139,16 +162,27 @@ export const FindingsPage: React.FC = () => {
 
         <div className="flex items-center space-x-2">
           {findings.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearAllFindings}
-              disabled={clearing || scanning}
-              className="text-rose-600 border-rose-200 hover:bg-rose-50"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-              {clearing ? 'Clearing…' : 'Clear All Findings'}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportFindings}
+                className="text-xs"
+              >
+                <Download className="w-3.5 h-3.5 mr-1" />
+                Export Audit JSON
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearAllFindings}
+                disabled={clearing || scanning}
+                className="text-rose-600 border-rose-200 hover:bg-rose-50"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                {clearing ? 'Clearing…' : 'Clear All Findings'}
+              </Button>
+            </>
           )}
           <Button
             variant="secondary"
@@ -159,6 +193,32 @@ export const FindingsPage: React.FC = () => {
             <Scan className="w-4 h-4 mr-1.5" />
             {scanning ? 'Scanning Corpus...' : 'Run Aggressive Contradiction Scan'}
           </Button>
+        </div>
+      </div>
+
+      {/* Findings Stat Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white p-3.5 rounded-md border border-clario-border shadow-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Total Flagged</span>
+          <span className="text-xl font-bold text-clario-navy">{findings.length}</span>
+        </div>
+        <div className="bg-rose-50/60 p-3.5 rounded-md border border-rose-200 shadow-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 block">Critical & High</span>
+          <span className="text-xl font-bold text-rose-900">
+            {findings.filter(f => f.severity === 'critical' || f.severity === 'high').length}
+          </span>
+        </div>
+        <div className="bg-amber-50/60 p-3.5 rounded-md border border-amber-200 shadow-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 block">Under Review</span>
+          <span className="text-xl font-bold text-amber-900">
+            {findings.filter(f => f.status === 'under_review').length}
+          </span>
+        </div>
+        <div className="bg-emerald-50/60 p-3.5 rounded-md border border-emerald-200 shadow-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">Resolved / Confirmed</span>
+          <span className="text-xl font-bold text-emerald-900">
+            {findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length}
+          </span>
         </div>
       </div>
 
@@ -203,6 +263,7 @@ export const FindingsPage: React.FC = () => {
             className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-1.5 focus:outline-none"
           >
             <option value="">All Severities</option>
+            <option value="critical">Critical Severity</option>
             <option value="high">High Severity</option>
             <option value="medium">Medium Severity</option>
             <option value="low">Low Severity</option>
@@ -233,7 +294,7 @@ export const FindingsPage: React.FC = () => {
           </Card>
         ) : (
           findings.map((f) => (
-            <Card key={f.id} className="p-5 space-y-4">
+            <Card key={f.id} className="p-5 space-y-4 shadow-subtle">
               {/* Finding Title & Status Controls */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-clario-border">
                 <div className="flex items-center space-x-2.5">
@@ -241,7 +302,7 @@ export const FindingsPage: React.FC = () => {
                     {f.category.replace('_', ' ').toUpperCase()}
                   </Badge>
                   <h3 className="font-semibold text-sm text-clario-navy">{f.title}</h3>
-                  <Badge variant={f.severity === 'high' ? 'red' : 'gold'} size="sm">
+                  <Badge variant={f.severity === 'critical' || f.severity === 'high' ? 'red' : f.severity === 'medium' ? 'gold' : 'sage'} size="sm">
                     {f.severity.toUpperCase()}
                   </Badge>
                 </div>
@@ -269,6 +330,14 @@ export const FindingsPage: React.FC = () => {
                     <option value="resolved">Resolved</option>
                     <option value="dismissed">Dismissed</option>
                   </Select>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSingle(f.id, f.title)}
+                    className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    title="Delete finding"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 

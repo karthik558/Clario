@@ -1,5 +1,5 @@
 import { Select } from '../components/ui/Select';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FlaskConical,
   Search,
@@ -11,13 +11,16 @@ import {
   CheckCircle2,
   HelpCircle,
   Play,
-  ArrowRight
+  ArrowRight,
+  ExternalLink,
+  BookOpen
 } from 'lucide-react';
 import { api } from '../services/api';
 import { SearchMethodComparison, BenchmarkSummary } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 
 export const SearchLabPage: React.FC = () => {
   const [query, setQuery] = useState('data retention zero data retention ZDR 30 days vs 60 days audit');
@@ -27,14 +30,13 @@ export const SearchLabPage: React.FC = () => {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingBenchmark, setLoadingBenchmark] = useState(false);
   const [activeTab, setActiveTab] = useState<'methods' | 'benchmark'>('methods');
+  const [viewerChunk, setViewerChunk] = useState<{ docId: string; chunkId: string; page: number } | null>(null);
 
-  const handleRunSearchComparison = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!query.trim()) return;
-
+  const executeComparison = async (q: string, k: number) => {
+    if (!q.trim()) return;
     setLoadingSearch(true);
     try {
-      const data = await api.compareSearchMethods(query, topK);
+      const data = await api.compareSearchMethods(q, k);
       setComparison(data);
     } catch (err) {
       console.error(err);
@@ -42,6 +44,15 @@ export const SearchLabPage: React.FC = () => {
       setLoadingSearch(false);
     }
   };
+
+  const handleRunSearchComparison = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    executeComparison(query, topK);
+  };
+
+  useEffect(() => {
+    executeComparison(query, topK);
+  }, []);
 
   const handleRunAcademicBenchmark = async () => {
     setLoadingBenchmark(true);
@@ -145,6 +156,7 @@ export const SearchLabPage: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setQuery(sq);
+                      executeComparison(sq, topK);
                     }}
                     className="px-2 py-0.5 rounded bg-clario-ivory hover:bg-clario-ivory-muted border border-clario-border text-clario-text truncate max-w-[240px]"
                   >
@@ -216,6 +228,14 @@ export const SearchLabPage: React.FC = () => {
                         <p className="text-xs text-clario-text line-clamp-3 leading-relaxed">
                           {r.snippet}
                         </p>
+                        <button
+                          type="button"
+                          onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
+                          className="mt-2 text-[10px] text-clario-navy hover:text-clario-teal font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          <span>Page {r.page_number} in Viewer</span>
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -240,6 +260,14 @@ export const SearchLabPage: React.FC = () => {
                         <p className="text-xs text-clario-text line-clamp-3 leading-relaxed">
                           {r.snippet}
                         </p>
+                        <button
+                          type="button"
+                          onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
+                          className="mt-2 text-[10px] text-clario-navy hover:text-clario-teal font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          <span>Page {r.page_number} in Viewer</span>
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -264,6 +292,14 @@ export const SearchLabPage: React.FC = () => {
                         <p className="text-xs text-clario-text line-clamp-3 leading-relaxed">
                           {r.snippet}
                         </p>
+                        <button
+                          type="button"
+                          onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
+                          className="mt-2 text-[10px] text-clario-navy hover:text-clario-teal font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          <span>Page {r.page_number} in Viewer</span>
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -436,6 +472,15 @@ export const SearchLabPage: React.FC = () => {
             )}
           </Card>
         </div>
+      )}
+
+      {viewerChunk && (
+        <DocumentViewerModal
+          documentId={viewerChunk.docId}
+          highlightChunkId={viewerChunk.chunkId}
+          highlightPage={viewerChunk.page}
+          onClose={() => setViewerChunk(null)}
+        />
       )}
     </div>
   );
