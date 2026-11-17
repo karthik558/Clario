@@ -390,60 +390,60 @@ export const SettingsPage: React.FC = () => {
 
       {/* Information Retrieval (IR) Tuning */}
       <Card className="rounded-md p-6 space-y-4">
-        <div className="flex items-center space-x-2 pb-3 border-b border-[#E4E8E6]">
-          <Sliders className="w-4 h-4 text-[#477E88]" />
-          <h3 className="font-bold text-sm text-[#14263D]">IR Algorithm Tuning Parameters</h3>
+        <div className="flex items-center space-x-2 pb-3 border-b border-slate-200">
+          <Sliders className="w-4 h-4 text-slate-700" />
+          <h3 className="font-bold text-sm text-slate-900">IR Algorithm Tuning Parameters</h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
-            <label htmlFor="bm25K1" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
+            <label htmlFor="bm25K1" className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1">
               BM25 k1 Parameter (Term Saturation)
             </label>
             <input id="bm25K1" type="number"
               step="0.05"
               value={bm25K1}
               onChange={(e) => setBm25K1(parseFloat(e.target.value))}
-              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-[#E4E8E6] bg-white focus:outline-none"
+              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none"
             />
           </div>
 
           <div>
-            <label htmlFor="bm25B" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
+            <label htmlFor="bm25B" className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1">
               BM25 b Parameter (Length Normalization)
             </label>
             <input id="bm25B" type="number"
               step="0.05"
               value={bm25B}
               onChange={(e) => setBm25B(parseFloat(e.target.value))}
-              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-[#E4E8E6] bg-white focus:outline-none"
+              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none"
             />
           </div>
 
           <div>
-            <label htmlFor="rrfK" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
+            <label htmlFor="rrfK" className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1">
               RRF Constant (k)
             </label>
             <input id="rrfK" type="number"
               value={rrfK}
               onChange={(e) => setRrfK(parseInt(e.target.value))}
-              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-[#E4E8E6] bg-white focus:outline-none"
+              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none"
             />
           </div>
 
           <div>
-            <label htmlFor="defaultTopK" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
+            <label htmlFor="defaultTopK" className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1">
               Default Top-K Retrieved Chunks
             </label>
             <input id="defaultTopK" type="number"
               value={defaultTopK}
               onChange={(e) => setDefaultTopK(parseInt(e.target.value))}
-              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-[#E4E8E6] bg-white focus:outline-none"
+              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none"
             />
           </div>
         </div>
 
-        <div className="pt-3 border-t border-[#E4E8E6] flex items-center justify-between">
+        <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
           <Button variant="outline" size="sm" onClick={handleReindex} loading={reindexing}>
             <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
             Reindex All Chunks

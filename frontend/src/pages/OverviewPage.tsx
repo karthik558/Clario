@@ -179,8 +179,8 @@ export const OverviewPage: React.FC = () => {
           <Card className="h-full rounded-md p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="font-bold text-sm text-[#14263D] tracking-tight">Upload documents</h3>
-                <p className="text-xs text-[#748293] mt-0.5">Add a document to start asking questions and comparing evidence.</p>
+                <h3 className="font-bold text-sm text-slate-900 tracking-tight">Upload documents</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Add a document to start asking questions and comparing evidence.</p>
               </div>
             </div>
             <FileUploadZone onUploadSuccess={fetchDashboardData} compact />
@@ -190,8 +190,8 @@ export const OverviewPage: React.FC = () => {
         <div>
           <Card className="h-full flex flex-col justify-between rounded-md p-6">
             <div>
-              <h3 className="font-bold text-sm text-[#14263D] tracking-tight mb-1">Continue your review</h3>
-              <p className="text-xs text-[#748293] mb-4">Choose the next step for your documents.</p>
+              <h3 className="font-bold text-sm text-slate-900 tracking-tight mb-1">Continue your review</h3>
+              <p className="text-xs text-slate-500 mb-4">Choose the next step for your documents.</p>
 
               <div className="space-y-3">
                 <button
@@ -302,7 +302,7 @@ export const OverviewPage: React.FC = () => {
                       </div>
                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-[#14263D] rounded-full"
+                          className="h-full bg-slate-900 rounded-full"
                           style={{ width: `${Math.max(pct, 12)}%` }}
                         />
                       </div>
@@ -352,14 +352,14 @@ export const OverviewPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div className="p-2.5 rounded bg-slate-50 border border-slate-200">
                 <span className="text-[10px] uppercase font-bold text-slate-700 block">Critical & High</span>
-                <span className="text-lg font-extrabold text-[#14263D]">
+                <span className="text-lg font-extrabold text-slate-900">
                   {findings.filter(f => f.severity === 'critical' || f.severity === 'high').length}
                 </span>
                 <span className="text-[10px] text-slate-500 block">Mandatory review</span>
               </div>
               <div className="p-2.5 rounded bg-slate-50 border border-slate-200">
                 <span className="text-[10px] uppercase font-bold text-slate-700 block">Medium & Low</span>
-                <span className="text-lg font-extrabold text-[#14263D]">
+                <span className="text-lg font-extrabold text-slate-900">
                   {findings.filter(f => f.severity === 'medium' || f.severity === 'low').length}
                 </span>
                 <span className="text-[10px] text-slate-500 block">Informational</span>
@@ -376,7 +376,7 @@ export const OverviewPage: React.FC = () => {
               </div>
               <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
                 <div
-                  className="bg-[#14263D] h-full"
+                  className="bg-slate-900 h-full"
                   style={{
                     width: `${Math.round(
                       (findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length /
@@ -431,7 +431,7 @@ export const OverviewPage: React.FC = () => {
             </p>
 
             {/* Embedded SVG Mini Topology */}
-            <div className="w-full h-32 rounded bg-[#FAF9F5] border border-slate-200 relative overflow-hidden flex items-center justify-center">
+            <div className="w-full h-32 rounded bg-slate-50 border border-slate-200 relative overflow-hidden flex items-center justify-center">
               <svg width="100%" height="100%" viewBox="0 0 280 120" className="pointer-events-none">
                 {/* Edges */}
                 <line x1="140" y1="60" x2="60" y2="35" stroke="#CBD5E1" strokeWidth="1.2" />
