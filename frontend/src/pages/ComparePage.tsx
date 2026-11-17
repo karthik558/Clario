@@ -130,16 +130,16 @@ export const ComparePage: React.FC = () => {
 
       {/* Document Selector Card */}
       <Card className="p-5">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           {/* Doc A Selector */}
           <div className="md:col-span-2">
-            <label htmlFor="docAId" className="block text-[11px] font-semibold text-clario-navy uppercase tracking-wider mb-1.5">
+            <label htmlFor="docAId" className="block text-[11px] font-semibold text-slate-800 uppercase tracking-wider mb-1.5">
               Document A (Base / Prior Version)
             </label>
             <Select id="docAId" value={docAId}
               disabled={loading || promoting}
               onChange={(e) => changeDocument('a', e.target.value)}
-              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium text-clario-text"
+              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium text-clario-text h-[42px]"
             >
               <option value="">Select Document A</option>
               {documents.map((d) => (
@@ -151,29 +151,29 @@ export const ComparePage: React.FC = () => {
           </div>
 
           {/* Compare Action Button in Middle */}
-          <div className="flex flex-col items-center justify-center pt-2">
+          <div className="flex flex-col justify-end">
             <Button
               variant="secondary"
               size="md"
               disabled={!docAId || !docBId || docAId === docBId || loading || promoting}
               loading={loading}
               onClick={handleCompare}
-              className="w-full"
+              className="w-full h-[42px] flex items-center justify-center font-medium"
             >
-              <GitCompare className="w-4 h-4 mr-1.5" />
-              Compare
+              <GitCompare className="w-4 h-4 mr-1.5 shrink-0" />
+              <span>Compare</span>
             </Button>
           </div>
 
           {/* Doc B Selector */}
           <div className="md:col-span-2">
-            <label htmlFor="docBId" className="block text-[11px] font-semibold text-clario-navy uppercase tracking-wider mb-1.5">
+            <label htmlFor="docBId" className="block text-[11px] font-semibold text-slate-800 uppercase tracking-wider mb-1.5">
               Document B (Target / Revised Version)
             </label>
             <Select id="docBId" value={docBId}
               disabled={loading || promoting}
               onChange={(e) => changeDocument('b', e.target.value)}
-              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium text-clario-text"
+              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium text-clario-text h-[42px]"
             >
               <option value="">Select Document B</option>
               {documents.map((d) => (

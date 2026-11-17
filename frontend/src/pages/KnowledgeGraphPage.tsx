@@ -263,13 +263,13 @@ export const KnowledgeGraphPage: React.FC = () => {
       case 'document':
         return 'url(#gradNavy)';
       case 'topic':
-        return 'url(#gradTeal)';
+        return 'url(#gradTopic)';
       case 'finding':
         return 'url(#gradRose)';
       case 'chunk':
         return 'url(#gradSlate)';
       default:
-        return '#94A3B8';
+        return '#64748B';
     }
   };
 
@@ -285,70 +285,111 @@ export const KnowledgeGraphPage: React.FC = () => {
             2D semantic topology mapping documents, governing provisions, cross-clause contradictions, and evidence citations
           </p>
         </div>
-
-        {/* Corpus Stats Pills */}
-        {data?.stats && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="navy">Docs: {data.stats.total_documents}</Badge>
-            <Badge variant="teal">Topics: {data.stats.total_topics}</Badge>
-            <Badge variant="red">Findings: {data.stats.total_findings}</Badge>
-            <Badge variant="gray">Total Nodes: {data.stats.total_nodes}</Badge>
-          </div>
-        )}
       </div>
 
-      {/* Multi-Document Scope Selector Bar */}
-      {documents.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-slate-200 text-xs shadow-xs">
-          <span className="text-slate-800 font-semibold flex items-center gap-1.5 mr-1 shrink-0">
-            <FileText className="w-3.5 h-3.5 text-slate-700" />
-            Document Scope:
-          </span>
-          <button
-            type="button"
-            aria-pressed={selectedDocIds.length === 0}
-            onClick={selectAllDocuments}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 ${
-              selectedDocIds.length === 0
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-            }`}
-          >
-            All Workspace Documents ({documents.length})
-          </button>
-          {documents.map((d) => {
-            const isSelected = selectedDocIds.includes(d.id);
-            return (
-              <button
-                key={d.id}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => toggleDocumentScope(d.id)}
-                className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 shrink-0 border ${
-                  isSelected
-                    ? 'bg-slate-900 text-white font-medium border-slate-900 shadow-xs'
-                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
-                }`}
-                title={`${d.title} (${d.file_type.toUpperCase()})`}
-              >
-                <span className="truncate min-w-0 block flex-1 text-left">{d.title}</span>
-                <span className={`text-[10px] font-mono shrink-0 ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
-                  ({d.file_type.toUpperCase()})
-                </span>
-              </button>
-            );
-          })}
+      {/* Executive Metric Cards */}
+      {data?.stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Indexed Documents</span>
+              <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">{data.stats.total_documents}</span>
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Corpus scope</span>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+              <FileText className="w-5 h-5" />
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Semantic Topics</span>
+              <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">{data.stats.total_topics}</span>
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Discovered clusters</span>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+              <Layers className="w-5 h-5" />
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Flagged Findings</span>
+              <span className="text-2xl font-bold text-rose-600 font-mono mt-0.5 block">{data.stats.total_findings}</span>
+              <span className="text-[10px] text-rose-500 mt-0.5 block">Contradictions</span>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Active Nodes</span>
+              <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">{data.stats.total_nodes}</span>
+              <span className="text-[10px] text-slate-400 mt-0.5 block">{filteredEdges.length} connected edges</span>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+              <Network className="w-5 h-5" />
+            </div>
+          </Card>
         </div>
       )}
 
+      {/* Multi-Document Scope Selector Bar */}
+      {documents.length > 0 && (
+        <Card className="p-3 bg-white border border-slate-200 shadow-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-slate-800 font-semibold flex items-center gap-1.5 mr-1 shrink-0 text-xs">
+              <FileText className="w-3.5 h-3.5 text-slate-600" />
+              Document Scope:
+            </span>
+            <button
+              type="button"
+              aria-pressed={selectedDocIds.length === 0}
+              onClick={selectAllDocuments}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 ${
+                selectedDocIds.length === 0
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+              }`}
+            >
+              All Workspace Documents ({documents.length})
+            </button>
+            {documents.map((d) => {
+              const isSelected = selectedDocIds.includes(d.id);
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => toggleDocumentScope(d.id)}
+                  className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 shrink-0 border ${
+                    isSelected
+                      ? 'bg-slate-900 text-white font-medium border-slate-900 shadow-xs'
+                      : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+                  }`}
+                  title={`${d.title} (${d.file_type.toUpperCase()})`}
+                >
+                  <span className="truncate min-w-0 block flex-1 text-left">{d.title}</span>
+                  <span className={`text-[10px] font-mono shrink-0 ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                    ({d.file_type.toUpperCase()})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       {/* Control Toolbar */}
-      <Card className="p-3.5 bg-white shadow-subtle">
+      <Card className="p-3 bg-white border border-slate-200 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Node Filter Toggles */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mr-1 flex items-center gap-1">
               <Filter className="w-3.5 h-3.5" />
-              Node Layers:
+              Layers:
             </span>
 
             <button
@@ -356,8 +397,8 @@ export const KnowledgeGraphPage: React.FC = () => {
               onClick={() => toggleType('document')}
               className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
                 visibleTypes.document
-                  ? 'bg-navy-900 text-white border-navy-900 shadow-xs'
-                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-slate-300" />
@@ -369,11 +410,11 @@ export const KnowledgeGraphPage: React.FC = () => {
               onClick={() => toggleType('topic')}
               className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
                 visibleTypes.topic
-                  ? 'bg-teal-700 text-white border-teal-700 shadow-xs'
-                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-teal-300" />
+              <span className="w-2 h-2 rounded-full bg-blue-300" />
               Topics
             </button>
 
@@ -382,8 +423,8 @@ export const KnowledgeGraphPage: React.FC = () => {
               onClick={() => toggleType('finding')}
               className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
                 visibleTypes.finding
-                  ? 'bg-rose-700 text-white border-rose-700 shadow-xs'
-                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-rose-300" />
@@ -396,7 +437,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
                 visibleTypes.chunk
                   ? 'bg-slate-700 text-white border-slate-700 shadow-xs'
-                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-slate-300" />
@@ -413,7 +454,7 @@ export const KnowledgeGraphPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Find node or topic..."
-                className="text-xs pl-8 pr-2.5 py-1 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-clario-navy w-44 bg-white"
+                className="text-xs pl-8 pr-2.5 py-1 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900 w-44 bg-white"
               />
             </div>
 
@@ -450,14 +491,14 @@ export const KnowledgeGraphPage: React.FC = () => {
       {/* Main Canvas + Inspector Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* SVG Network Visualizer */}
-        <div className="lg:col-span-3 border border-slate-200 rounded-lg bg-[#FAF9F5] overflow-hidden shadow-sm relative h-[440px] sm:h-[520px] lg:h-[620px] select-none">
+        <div className="lg:col-span-3 border border-slate-800 rounded-xl bg-[#0B1120] overflow-hidden shadow-md relative h-[460px] sm:h-[540px] lg:h-[640px] select-none">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2">
-              <div className="w-6 h-6 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin" />
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
+              <div className="w-6 h-6 border-2 border-slate-600 border-t-white rounded-full animate-spin" />
               <p className="text-xs">Constructing semantic relationship graph...</p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-full text-red-600 p-6">
+            <div className="flex flex-col items-center justify-center h-full text-rose-400 p-6">
               <AlertTriangle className="w-8 h-8 mb-2" />
               <p className="text-xs">{error}</p>
             </div>
@@ -472,29 +513,29 @@ export const KnowledgeGraphPage: React.FC = () => {
             >
               <defs>
                 {/* Subtle Dot Grid */}
-                <pattern id="graphGrid" width="28" height="28" patternUnits="userSpaceOnUse">
-                  <circle cx="2" cy="2" r="0.9" fill="#E2E8F0" />
+                <pattern id="graphGrid" width="32" height="32" patternUnits="userSpaceOnUse">
+                  <circle cx="2" cy="2" r="1" fill="#1E293B" />
                 </pattern>
 
                 {/* Node Color Gradients */}
                 <linearGradient id="gradNavy" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#1E3A5F" />
-                  <stop offset="100%" stopColor="#14263D" />
+                  <stop offset="0%" stopColor="#1E293B" />
+                  <stop offset="100%" stopColor="#0F172A" />
                 </linearGradient>
 
-                <linearGradient id="gradTeal" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#5A9BA6" />
-                  <stop offset="100%" stopColor="#477E88" />
+                <linearGradient id="gradTopic" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3B82F6" />
+                  <stop offset="100%" stopColor="#1D4ED8" />
                 </linearGradient>
 
                 <linearGradient id="gradRose" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#E11D48" />
-                  <stop offset="100%" stopColor="#BE185D" />
+                  <stop offset="0%" stopColor="#F43F5E" />
+                  <stop offset="100%" stopColor="#BE123C" />
                 </linearGradient>
 
                 <linearGradient id="gradSlate" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#94A3B8" />
-                  <stop offset="100%" stopColor="#64748B" />
+                  <stop offset="0%" stopColor="#64748B" />
+                  <stop offset="100%" stopColor="#475569" />
                 </linearGradient>
               </defs>
 
@@ -520,10 +561,10 @@ export const KnowledgeGraphPage: React.FC = () => {
                         y1={source.y}
                         x2={target.x}
                         y2={target.y}
-                        stroke={edge.color || '#CBD5E1'}
+                        stroke={isHighlighted ? '#38BDF8' : edge.color || '#334155'}
                         strokeWidth={isHighlighted ? 2.5 : edge.weight || 1.2}
                         strokeDasharray={edge.dashed ? '4,4' : undefined}
-                        opacity={isDimmed ? 0.12 : isHighlighted ? 1 : 0.55}
+                        opacity={isDimmed ? 0.12 : isHighlighted ? 1 : 0.65}
                         className="transition-all duration-150"
                       />
                     </g>
@@ -560,10 +601,10 @@ export const KnowledgeGraphPage: React.FC = () => {
                         <circle
                           r={nodeRadius + 6}
                           fill="none"
-                          stroke={node.type === 'finding' ? '#E11D48' : '#14263D'}
+                          stroke={node.type === 'finding' ? '#F43F5E' : '#38BDF8'}
                           strokeWidth={2}
                           strokeDasharray={isSelected ? undefined : '3,3'}
-                          opacity={0.8}
+                          opacity={0.9}
                         />
                       )}
 
@@ -572,7 +613,7 @@ export const KnowledgeGraphPage: React.FC = () => {
                         r={nodeRadius}
                         fill={fill}
                         stroke="#FFFFFF"
-                        strokeWidth={2.5}
+                        strokeWidth={2}
                         className="shadow-sm"
                       />
 
@@ -585,10 +626,10 @@ export const KnowledgeGraphPage: React.FC = () => {
                         textAnchor="middle"
                         fontSize={node.type === 'document' ? '12px' : '10px'}
                         fontWeight={node.type === 'document' || isSelected ? 'bold' : 'normal'}
-                        fill="#1E293B"
-                        className="pointer-events-none select-none"
+                        fill="#F8FAFC"
+                        className="pointer-events-none select-none font-medium"
                         style={{
-                          textShadow: '0 1px 3px rgba(255,255,255,0.9), 0 -1px 3px rgba(255,255,255,0.9)',
+                          textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.9)',
                         }}
                       >
                         {node.label.length > 22 ? `${node.label.slice(0, 20)}…` : node.label}
@@ -601,26 +642,35 @@ export const KnowledgeGraphPage: React.FC = () => {
           )}
 
           {/* Quick Graph Legend Overlay */}
-          <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur border border-slate-200 rounded-md px-3 py-2 text-[10px] space-y-1 shadow-sm pointer-events-none">
-            <div className="font-semibold text-slate-700">Topology Legend</div>
+          <div className="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-2 text-[10px] space-y-1 shadow-md pointer-events-none text-slate-200">
+            <div className="font-semibold text-slate-100 uppercase tracking-wider text-[9px]">Topology Legend</div>
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#14263D] inline-block" />
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-600 inline-block" />
                 <span>Document</span>
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#477E88] inline-block" />
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" />
                 <span>Topic</span>
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#BE185D] inline-block" />
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" />
                 <span>Contradiction</span>
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#64748B] inline-block" />
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block" />
                 <span>Citation</span>
               </span>
             </div>
+          </div>
+
+          {/* Canvas Navigation Hint */}
+          <div className="absolute bottom-3 right-3 hidden sm:flex items-center gap-2 bg-slate-900/80 backdrop-blur-sm border border-slate-800 text-[10px] text-slate-400 px-2.5 py-1 rounded-md pointer-events-none">
+            <span>Drag to pan</span>
+            <span>•</span>
+            <span>Scroll to zoom</span>
+            <span>•</span>
+            <span>Click node to inspect</span>
           </div>
         </div>
 

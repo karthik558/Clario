@@ -65,12 +65,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-black/50 md:hidden" />}
       <aside ref={sidebarRef} id="workspace-navigation" aria-label="Workspace navigation" className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-open' : ''}`}>
-        <div className="flex h-20 shrink-0 items-center gap-3 px-5 border-b border-white/10">
+        <div className={`flex h-20 shrink-0 items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-4 sm:px-5'} border-b border-white/10`}>
           <a
             href="https://karthiklal.in"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 text-white hover:opacity-90 transition-opacity"
+            className={`flex items-center gap-3 text-white hover:opacity-90 transition-opacity min-w-0 ${collapsed ? 'hidden md:hidden' : ''}`}
             title="Clario"
           >
             <Layers className="w-7 h-7 text-white shrink-0" aria-hidden="true" />
@@ -78,7 +78,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="text-xl font-semibold tracking-tight text-white">Clario</span>
             </div>
           </a>
-          <button aria-label="Close navigation" onClick={onCloseMobile} className="md:hidden ml-auto p-2 text-slate-300 hover:text-white"><X className="w-5 h-5" /></button>
+
+          {/* Desktop Collapse / Expand Button near Clario */}
+          <button
+            onClick={onToggle}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!collapsed}
+            aria-controls="workspace-navigation"
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="hidden md:flex p-2 rounded-md text-slate-300 hover:bg-white/10 hover:text-white transition-colors shrink-0"
+          >
+            {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+          </button>
+
+          {/* Mobile Close Button */}
+          <button
+            aria-label="Close navigation"
+            onClick={onCloseMobile}
+            className="md:hidden ml-auto p-2 text-slate-300 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
         <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-1">
           {navItems.map(({ name, path, icon: Icon }) => (
@@ -89,11 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </nav>
         <div className="p-3 border-t border-white/10">
-          <button onClick={onToggle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="workspace-navigation"
-            className="hidden md:flex w-full items-center gap-3 p-3 rounded-md text-slate-300 hover:bg-white/10 hover:text-white text-sm transition-colors">
-            {collapsed ? <PanelLeftOpen className="w-5 h-5 shrink-0" /> : <PanelLeftClose className="w-5 h-5 shrink-0" />}<span className="sidebar-label">Collapse navigation</span>
-          </button>
-          <div className="sidebar-label px-3 pt-3 pb-2 text-xs text-slate-400">
+          <div className="sidebar-label px-3 py-2 text-xs text-slate-400">
             © 2026{' '}
             <a
               href="https://karthiklal.in"
