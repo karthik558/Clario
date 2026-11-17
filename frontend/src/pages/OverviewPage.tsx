@@ -74,14 +74,14 @@ export const OverviewPage: React.FC = () => {
           <Button variant="outline" onClick={() => navigate('/compare')}><GitCompare className="w-4 h-4" />Compare versions</Button>
         </div>
       </section>
-      {error && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error} <button className="underline ml-2" onClick={fetchDashboardData}>Retry</button></div>}
+      {error && <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error} <button className="underline ml-2" onClick={fetchDashboardData}>Retry</button></div>}
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-2xl">
+        <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-[#748293] mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Total Documents</span>
-            <div className="p-1.5 rounded-lg bg-[#477E88]/10 text-[#477E88]">
+            <div className="p-1.5 rounded-md bg-[#477E88]/10 text-[#477E88]">
               <Files className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -89,10 +89,10 @@ export const OverviewPage: React.FC = () => {
           <span className="text-[10px] text-[#748293] font-medium mt-1">Uploaded & stored</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-emerald-300 transition-all shadow-subtle rounded-2xl">
+        <Card className="p-4 flex flex-col justify-between hover:border-emerald-300 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-emerald-800 mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Indexed Ready</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+            <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-600">
               <FileCheck2 className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -100,10 +100,10 @@ export const OverviewPage: React.FC = () => {
           <span className="text-[10px] text-emerald-600 font-semibold mt-1">Available for review</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-2xl">
+        <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-[#748293] mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Searchable Passages</span>
-            <div className="p-1.5 rounded-lg bg-[#477E88]/10 text-[#477E88]">
+            <div className="p-1.5 rounded-md bg-[#477E88]/10 text-[#477E88]">
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -111,10 +111,10 @@ export const OverviewPage: React.FC = () => {
           <span className="text-[10px] text-[#748293] font-medium mt-1">Dense vector chunks</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-[#D4AE72]/50 transition-all shadow-subtle rounded-2xl">
+        <Card className="p-4 flex flex-col justify-between hover:border-[#D4AE72]/50 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-[#748293] mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Analyses Run</span>
-            <div className="p-1.5 rounded-lg bg-[#D4AE72]/15 text-[#D4AE72]">
+            <div className="p-1.5 rounded-md bg-[#D4AE72]/15 text-[#D4AE72]">
               <SearchCheck className="w-3.5 h-3.5 text-[#A9844B]" />
             </div>
           </div>
@@ -122,10 +122,10 @@ export const OverviewPage: React.FC = () => {
           <span className="text-[10px] text-[#748293] font-medium mt-1">Searches & diffs</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between border-amber-200 bg-amber-50/20 shadow-subtle rounded-2xl">
+        <Card className="p-4 flex flex-col justify-between border-amber-200 bg-amber-50/20 shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-amber-800 mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Conflicts Flagged</span>
-            <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
+            <div className="p-1.5 rounded-md bg-amber-100 text-amber-700">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -133,10 +133,10 @@ export const OverviewPage: React.FC = () => {
           <span className="text-[10px] text-amber-700 font-semibold mt-1">Candidate differences</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-2xl">
+        <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-[#748293] mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Avg Latency</span>
-            <div className="p-1.5 rounded-lg bg-[#477E88]/10 text-[#477E88]">
+            <div className="p-1.5 rounded-md bg-[#477E88]/10 text-[#477E88]">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -150,7 +150,7 @@ export const OverviewPage: React.FC = () => {
       {/* Ingestion & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card className="h-full rounded-2xl p-6">
+          <Card className="h-full rounded-md p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-bold text-sm text-[#14263D] tracking-tight">Upload documents</h3>
@@ -162,7 +162,7 @@ export const OverviewPage: React.FC = () => {
         </div>
 
         <div>
-          <Card className="h-full flex flex-col justify-between rounded-2xl p-6">
+          <Card className="h-full flex flex-col justify-between rounded-md p-6">
             <div>
               <h3 className="font-bold text-sm text-[#14263D] tracking-tight mb-1">Continue your review</h3>
               <p className="text-xs text-[#748293] mb-4">Choose the next step for your documents.</p>
@@ -170,10 +170,10 @@ export const OverviewPage: React.FC = () => {
               <div className="space-y-3">
                 <button
                   onClick={() => navigate('/ask')}
-                  className="w-full flex items-center justify-between p-3.5 rounded-xl border border-[#E4E8E6] bg-[#FCFBF8] hover:bg-[#F8F7F3] hover:border-[#477E88]/50 transition-all text-left group shadow-xs"
+                  className="w-full flex items-center justify-between p-3.5 rounded-md border border-[#E4E8E6] bg-[#FCFBF8] hover:bg-[#F8F7F3] hover:border-[#477E88]/50 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-[#477E88]/10 text-[#477E88] group-hover:scale-105 transition-transform">
+                    <div className="p-2 rounded-md bg-[#477E88]/10 text-[#477E88] group-hover:scale-105 transition-transform">
                       <MessageSquareQuote className="w-4 h-4" />
                     </div>
                     <div>
@@ -186,10 +186,10 @@ export const OverviewPage: React.FC = () => {
 
                 <button
                   onClick={() => navigate('/compare')}
-                  className="w-full flex items-center justify-between p-3.5 rounded-xl border border-[#E4E8E6] bg-[#FCFBF8] hover:bg-[#F8F7F3] hover:border-[#477E88]/50 transition-all text-left group shadow-xs"
+                  className="w-full flex items-center justify-between p-3.5 rounded-md border border-[#E4E8E6] bg-[#FCFBF8] hover:bg-[#F8F7F3] hover:border-[#477E88]/50 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-[#D4AE72]/20 text-[#A9844B] group-hover:scale-105 transition-transform">
+                    <div className="p-2 rounded-md bg-[#D4AE72]/20 text-[#A9844B] group-hover:scale-105 transition-transform">
                       <GitCompare className="w-4 h-4" />
                     </div>
                     <div>
@@ -202,10 +202,10 @@ export const OverviewPage: React.FC = () => {
 
                 <button
                   onClick={() => navigate('/search-lab')}
-                  className="w-full flex items-center justify-between p-3.5 rounded-xl border border-[#E4E8E6] bg-[#FCFBF8] hover:bg-[#F8F7F3] hover:border-[#477E88]/50 transition-all text-left group shadow-xs"
+                  className="w-full flex items-center justify-between p-3.5 rounded-md border border-[#E4E8E6] bg-[#FCFBF8] hover:bg-[#F8F7F3] hover:border-[#477E88]/50 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-[#A9D5C3]/30 text-[#14263D] group-hover:scale-105 transition-transform">
+                    <div className="p-2 rounded-md bg-[#A9D5C3]/30 text-[#14263D] group-hover:scale-105 transition-transform">
                       <FlaskConical className="w-4 h-4 text-[#477E88]" />
                     </div>
                     <div>
@@ -223,7 +223,7 @@ export const OverviewPage: React.FC = () => {
       </div>
 
       {/* Recent Documents Table */}
-      <Card className="rounded-2xl p-6">
+      <Card className="rounded-md p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-bold text-sm text-[#14263D] tracking-tight">Recent documents</h3>
@@ -255,7 +255,7 @@ export const OverviewPage: React.FC = () => {
                   className="hover:bg-[#F8F7F3] cursor-pointer transition-colors group"
                 >
                   <td className="py-3 px-3 font-semibold text-[#14263D] flex items-center space-x-2.5">
-                    <div className="p-1.5 rounded-lg bg-[#477E88]/10 text-[#477E88]">
+                    <div className="p-1.5 rounded-md bg-[#477E88]/10 text-[#477E88]">
                       <FileText className="w-3.5 h-3.5" />
                     </div>
                     <span className="truncate max-w-sm">{doc.title}</span>
@@ -279,14 +279,14 @@ export const OverviewPage: React.FC = () => {
                   <td className="py-3 px-3 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setSelectedDocId(doc.id)}
-                      className="p-1.5 rounded-lg text-[#748293] hover:text-[#477E88] hover:bg-white transition-colors"
+                      className="p-1.5 rounded-md text-[#748293] hover:text-[#477E88] hover:bg-white transition-colors"
                       title="Inspect chunks"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => handleDelete(doc.id, e)}
-                      className="p-1.5 rounded-lg text-[#748293] hover:text-rose-600 hover:bg-white transition-colors"
+                      className="p-1.5 rounded-md text-[#748293] hover:text-rose-600 hover:bg-white transition-colors"
                       title="Delete document"
                     >
                       <Trash2 className="w-4 h-4" />

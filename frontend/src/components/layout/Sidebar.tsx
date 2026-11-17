@@ -51,14 +51,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpe
         <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-6 space-y-1">
           {navItems.map(({ name, path, icon: Icon }) => (
             <NavLink key={path} to={path} end={path === '/'} onClick={onCloseMobile} aria-label={name} title={name}
-              className={({ isActive }) => `sidebar-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors ${isActive ? 'bg-clario-teal text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
+              className={({ isActive }) => `sidebar-link flex items-center gap-3 px-3 py-3 rounded-md text-sm transition-colors ${isActive ? 'bg-clario-teal text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
               <Icon className="w-5 h-5 shrink-0" aria-hidden="true" /><span className="sidebar-label">{name}</span>
             </NavLink>
           ))}
         </nav>
         <div className="p-3 border-t border-white/10">
           <button onClick={onToggle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="workspace-navigation"
-            className="hidden md:flex w-full items-center gap-3 p-3 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white text-sm">
+            className="hidden md:flex w-full items-center gap-3 p-3 rounded-md text-slate-300 hover:bg-white/10 hover:text-white text-sm">
             {collapsed ? <PanelLeftOpen className="w-5 h-5 shrink-0" /> : <PanelLeftClose className="w-5 h-5 shrink-0" />}<span className="sidebar-label">Collapse navigation</span>
           </button>
           <p className="sidebar-label px-3 pt-3 pb-2 text-xs text-slate-400">Your documents. Clearer decisions.</p>

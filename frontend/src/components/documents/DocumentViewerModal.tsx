@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, FileText, Layers, Hash, Bookmark, ExternalLink } from 'lucide-react';
+import { Markdown } from '../ui/Markdown';
 import { Modal } from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -22,27 +23,36 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'chunks' | 'raw'>('chunks');
+
 
   useEffect(() => {
     if (!documentId) {
       setDoc(null);
       return;
     }
+    let cancelled = false;
+    setDoc(null);
     const fetchDoc = async () => {
       setLoading(true);
       setError(null);
       try {
         const data = await api.getDocument(documentId);
-        setDoc(data);
+        if (!cancelled) setDoc(data);
       } catch (err: any) {
-        setError(err.message || 'Failed to load document');
+        if (!cancelled) setError(err.message || 'Failed to load document');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchDoc();
+    return () => { cancelled = true; };
   }, [documentId]);
+
+  useEffect(() => {
+    if (!doc) return;
+    const target = highlightChunkId ? document.getElementById(`chunk-${highlightChunkId}`) : null;
+    target?.scrollIntoView({ block: 'nearest' });
+  }, [doc, highlightChunkId]);
 
   if (!documentId) return null;
 
@@ -60,7 +70,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
       )}
 
       {error && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+        <div className="p-4 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs">
           {error}
         </div>
       )}
@@ -68,12 +78,12 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
       {doc && !loading && (
         <div className="space-y-4">
           {/* Header Metadata Bar */}
-          <div className="p-4 rounded-xl bg-clario-ivory border border-clario-border flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center space-x-3">
+          <div className="p-4 rounded-md bg-clario-ivory border border-clario-border flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-3 min-w-0">
               <Badge variant="navy" size="md">
                 {doc.file_type.toUpperCase()}
               </Badge>
-              <span className="text-clario-text-secondary font-mono">{doc.filename}</span>
+              <span className="text-clario-text-secondary font-mono break-all">{doc.filename}</span>
               <span className="text-clario-text-muted">&bull;</span>
               <span className="text-clario-text font-medium">{doc.page_count} Pages</span>
               <span className="text-clario-text-muted">&bull;</span>
@@ -88,7 +98,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 download={doc.filename}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-clario-border rounded-lg text-xs font-medium text-clario-text hover:bg-clario-ivory transition-colors shadow-xs"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-clario-border rounded-md text-xs font-medium text-clario-text hover:bg-clario-ivory transition-colors shadow-xs"
               >
                 <Download className="w-3.5 h-3.5 text-clario-teal" />
                 <span>Download Original</span>
@@ -96,30 +106,16 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             </div>
           </div>
 
-          {/* View Tabs */}
-          <div className="flex border-b border-clario-border space-x-4 text-xs font-medium">
-            <button
-              onClick={() => setActiveTab('chunks')}
-              className={`pb-2 border-b-2 transition-colors ${
-                activeTab === 'chunks'
-                  ? 'border-clario-teal text-clario-teal font-semibold'
-                  : 'border-transparent text-clario-text-secondary hover:text-clario-text'
-              }`}
-            >
-              Extracted Chunks & Provenance ({doc.chunks.length})
-            </button>
-          </div>
-
-          {/* Chunks List */}
-          {activeTab === 'chunks' && (
-            <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
+          <h4 className="text-sm font-semibold text-clario-navy border-b border-clario-border pb-3">Source passages ({doc.chunks.length})</h4>
+          {doc.chunks.length === 0 && <p className="text-sm text-clario-text-secondary">No extracted passages are available for this document.</p>}
+            <div className="space-y-3">
               {doc.chunks.map((chunk) => {
-                const isTarget = highlightChunkId === chunk.id || (highlightPage && chunk.page_number === highlightPage);
+                const isTarget = highlightChunkId ? highlightChunkId === chunk.id : highlightPage === chunk.page_number;
                 return (
                   <div
                     key={chunk.id}
                     id={`chunk-${chunk.id}`}
-                    className={`p-4 rounded-xl border transition-all ${
+                    className={`p-4 rounded-md border transition-all ${
                       isTarget
                         ? 'border-clario-gold bg-amber-50/50 ring-2 ring-clario-gold/20 shadow-card'
                         : 'border-clario-border bg-white hover:border-clario-teal/30'
@@ -143,14 +139,11 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                       </span>
                     </div>
 
-                    <p className="text-xs text-clario-text leading-relaxed whitespace-pre-line font-sans">
-                      {chunk.content}
-                    </p>
+                    <Markdown>{chunk.content}</Markdown>
                   </div>
                 );
               })}
             </div>
-          )}
         </div>
       )}
     </Modal>

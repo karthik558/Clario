@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -18,6 +19,8 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     if (!isOpen) return;
     const previousFocus = document.activeElement as HTMLElement | null;
@@ -27,7 +30,7 @@ export const Modal: React.FC<ModalProps> = ({
     const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? []);
     (focusable()[0] ?? dialog)?.focus();
     const handler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); }
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeRef.current(); }
       if (event.key === 'Tab') {
         const items = focusable();
         const first = items[0];
@@ -55,23 +58,23 @@ export const Modal: React.FC<ModalProps> = ({
     '4xl': 'max-w-4xl',
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-clario-navy/50 backdrop-blur-xs">
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
-        className={`bg-white w-full ${maxWidthStyles[maxWidth]} rounded-2xl shadow-elevated border border-clario-border overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150`}
+        className={`bg-white w-full ${maxWidthStyles[maxWidth]} rounded-md shadow-elevated border border-clario-border overflow-hidden flex flex-col max-h-[90dvh] animate-in fade-in zoom-in-95 duration-150`}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-clario-border bg-clario-ivory-card">
+        <div className="shrink-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-clario-border bg-clario-ivory-card">
           <h3 id={titleId} className="font-semibold text-base text-clario-text tracking-tight">{title}</h3>
           <button
             aria-label="Close dialog"
             onClick={onClose}
-            className="p-1 rounded-lg text-clario-text-secondary hover:text-clario-text hover:bg-clario-ivory transition-colors"
+            className="p-1 rounded-md text-clario-text-secondary hover:text-clario-text hover:bg-clario-ivory transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6 overflow-y-auto flex-1">{children}</div>
+        <div className="min-h-0 p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
       </div>
-    </div>
+    </div>, document.body
   );
 };

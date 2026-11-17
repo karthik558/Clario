@@ -1,5 +1,5 @@
 import React from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { GlobalSearchModal } from '../components/layout/GlobalSearchModal';
@@ -10,6 +10,7 @@ import { SettingsPage } from '../pages/SettingsPage';
 import { api } from '../services/api';
 import { DocumentItem, SystemSettings } from '../types';
 
+beforeEach(() => { vi.spyOn(api, 'getAnswerHistory').mockResolvedValue([]); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const documents = [
   { id: 'a', title: 'Policy A', filename: 'a.txt', collection: 'Policies', status: 'READY', file_type: 'txt', tags: [], created_at: '2026-01-01', updated_at: '2026-01-01', file_size: 100, page_count: 1, word_count: 20, chunk_count: 1 },
@@ -48,13 +49,19 @@ describe('Workspace interactions', () => {
     vi.spyOn(api, 'getDocuments').mockResolvedValue(documents);
     render(<DocumentsPage />);
     await screen.findByText('Policy A');
-    fireEvent.change(screen.getByLabelText('Document collection'), { target: { value: 'Policies' } });
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Document collection' }), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('option', { name: 'Policies' }));
     expect(screen.queryByText('Contract B')).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Document status'), { target: { value: 'ERROR' } });
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Document status' }), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('option', { name: 'Error' }));
     expect(screen.getByText('No documents found')).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Document collection' }), { key: 'Enter' });
     expect(screen.getByRole('option', { name: 'Contracts' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Document status'), { target: { value: '' } });
-    fireEvent.change(screen.getByLabelText('Document collection'), { target: { value: 'Contracts' } });
+    fireEvent.keyDown(screen.getByRole('option', { name: 'Contracts' }), { key: 'Escape' });
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Document status' }), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('option', { name: 'All Statuses' }));
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Document collection' }), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('option', { name: 'Contracts' }));
     expect(screen.getByText('Contract B')).toBeInTheDocument();
   });
   it('toggles all document scope pills and resets the workspace scope', async () => {

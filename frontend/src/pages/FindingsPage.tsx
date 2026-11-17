@@ -1,3 +1,5 @@
+import { workspaceDate } from '../utils/date';
+import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
 import {
   AlertTriangle,
@@ -135,10 +137,10 @@ export const FindingsPage: React.FC = () => {
             <span className="font-medium">Filter By:</span>
           </div>
 
-          <select
+          <Select
             aria-label="Finding status filter" value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
+            className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-1.5 focus:outline-none"
           >
             <option value="">All Statuses</option>
             <option value="open">Open</option>
@@ -146,12 +148,12 @@ export const FindingsPage: React.FC = () => {
             <option value="confirmed">Confirmed</option>
             <option value="resolved">Resolved</option>
             <option value="dismissed">Dismissed</option>
-          </select>
+          </Select>
 
-          <select
+          <Select
             aria-label="Finding category" value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
+            className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-1.5 focus:outline-none"
           >
             <option value="">All Categories</option>
             <option value="possible_contradiction">Possible Contradiction</option>
@@ -160,18 +162,18 @@ export const FindingsPage: React.FC = () => {
             <option value="outdated_statement">Outdated Statement</option>
             <option value="missing_coverage">Missing Coverage</option>
             <option value="needs_human_review">Needs Human Review</option>
-          </select>
+          </Select>
 
-          <select
+          <Select
             aria-label="Finding severity" value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
-            className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
+            className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-1.5 focus:outline-none"
           >
             <option value="">All Severities</option>
             <option value="high">High Severity</option>
             <option value="medium">Medium Severity</option>
             <option value="low">Low Severity</option>
-          </select>
+          </Select>
 
           <span className="text-[11px] text-clario-text-muted ml-auto">
             Showing {findings.length} finding(s)
@@ -214,17 +216,17 @@ export const FindingsPage: React.FC = () => {
                 {/* Status Dropdown */}
                 <div className="flex items-center space-x-2 text-xs">
                   <span className="text-clario-text-secondary font-medium">Status:</span>
-                  <select
+                  <Select
                     aria-label={`Review status for ${f.title}`} value={f.status}
                     onChange={(e) => handleStatusChange(f.id, e.target.value)}
-                    className="text-xs bg-clario-ivory font-semibold text-clario-navy border border-clario-border rounded-lg px-2.5 py-1 focus:outline-none cursor-pointer"
+                    className="text-xs bg-clario-ivory font-semibold text-clario-navy border border-clario-border rounded-md px-2.5 py-1 focus:outline-none cursor-pointer"
                   >
                     <option value="open">Open</option>
                     <option value="under_review">Under Review</option>
                     <option value="confirmed">Confirmed</option>
                     <option value="resolved">Resolved</option>
                     <option value="dismissed">Dismissed</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
 
@@ -237,7 +239,7 @@ export const FindingsPage: React.FC = () => {
               {(f.doc_a_quote || f.doc_b_quote) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
                   {f.doc_a_quote && (
-                    <div className="p-3 rounded-xl bg-clario-ivory border border-clario-border">
+                    <div className="p-3 rounded-md bg-clario-ivory border border-clario-border">
                       <span className="text-[10px] font-semibold text-clario-navy uppercase block mb-1">
                         Source A: {f.doc_a_title} {f.doc_a_page ? `(Page ${f.doc_a_page})` : ''}
                       </span>
@@ -248,7 +250,7 @@ export const FindingsPage: React.FC = () => {
                   )}
 
                   {f.doc_b_quote && (
-                    <div className="p-3 rounded-xl bg-amber-50/50 border border-amber-200">
+                    <div className="p-3 rounded-md bg-amber-50/50 border border-amber-200">
                       <span className="text-[10px] font-semibold text-amber-900 uppercase block mb-1">
                         Source B: {f.doc_b_title} {f.doc_b_page ? `(Page ${f.doc_b_page})` : ''}
                       </span>
@@ -270,7 +272,7 @@ export const FindingsPage: React.FC = () => {
                         value={notesInput}
                         onChange={(e) => setNotesInput(e.target.value)}
                         placeholder="Add human auditor evaluation notes..."
-                        className="flex-1 text-xs px-2.5 py-1 border border-clario-border rounded-lg bg-white focus:outline-none"
+                        className="flex-1 text-xs px-2.5 py-1 border border-clario-border rounded-md bg-white focus:outline-none"
                       />
                       <button
                         onClick={() => handleSaveNotes(f.id)}
@@ -303,7 +305,7 @@ export const FindingsPage: React.FC = () => {
                 </div>
 
                 <span className="text-[10px] text-clario-text-muted shrink-0">
-                  Recorded on {new Date(f.created_at).toLocaleDateString()}
+                  Recorded on {workspaceDate(f.created_at).toLocaleDateString()}
                 </span>
               </div>
             </Card>

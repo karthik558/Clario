@@ -104,7 +104,12 @@ export const api = {
   },
 
   // Ask Clario
-  ask: async (query: string, document_ids?: string[], top_k: number = 5): Promise<AskResponse> => {
+  getAnswerHistory: async (): Promise<Array<{ id: string; query: string; response: AskResponse; document_ids: string[]; created_at: string }>> => {
+    const res = await fetch(`${API_BASE}/ask/history`);
+    if (!res.ok) throw new Error('Could not load saved answers');
+    return res.json();
+  },
+  ask: async (query: string, document_ids?: string[], top_k?: number): Promise<AskResponse> => {
     const res = await fetch(`${API_BASE}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -180,7 +185,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Report generation failed');
+    if (!res.ok) { const error = await res.json().catch(() => ({})); throw new Error(typeof error.detail === 'string' ? error.detail : 'Report generation failed. Check the title and document scope.'); }
     return res.json();
   },
 

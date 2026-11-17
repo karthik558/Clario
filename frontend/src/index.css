@@ -49,3 +49,23 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+.web-select { display: inline-flex; align-items: center; justify-content: space-between; gap: .75rem; min-width: 0; text-align: left; cursor: pointer; }
+.web-select > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.web-select:disabled { opacity: .5; cursor: not-allowed; }
+.web-select-menu { z-index: 80; min-width: var(--radix-select-trigger-width); max-width: min(36rem, calc(100vw - 24px)); max-height: min(320px, var(--radix-select-content-available-height)); background: white; color: #233448; border: 1px solid #CCD3CF; border-radius: 6px; box-shadow: 0 8px 24px #14263D20; overflow: hidden; }
+.web-select-option { display: flex; align-items: center; gap: 1rem; padding: .625rem .75rem; font-size: 13px; line-height: 1.5; border-radius: 4px; cursor: pointer; outline: none; overflow-wrap: anywhere; }
+.web-select-option[data-highlighted] { background: #edf4f2; color: #14263D; }
+.web-select-option[data-state='checked'] { color: #325C64; font-weight: 600; }
+.web-select-option[data-disabled] { opacity: .45; cursor: not-allowed; }
+.document-prose { color: #233448; font-size: 14px; line-height: 1.75; overflow-wrap: anywhere; }
+.document-prose > * + * { margin-top: .8rem; }
+.document-prose h1, .document-prose h2, .document-prose h3, .document-prose h4 { font-size: 1rem; line-height: 1.5; font-weight: 600; color: #14263D; }
+.document-prose ul { list-style: disc; padding-left: 1.5rem; }
+.document-prose ol { list-style: decimal; padding-left: 1.5rem; }
+.document-prose blockquote { border-left: 3px solid #A9D5C3; padding: .5rem 1rem; background: #F8F7F3; }
+.document-prose a { text-decoration: underline; color: #325C64; }
+.document-prose pre { overflow-x: auto; padding: 1rem; background: #F0EFEA; border-radius: 4px; }
+.document-prose code { font-size: .875em; }
+.document-prose th, .document-prose td { padding: .5rem .75rem; border: 1px solid #E4E8E6; text-align: left; }
+.document-prose th { background: #F8F7F3; }

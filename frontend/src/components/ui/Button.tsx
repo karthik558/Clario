@@ -15,7 +15,7 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const base = 'inline-flex items-center justify-center font-medium rounded-lg transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed shadow-xs';
+  const base = 'inline-flex items-center justify-center font-medium rounded-md transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed shadow-xs';
 
   const variants = {
     primary: 'bg-clario-navy text-white hover:bg-clario-navy-light active:bg-clario-navy-dark',

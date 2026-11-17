@@ -78,7 +78,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
           )}
 
           {/* Mode Switcher */}
-          <div className="flex bg-white rounded-lg p-0.5 border border-clario-border text-xs">
+          <div className="flex bg-white rounded-md p-0.5 border border-clario-border text-xs">
             <button
               aria-pressed={mode === 'hybrid'}
               onClick={() => { setMode('hybrid'); if (query) handleSearch(query, 'hybrid'); }}
@@ -137,7 +137,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     if (onSelectResult) onSelectResult(r);
                     onClose();
                   }}
-                  className="w-full text-left p-3 rounded-xl border border-clario-border hover:border-clario-teal/50 hover:bg-clario-ivory transition-all cursor-pointer group"
+                  className="w-full text-left p-3 rounded-md border border-clario-border hover:border-clario-teal/50 hover:bg-clario-ivory transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center space-x-2">

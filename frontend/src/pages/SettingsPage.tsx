@@ -1,3 +1,4 @@
+import { Select } from '../components/ui/Select';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Settings,
@@ -129,6 +130,10 @@ export const SettingsPage: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!ollamaModel.trim() || !/^https?:\/\/[^\s]+$/.test(ollamaUrl) || !Number.isFinite(bm25K1) || bm25K1 <= 0 || bm25K1 > 10 || !Number.isFinite(bm25B) || bm25B < 0 || bm25B > 1 || !Number.isInteger(rrfK) || rrfK < 1 || rrfK > 1000 || !Number.isInteger(defaultTopK) || defaultTopK < 1 || defaultTopK > 50) {
+      setError('Enter a model name and HTTP(S) URL. BM25 k1 must be 0–10 (exclusive of 0), b 0–1, RRF 1–1000, and Top-K 1–50.');
+      return;
+    }
     setSaving(true);
     setError('');
     setSuccessMsg(null);
@@ -142,10 +147,10 @@ export const SettingsPage: React.FC = () => {
         rrf_k: rrfK,
         default_top_k: defaultTopK,
       });
-      setSuccessMsg('Configuration updated. AI assistant will now utilize selected engine.');
+      setSuccessMsg('Configuration saved to the database. New answers will use this engine.');
       fetchSettings();
     } catch (err) {
-      setError('The operation failed. Check the connection and try again.');
+      setError('Configuration was not saved. Check the model name, server URL, and numeric ranges.');
     } finally {
       setSaving(false);
     }
@@ -165,9 +170,11 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  if (loading && !settings) return <p role="status" className="text-sm text-clario-text-secondary">Loading saved workspace settings…</p>;
+
   return (
     <div className="space-y-8 max-w-5xl">
-      {error && <p role="alert" className="p-4 rounded-lg bg-rose-50 text-rose-800 text-sm">{error}</p>}
+      {error && <p role="alert" className="p-4 rounded-md bg-rose-50 text-rose-800 text-sm">{error}</p>}
       {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-[#14263D] tracking-tight flex items-center space-x-2">
@@ -179,17 +186,17 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {successMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2.5 animate-in fade-in shadow-xs">
+        <div className="p-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2.5 animate-in fade-in shadow-xs">
           <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
           <span className="font-medium">{successMsg}</span>
         </div>
       )}
 
       {/* Ollama Local Integration Card */}
-      <Card className="rounded-2xl p-6 border-[#477E88]/40 bg-gradient-to-br from-white to-[#FCFBF8] shadow-card space-y-5">
+      <Card className="rounded-md p-6 border-[#477E88]/40 bg-gradient-to-br from-white to-[#FCFBF8] shadow-card space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E4E8E6]">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-[#477E88]/15 text-[#477E88]">
+            <div className="p-2.5 rounded-md bg-[#477E88]/15 text-[#477E88]">
               <Bot className="w-5 h-5" />
             </div>
             <div>
@@ -216,13 +223,13 @@ export const SettingsPage: React.FC = () => {
               size="md"
               className="font-semibold"
             >
-              {ollamaStatus?.running ? 'Ollama Online' : 'Ollama Offline'}
+              {checkingOllama ? 'Checking connection…' : ollamaStatus?.running ? 'Ollama Online' : 'Ollama Offline'}
             </Badge>
           </div>
         </div>
 
         {/* Ollama Status Feedback */}
-        <div className={`p-4 rounded-xl border text-xs ${
+        <div className={`p-4 rounded-md border text-xs ${
           ollamaStatus?.running
             ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
             : 'bg-amber-50/60 border-amber-200 text-amber-900'
@@ -234,7 +241,7 @@ export const SettingsPage: React.FC = () => {
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             )}
             <span className="font-bold">
-              {ollamaStatus?.running ? 'Ollama Daemon Detected' : 'Ollama Daemon Not Detected Yet'}
+              {checkingOllama ? 'Checking the saved server address…' : ollamaStatus?.running ? 'Ollama connected' : 'Ollama is unavailable'}
             </span>
           </div>
           <p className="text-[11px] leading-relaxed ml-6">
@@ -250,15 +257,15 @@ export const SettingsPage: React.FC = () => {
             <label htmlFor="llmProvider" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1.5">
               Generation Engine
             </label>
-            <select id="llmProvider" value={llmProvider}
+            <Select id="llmProvider" value={llmProvider}
               onChange={(e) => setLlmProvider(e.target.value)}
-              className="w-full text-xs bg-white border border-[#E4E8E6] rounded-xl px-3 py-2.5 font-semibold text-[#14263D] focus:outline-none focus:border-[#477E88]"
+              className="w-full text-xs bg-white border border-[#E4E8E6] rounded-md px-3 py-2.5 font-semibold text-[#14263D] focus:outline-none focus:border-[#477E88]"
             >
-              <option value="extractive">Built-in Extractive (Zero Hallucination, Fast)</option>
-              <option value="ollama">Ollama Local API Model (Local LLM)</option>
-              <option value="gemini">Google Gemini 1.5 Flash (Cloud API)</option>
-              <option value="openai">OpenAI GPT-4o-mini (Cloud API)</option>
-            </select>
+              <option value="extractive">Extractive · retrieved passages</option>
+              <option value="ollama">Ollama · local model</option>
+              <option value="gemini">Google Gemini · cloud</option>
+              <option value="openai">OpenAI · cloud</option>
+            </Select>
           </div>
 
           <div>
@@ -269,7 +276,7 @@ export const SettingsPage: React.FC = () => {
               value={ollamaUrl}
               onChange={(e) => setOllamaUrl(e.target.value)}
               placeholder="http://localhost:11434"
-              className="w-full text-xs font-mono bg-white border border-[#E4E8E6] rounded-xl px-3 py-2.5 text-[#14263D] focus:outline-none focus:border-[#477E88]"
+              className="w-full text-xs font-mono bg-white border border-[#E4E8E6] rounded-md px-3 py-2.5 text-[#14263D] focus:outline-none focus:border-[#477E88]"
             />
           </div>
 
@@ -277,43 +284,33 @@ export const SettingsPage: React.FC = () => {
             <label htmlFor="ollamaModel" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1.5">
               Model Name / Custom Model
             </label>
-            <input id="ollamaModel" aria-label="Model name or custom model" list="ollama-models" value={ollamaModel} onChange={e => setOllamaModel(e.target.value)} placeholder="llama3.2 or your custom model" className="w-full text-sm font-mono bg-white border border-clario-border rounded-lg px-3 py-2.5" />
-            <datalist id="ollama-models">{ollamaStatus?.models.map(model => <option key={model} value={model} />)}</datalist>
+            <input id="ollamaModel" aria-label="Model name or custom model" value={ollamaModel} onChange={e => setOllamaModel(e.target.value)} placeholder="llama3.2 or your custom model" className="w-full text-sm font-mono bg-white border border-clario-border rounded-md px-3 py-2.5" />
+            {ollamaStatus && ollamaStatus.models.length > 0 && <Select aria-label="Installed Ollama models" value={ollamaStatus.models.includes(ollamaModel) ? ollamaModel : ''} onChange={e => { if (e.target.value) setOllamaModel(e.target.value); }} className="w-full mt-2 border border-clario-border bg-white p-2 text-xs rounded-md"><option value="">Choose an installed model</option>{ollamaStatus.models.map(model => <option key={model} value={model}>{model}</option>)}</Select>}
           </div>
         </div>
 
-        {/* Ollama Guide & User Creations Cheat Sheet */}
-        <div className="p-4 rounded-xl bg-[#0F1D30] text-slate-200 text-xs font-mono space-y-2 border border-white/10">
-          <div className="flex items-center space-x-2 text-[#D4AE72] font-semibold text-xs mb-1">
-            <Terminal className="w-4 h-4" />
-            <span>Ollama Commands & Custom User Model Creation Guide:</span>
+        <details className="border-t border-clario-border pt-4 text-sm">
+          <summary className="cursor-pointer font-medium text-clario-navy">Set up Ollama or a custom model</summary>
+          <div className="mt-4 space-y-3 text-clario-text-secondary">
+            <p>Install <a href="https://ollama.com/download" target="_blank" rel="noreferrer" className="text-clario-teal underline">Ollama</a>, open the app, and download a model in your terminal:</p>
+            <pre className="bg-clario-ivory border border-clario-border rounded p-3 overflow-x-auto text-xs text-clario-text">ollama pull llama3.2</pre>
+            <p>Choose Ollama above, enter the exact installed model name, and save the configuration. Custom models created in Ollama work in the same field.</p>
+            <p className="text-xs">These are setup instructions. Commands are run in your own terminal.</p>
           </div>
-          <p className="text-[11px] text-slate-300">
-            # 1. Download & run standard model:<br />
-            <span className="text-[#A9D5C3]">ollama run llama3.2</span>
-          </p>
-          <p className="text-[11px] text-slate-300">
-            # 2. How to create your own customized model (User Creation):<br />
-            Create a file called <span className="text-[#D4AE72]">Modelfile</span> with:<br />
-            <span className="text-white/80 pl-2">FROM llama3.2</span><br />
-            <span className="text-white/80 pl-2">SYSTEM You are Clario Auditor, an expert in contracts and compliance.</span><br />
-            Then build it in terminal:<br />
-            <span className="text-[#A9D5C3]">ollama create clario-auditor -f ./Modelfile</span>
-          </p>
-        </div>
+        </details>
 
         <div className="flex justify-end">
-          <Button variant="primary" size="md" onClick={handleSave} loading={saving}>
+          <Button variant="primary" size="md" onClick={handleSave} loading={saving} disabled={loading}>
             Save configuration
           </Button>
         </div>
       </Card>
 
       {/* Database Explorer Section */}
-      <Card className="rounded-2xl p-6 space-y-5">
+      <Card className="rounded-md p-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E4E8E6]">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-[#477E88]/10 text-[#477E88]">
+            <div className="p-2.5 rounded-md bg-[#477E88]/10 text-[#477E88]">
               <Database className="w-5 h-5" />
             </div>
             <div>
@@ -324,7 +321,7 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="text-[11px] font-mono text-[#748293] bg-[#F8F7F3] px-3 py-1.5 rounded-xl border border-[#E4E8E6]">
+          <div className="text-[11px] font-mono text-[#748293] bg-[#F8F7F3] px-3 py-1.5 rounded-md border border-[#E4E8E6]">
             File: backend/data/clario.db
           </div>
         </div>
@@ -336,14 +333,14 @@ export const SettingsPage: React.FC = () => {
               key={t.name}
               aria-pressed={selectedTable === t.name}
               onClick={() => inspectTable(t.name)}
-              className={`px-3 py-1.5 rounded-xl font-semibold transition-all flex items-center space-x-2 ${
+              className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center space-x-2 ${
                 selectedTable === t.name
                   ? 'bg-[#14263D] text-white shadow-xs'
                   : 'bg-[#F8F7F3] text-[#748293] hover:text-[#14263D] hover:bg-[#F0EFEA] border border-[#E4E8E6]'
               }`}
             >
               <span>{t.name}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+              <span className={`text-[10px] px-1.5 py-0.2 rounded ${
                 selectedTable === t.name ? 'bg-white/20 text-white' : 'bg-[#E4E8E6] text-[#748293]'
               }`}>
                 {t.row_count}
@@ -355,7 +352,7 @@ export const SettingsPage: React.FC = () => {
         {/* Data Table Preview */}
         {loadingTable && <p role="status" className="text-sm text-clario-text-secondary">Loading table…</p>}
         {tableData && (
-          <div className="border border-[#E4E8E6] rounded-xl overflow-hidden text-xs">
+          <div className="border border-[#E4E8E6] rounded-md overflow-hidden text-xs">
             <div className="p-3 bg-[#F8F7F3] border-b border-[#E4E8E6] flex items-center justify-between">
               <span className="font-bold text-[#14263D] font-mono">Table: {tableData.table}</span>
               <span className="text-[11px] text-[#748293]">Showing top {tableData.rows.length} rows</span>
@@ -388,7 +385,7 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       {/* Information Retrieval (IR) Tuning */}
-      <Card className="rounded-2xl p-6 space-y-4">
+      <Card className="rounded-md p-6 space-y-4">
         <div className="flex items-center space-x-2 pb-3 border-b border-[#E4E8E6]">
           <Sliders className="w-4 h-4 text-[#477E88]" />
           <h3 className="font-bold text-sm text-[#14263D]">IR Algorithm Tuning Parameters</h3>
@@ -403,7 +400,7 @@ export const SettingsPage: React.FC = () => {
               step="0.05"
               value={bm25K1}
               onChange={(e) => setBm25K1(parseFloat(e.target.value))}
-              className="w-full text-xs font-mono px-3 py-2 rounded-xl border border-[#E4E8E6] bg-white focus:outline-none"
+              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-[#E4E8E6] bg-white focus:outline-none"
             />
           </div>
 
@@ -415,7 +412,7 @@ export const SettingsPage: React.FC = () => {
               step="0.05"
               value={bm25B}
               onChange={(e) => setBm25B(parseFloat(e.target.value))}
-              className="w-full text-xs font-mono px-3 py-2 rounded-xl border border-[#E4E8E6] bg-white focus:outline-none"
+              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-[#E4E8E6] bg-white focus:outline-none"
             />
           </div>
 
@@ -426,7 +423,7 @@ export const SettingsPage: React.FC = () => {
             <input id="rrfK" type="number"
               value={rrfK}
               onChange={(e) => setRrfK(parseInt(e.target.value))}
-              className="w-full text-xs font-mono px-3 py-2 rounded-xl border border-[#E4E8E6] bg-white focus:outline-none"
+              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-[#E4E8E6] bg-white focus:outline-none"
             />
           </div>
 
@@ -437,7 +434,7 @@ export const SettingsPage: React.FC = () => {
             <input id="defaultTopK" type="number"
               value={defaultTopK}
               onChange={(e) => setDefaultTopK(parseInt(e.target.value))}
-              className="w-full text-xs font-mono px-3 py-2 rounded-xl border border-[#E4E8E6] bg-white focus:outline-none"
+              className="w-full text-xs font-mono px-3 py-2 rounded-md border border-[#E4E8E6] bg-white focus:outline-none"
             />
           </div>
         </div>
@@ -447,7 +444,7 @@ export const SettingsPage: React.FC = () => {
             <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
             Reindex All Chunks
           </Button>
-          <Button variant="primary" size="md" onClick={handleSave} loading={saving}>
+          <Button variant="primary" size="md" onClick={handleSave} loading={saving} disabled={loading}>
             Save All Settings
           </Button>
         </div>

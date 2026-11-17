@@ -32,7 +32,7 @@ class AskService:
         results, ret_latency_ms = search_service.search(
             query=request.query,
             mode="hybrid",
-            top_k=request.top_k,
+            top_k=request.top_k or settings.DEFAULT_TOP_K,
             document_ids=request.document_ids,
             db=db
         )
@@ -159,6 +159,7 @@ Provide a well-structured answer with source citations [1], [2]:"""
             "model": settings.OLLAMA_MODEL,
             "prompt": prompt,
             "stream": False,
+            "think": False,
             "options": {
                 "temperature": 0.2
             }
@@ -168,7 +169,10 @@ Provide a well-structured answer with source citations [1], [2]:"""
             resp = client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()
-            return data.get("response", "").strip()
+            answer = data.get("response", "").strip()
+            if not answer:
+                raise ValueError("The model returned an empty answer")
+            return answer
 
     @staticmethod
     def _extractive_synthesis(
@@ -178,7 +182,7 @@ Provide a well-structured answer with source citations [1], [2]:"""
         conflict_notes: Optional[str]
     ) -> str:
         lines = []
-        lines.append(f"### Evidence Summary for: *\"{query}\"*\n")
+        lines.append("### Evidence summary\n")
 
         by_doc: Dict[str, List[CitationItem]] = {}
         for c in citations:
@@ -186,18 +190,19 @@ Provide a well-structured answer with source citations [1], [2]:"""
 
         for doc_title, doc_cits in by_doc.items():
             lines.append(f"#### From **{doc_title}**:")
-            for cit in doc_cits[:2]:
+            for cit in doc_cits:
                 key_sents = extract_relevant_sentences(query, cit.snippet, max_sentences=2)
                 if key_sents:
                     quote = " ".join(key_sents)
                 else:
                     quote = cit.snippet[:240].strip() + ("..." if len(cit.snippet) > 240 else "")
-                lines.append(f"> \"{quote}\" **[[{cit.citation_id}] - Page {cit.page_number}]**\n")
+                lines.append("\n".join("> " + line for line in quote.splitlines()))
+                lines.append(f"\n**Source [{cit.citation_id}] · Page {cit.page_number}**\n")
 
         if has_conflict and conflict_notes:
             lines.append(f"\n> ⚠️ **Potential Contradiction / Divergence:**\n> {conflict_notes}")
 
-        lines.append("\n*Note: This synthesis was compiled strictly from retrieved passages without generative hallucination. Click citations below to view source context.*")
+        lines.append("\n*Note: This synthesis was compiled strictly from retrieved passages using extractive retrieval. Review the citations below to verify the source context.*")
         return "\n".join(lines)
 
     @staticmethod

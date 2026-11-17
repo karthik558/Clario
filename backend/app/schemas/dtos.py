@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import Literal, List, Optional, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -112,7 +112,7 @@ class AskRequest(BaseModel):
     query: str
     document_ids: Optional[List[str]] = None
     collection: Optional[str] = None
-    top_k: int = 6
+    top_k: Optional[int] = Field(default=None, ge=1, le=50)
 
 class CitationItem(BaseModel):
     citation_id: int
@@ -221,8 +221,8 @@ class FindingResponse(BaseModel):
 # ---------------- Reports ----------------
 
 class ReportCreate(BaseModel):
-    title: str
-    report_type: str
+    title: str = Field(min_length=1, max_length=255)
+    report_type: Literal["summary", "comparative", "search_benchmark", "contradictions", "research_dossier"]
     document_ids: List[str] = []
     include_methodology: bool = True
     custom_notes: Optional[str] = None

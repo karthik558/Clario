@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+import json
+from fastapi import APIRouter, Depends, Query
+from app.models.entities import AnswerRecord
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.schemas.dtos import AskRequest, AskResponse
@@ -8,4 +10,14 @@ router = APIRouter()
 
 @router.post("/ask", response_model=AskResponse)
 def ask_clario(request: AskRequest, db: Session = Depends(get_db)):
-    return AskService.answer_question(request, db)
+    response = AskService.answer_question(request, db)
+    record = AnswerRecord(query=request.query, document_ids_json=json.dumps(request.document_ids or []), response_json=response.model_dump_json())
+    db.add(record)
+    db.commit()
+    return response
+
+
+@router.get("/ask/history")
+def answer_history(limit: int = Query(default=50, ge=1, le=100), db: Session = Depends(get_db)):
+    records = db.query(AnswerRecord).order_by(AnswerRecord.created_at.desc(), AnswerRecord.id.desc()).limit(limit).all()
+    return [{"id": row.id, "query": row.query, "response": json.loads(row.response_json), "document_ids": json.loads(row.document_ids_json), "created_at": row.created_at} for row in reversed(records)]

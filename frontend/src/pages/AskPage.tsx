@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { AskResponse, CitationItem, DocumentItem } from '../types';
+import { Markdown } from '../components/ui/Markdown';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -28,30 +29,44 @@ export const AskPage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [engineLabel, setEngineLabel] = useState('');
+  const [error, setError] = useState('');
+  const [pendingQuery, setPendingQuery] = useState('');
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    api.getSettings().then(config => {
+      if (!cancelled) setEngineLabel(config.llm_provider === 'ollama' ? `Ollama · ${config.ollama_model}` : config.llm_provider === 'extractive' ? 'Extractive · retrieved passages' : config.llm_provider);
+    }).catch(() => {});
+    api.getAnswerHistory().then(saved => { if (!cancelled) setHistory(saved); })
+      .catch(() => { if (!cancelled) setError('Saved answers could not be loaded. You can still ask a new question.'); })
+      .finally(() => { if (!cancelled) setLoadingHistory(false); });
     const loadDocs = async () => {
       try {
         const docs = await api.getDocuments();
-        setDocuments(docs);
+        if (!cancelled) setDocuments(docs);
       } catch (err) {
         console.error(err);
       }
     };
     loadDocs();
+    return () => { cancelled = true; };
   }, []);
 
   const handleAsk = async (userQuery?: string) => {
-    const q = userQuery || query;
-    if (!q.trim() || loading) return;
+    const q = (userQuery || query).trim();
+    if (!q || loading || loadingHistory) return;
 
+    setError('');
+    setPendingQuery(q);
     setLoading(true);
     setResponse(null);
     try {
       const docIds = selectedDocIds.length > 0 ? selectedDocIds : undefined;
-      const res = await api.ask(q, docIds, 5);
+      const res = await api.ask(q, docIds);
       setResponse(res);
       setHistory((prev) => [...prev, { query: q, response: res }]);
       setQuery('');
@@ -59,16 +74,18 @@ export const AskPage: React.FC = () => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     } catch (err) {
-      console.error(err);
+      setQuery(q);
+      setError('The answer could not be generated or saved. Your question is kept below; please try again.');
     } finally {
       setLoading(false);
+      setPendingQuery('');
     }
   };
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async (text: string, index: number) => {
+    try { await navigator.clipboard.writeText(text); } catch { setError('Could not copy the answer. Select and copy the text manually.'); return; }
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
   const presets = [
@@ -92,14 +109,18 @@ export const AskPage: React.FC = () => {
         </div>
       </div>
 
+      <p className="text-xs text-clario-text-secondary">Completed answers and source citations are saved in this workspace. The latest 50 answers appear below.</p>
+      {error && <p role="alert" className="p-3 border border-rose-200 bg-rose-50 text-rose-800 rounded-md text-sm">{error}</p>}
+      {loadingHistory && <p role="status" className="text-sm text-clario-text-secondary">Loading saved answers…</p>}
+      {engineLabel && <p className="text-xs text-clario-text-secondary">Answer engine: <span className="font-medium text-clario-navy">{engineLabel}</span></p>}
       {/* Scope Selector */}
       {documents.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-xl border border-clario-border text-xs">
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-clario-border text-xs">
           <span className="text-clario-text-secondary font-medium">Search Scope:</span>
           <button
             aria-pressed={selectedDocIds.length === 0}
             onClick={() => setSelectedDocIds([])}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
               selectedDocIds.length === 0
                 ? 'bg-clario-navy text-white'
                 : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted'
@@ -120,7 +141,7 @@ export const AskPage: React.FC = () => {
                     setSelectedDocIds([...selectedDocIds, d.id]);
                   }
                 }}
-                className={`px-2.5 py-1 rounded-lg text-xs transition-colors truncate max-w-[200px] ${
+                className={`px-2.5 py-1 rounded-md text-xs transition-colors truncate max-w-[200px] ${
                   isSelected
                     ? 'bg-clario-teal text-white font-medium'
                     : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
@@ -135,13 +156,13 @@ export const AskPage: React.FC = () => {
       )}
 
       {/* Preset Starters */}
-      {history.length === 0 && !response && !loading && (
+      {history.length === 0 && !response && !loading && !loadingHistory && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {presets.map((p, idx) => (
             <button
               key={idx}
               onClick={() => handleAsk(p)}
-              className="p-3.5 rounded-xl border border-clario-border bg-white hover:border-clario-teal/50 hover:bg-clario-ivory transition-all text-left group flex items-start space-x-3 shadow-subtle"
+              className="p-3.5 rounded-md border border-clario-border bg-white hover:border-clario-teal/50 hover:bg-clario-ivory transition-all text-left group flex items-start space-x-3 shadow-subtle"
             >
               <SearchCheck className="w-4 h-4 text-clario-gold shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-medium text-clario-text group-hover:text-clario-teal transition-colors">
@@ -158,16 +179,16 @@ export const AskPage: React.FC = () => {
           <div key={idx} className="space-y-4 animate-in fade-in">
             {/* User Question */}
             <div className="flex justify-end">
-              <div className="bg-clario-navy text-white px-4 py-2.5 rounded-2xl rounded-tr-xs text-xs font-medium max-w-xl shadow-xs">
+              <div className="whitespace-pre-wrap break-words bg-clario-navy text-white px-4 py-2.5 rounded-md rounded-tr-xs text-xs font-medium max-w-xl shadow-xs">
                 {item.query}
               </div>
             </div>
 
             {/* Clario Answer */}
-            <div className="bg-white rounded-2xl border border-clario-border p-6 shadow-subtle space-y-4">
+            <div className="bg-white rounded-md border border-clario-border p-6 shadow-subtle space-y-4">
               {/* Answer Header Bar */}
-              <div className="flex items-center justify-between pb-3 border-b border-clario-border text-xs">
-                <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap gap-3 items-center justify-between pb-3 border-b border-clario-border text-xs">
+                <div className="flex flex-wrap gap-2 items-center">
                   <div className="w-6 h-6 rounded-md bg-clario-teal text-white flex items-center justify-center font-bold text-[10px]">
                     CL
                   </div>
@@ -180,18 +201,18 @@ export const AskPage: React.FC = () => {
                     <span>{item.response.retrieval_latency_ms}ms</span>
                   </span>
                   <button
-                    onClick={() => handleCopy(item.response.answer)}
+                    onClick={() => handleCopy(item.response.answer, idx)}
                     className="p-1 rounded text-clario-text-secondary hover:text-clario-text hover:bg-clario-ivory transition-colors"
                     title="Copy Answer"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
 
               {/* Contradiction Alert if detected */}
               {item.response.has_conflicting_evidence && (
-                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2.5">
+                <div className="p-3.5 rounded-md bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2.5">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold block mb-0.5">Divergent Terms Detected Across Sources</span>
@@ -203,8 +224,8 @@ export const AskPage: React.FC = () => {
               )}
 
               {/* Formatted Markdown Content */}
-              <div className="text-xs text-clario-text leading-relaxed whitespace-pre-line font-sans">
-                {item.response.answer}
+              <div className="min-w-0">
+                <Markdown>{item.response.answer}</Markdown>
               </div>
 
               {/* Citations Grid */}
@@ -213,17 +234,17 @@ export const AskPage: React.FC = () => {
                   <div className="flex items-center justify-between mb-2.5">
                     <span className="text-[11px] font-semibold text-clario-navy uppercase tracking-wider flex items-center space-x-1.5">
                       <Bookmark className="w-3.5 h-3.5 text-clario-gold" />
-                      <span>Verified Citations ({item.response.citations.length})</span>
+                      <span>Source citations ({item.response.citations.length})</span>
                     </span>
                     <span className="text-[10px] text-clario-text-muted">Click to open source page & passage</span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                     {item.response.citations.map((cit) => (
-                      <div
+                      <button type="button"
                         key={cit.citation_id}
                         onClick={() => setSelectedCitation(cit)}
-                        className="p-3 rounded-xl border border-clario-border bg-clario-ivory/60 hover:border-clario-teal/50 hover:bg-clario-ivory transition-all cursor-pointer group flex flex-col justify-between"
+                        className="text-left p-3 rounded-md border border-clario-border bg-clario-ivory/60 hover:border-clario-teal/50 hover:bg-clario-ivory transition-all cursor-pointer group flex flex-col justify-between"
                       >
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center space-x-2 truncate">
@@ -248,7 +269,7 @@ export const AskPage: React.FC = () => {
                             <ChevronRight className="w-3 h-3" />
                           </span>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -257,8 +278,9 @@ export const AskPage: React.FC = () => {
           </div>
         ))}
 
+        {pendingQuery && <div className="flex justify-end"><p className="max-w-xl whitespace-pre-wrap break-words bg-clario-navy text-white p-4 rounded-md text-sm">{pendingQuery}</p></div>}
         {loading && (
-          <div className="bg-white rounded-2xl border border-clario-border p-6 shadow-subtle flex items-center space-x-3 text-xs text-clario-text-secondary animate-pulse">
+          <div className="bg-white rounded-md border border-clario-border p-6 shadow-subtle flex items-center space-x-3 text-xs text-clario-text-secondary animate-pulse">
             <SearchCheck className="w-5 h-5 text-clario-teal animate-spin" />
             <span>Retrieving relevant passages and synthesizing evidence...</span>
           </div>
@@ -276,18 +298,18 @@ export const AskPage: React.FC = () => {
           }}
           className="flex items-center space-x-2"
         >
-          <input
-            type="text"
+          <textarea
+            rows={3} disabled={loading || loadingHistory}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ask anything about policies, contracts, findings, or research..."
-            aria-label="Question about your documents" className="min-w-0 flex-1 text-xs px-3.5 py-2.5 rounded-lg border border-clario-border bg-clario-ivory focus:outline-none focus:border-clario-teal text-clario-text"
+            aria-label="Question about your documents" className="min-w-0 flex-1 text-xs px-3.5 py-2.5 rounded-md border border-clario-border bg-clario-ivory focus:outline-none focus:border-clario-teal text-clario-text"
           />
           <Button
             type="submit"
             variant="primary"
             size="md"
-            disabled={!query.trim() || loading}
+            disabled={!query.trim() || loading || loadingHistory}
             loading={loading}
           >
             <Send className="w-4 h-4 mr-1.5" />

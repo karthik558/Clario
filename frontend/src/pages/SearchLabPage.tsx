@@ -1,3 +1,4 @@
+import { Select } from '../components/ui/Select';
 import React, { useState } from 'react';
 import {
   FlaskConical,
@@ -68,10 +69,10 @@ export const SearchLabPage: React.FC = () => {
         </div>
 
         {/* View Switcher Tabs */}
-        <div className="flex bg-white rounded-xl p-1 border border-clario-border text-xs">
+        <div className="flex bg-white rounded-md p-1 border border-clario-border text-xs">
           <button
             aria-pressed={activeTab === 'methods'} onClick={() => setActiveTab('methods')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
               activeTab === 'methods'
                 ? 'bg-clario-navy text-white shadow-xs'
                 : 'text-clario-text-secondary hover:text-clario-text'
@@ -84,7 +85,7 @@ export const SearchLabPage: React.FC = () => {
               setActiveTab('benchmark');
               if (!benchmark) handleRunAcademicBenchmark();
             }}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
               activeTab === 'benchmark'
                 ? 'bg-clario-navy text-white shadow-xs'
                 : 'text-clario-text-secondary hover:text-clario-text'
@@ -108,20 +109,20 @@ export const SearchLabPage: React.FC = () => {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Enter query to evaluate across BM25, Vector, and Hybrid..."
-                    className="w-full text-xs pl-10 pr-4 py-2.5 rounded-lg border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+                    className="w-full text-xs pl-10 pr-4 py-2.5 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
                   />
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-xs text-clario-text-secondary whitespace-nowrap">Top-K:</span>
-                  <select
+                  <Select
                     aria-label="Number of search results" value={topK}
                     onChange={(e) => setTopK(Number(e.target.value))}
-                    className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-2"
+                    className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-2"
                   >
                     <option value={3}>3</option>
                     <option value={5}>5</option>
                     <option value={8}>8</option>
-                  </select>
+                  </Select>
                   <Button variant="primary" size="md" type="submit" loading={loadingSearch}>
                     Evaluate Retrieval
                   </Button>
@@ -195,7 +196,7 @@ export const SearchLabPage: React.FC = () => {
               {/* 3-Column Method Comparison Table */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Method A: BM25 */}
-                <div className="bg-white rounded-xl border border-clario-border p-4 shadow-subtle flex flex-col">
+                <div className="bg-white rounded-md border border-clario-border p-4 shadow-subtle flex flex-col">
                   <div className="flex items-center justify-between pb-3 border-b border-clario-border mb-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
@@ -205,7 +206,7 @@ export const SearchLabPage: React.FC = () => {
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                     {comparison.bm25_results.map((r) => (
-                      <div key={r.chunk_id} className="p-3 rounded-lg border border-clario-border bg-clario-ivory/50">
+                      <div key={r.chunk_id} className="p-3 rounded-md border border-clario-border bg-clario-ivory/50">
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className="font-semibold text-clario-navy truncate max-w-[140px]">{r.document_title}</span>
                           <span className="font-mono text-blue-700">Rank #{r.rank} &bull; {r.score}</span>
@@ -219,7 +220,7 @@ export const SearchLabPage: React.FC = () => {
                 </div>
 
                 {/* Method B: Semantic Vector */}
-                <div className="bg-white rounded-xl border border-clario-border p-4 shadow-subtle flex flex-col">
+                <div className="bg-white rounded-md border border-clario-border p-4 shadow-subtle flex flex-col">
                   <div className="flex items-center justify-between pb-3 border-b border-clario-border mb-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
@@ -229,7 +230,7 @@ export const SearchLabPage: React.FC = () => {
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                     {comparison.vector_results.map((r) => (
-                      <div key={r.chunk_id} className="p-3 rounded-lg border border-clario-border bg-clario-ivory/50">
+                      <div key={r.chunk_id} className="p-3 rounded-md border border-clario-border bg-clario-ivory/50">
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className="font-semibold text-clario-navy truncate max-w-[140px]">{r.document_title}</span>
                           <span className="font-mono text-purple-700">Rank #{r.rank} &bull; {r.score}</span>
@@ -243,7 +244,7 @@ export const SearchLabPage: React.FC = () => {
                 </div>
 
                 {/* Method C: Hybrid RRF */}
-                <div className="bg-white rounded-xl border-2 border-clario-teal p-4 shadow-card flex flex-col">
+                <div className="bg-white rounded-md border-2 border-clario-teal p-4 shadow-card flex flex-col">
                   <div className="flex items-center justify-between pb-3 border-b border-clario-teal/30 mb-3">
                     <div className="flex items-center space-x-2">
                       <SearchCheck className="w-4 h-4 text-clario-gold" />
@@ -253,7 +254,7 @@ export const SearchLabPage: React.FC = () => {
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                     {comparison.hybrid_results.map((r) => (
-                      <div key={r.chunk_id} className="p-3 rounded-lg border border-clario-teal/40 bg-clario-teal/5">
+                      <div key={r.chunk_id} className="p-3 rounded-md border border-clario-teal/40 bg-clario-teal/5">
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className="font-semibold text-clario-navy truncate max-w-[140px]">{r.document_title}</span>
                           <span className="font-mono text-clario-teal font-bold">Rank #{r.rank} &bull; {r.score}</span>
@@ -304,7 +305,7 @@ export const SearchLabPage: React.FC = () => {
                   </h4>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border border-clario-border rounded-xl overflow-hidden">
+                    <table className="w-full text-xs text-left border border-clario-border rounded-md overflow-hidden">
                       <thead className="bg-clario-ivory text-clario-navy font-semibold">
                         <tr>
                           <th className="p-3">Retrieval Engine</th>
@@ -393,7 +394,7 @@ export const SearchLabPage: React.FC = () => {
                   </h4>
                   <div className="space-y-3">
                     {benchmark.queries.map((q) => (
-                      <div key={q.query_id} className="p-3.5 rounded-xl border border-clario-border bg-white text-xs space-y-2">
+                      <div key={q.query_id} className="p-3.5 rounded-md border border-clario-border bg-white text-xs space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-clario-navy">
                             Query [{q.query_id}]: "{q.query_text}"

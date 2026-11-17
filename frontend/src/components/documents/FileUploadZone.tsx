@@ -85,7 +85,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={e => { if (e.target !== fileInputRef.current) fileInputRef.current?.click(); }}
-          className={`border-2 border-dashed rounded-2xl transition-all cursor-pointer text-center ${
+          className={`border-2 border-dashed rounded-md transition-all cursor-pointer text-center ${
             compact ? 'p-6' : 'p-8'
           } ${
             isDragging
@@ -104,7 +104,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
               }
             }}
           />
-          <div className="w-12 h-12 rounded-xl bg-clario-teal/10 text-clario-teal flex items-center justify-center mx-auto mb-3 shadow-xs">
+          <div className="w-12 h-12 rounded-md bg-clario-teal/10 text-clario-teal flex items-center justify-center mx-auto mb-3 shadow-xs">
             <UploadCloud className="w-6 h-6" />
           </div>
           <h4 className="text-sm font-semibold text-clario-text tracking-tight mb-1">
@@ -115,10 +115,10 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
           </p>
         </div>
       ) : (
-        <div className="border border-clario-teal/40 rounded-2xl p-5 bg-clario-ivory-card shadow-subtle animate-in fade-in">
+        <div className="border border-clario-teal/40 rounded-md p-5 bg-clario-ivory-card shadow-subtle animate-in fade-in">
           <div className="flex items-center justify-between pb-3 border-b border-clario-border mb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-lg bg-clario-teal/15 text-clario-teal flex items-center justify-center">
+              <div className="w-9 h-9 rounded-md bg-clario-teal/15 text-clario-teal flex items-center justify-center">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
@@ -146,7 +146,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-lg border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+                className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
               />
             </div>
             <div>
@@ -158,7 +158,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
                 value={collection}
                 onChange={(e) => setCollection(e.target.value)}
                 placeholder="e.g. Policies, Contracts"
-                className="w-full text-xs px-3 py-2 rounded-lg border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+                className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
               />
             </div>
             <div>
@@ -170,7 +170,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="compliance, 2024, audit"
-                className="w-full text-xs px-3 py-2 rounded-lg border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+                className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
               />
             </div>
           </div>
@@ -187,14 +187,14 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
       )}
 
       {error && (
-        <div className="mt-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2 animate-in fade-in">
+        <div className="mt-3 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2 animate-in fade-in">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="mt-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2 animate-in fade-in">
+        <div className="mt-3 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{successMsg}</span>
         </div>

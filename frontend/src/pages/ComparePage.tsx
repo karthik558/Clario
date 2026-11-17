@@ -1,3 +1,4 @@
+import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
 import {
   GitCompare,
@@ -22,7 +23,16 @@ export const ComparePage: React.FC = () => {
   const [docBId, setDocBId] = useState<string>('');
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [promotedIndex, setPromotedIndex] = useState<number | null>(null);
+  const [promotedIndices, setPromotedIndices] = useState<number[]>([]);
+  const [promoting, setPromoting] = useState(false);
+  const [error, setError] = useState('');
+
+  const changeDocument = (side: 'a' | 'b', value: string) => {
+    (side === 'a' ? setDocAId : setDocBId)(value);
+    setComparison(null);
+    setPromotedIndices([]);
+    setError('');
+  };
 
   useEffect(() => {
     const loadDocs = async () => {
@@ -42,7 +52,7 @@ export const ComparePage: React.FC = () => {
           }
         }
       } catch (err) {
-        console.error(err);
+        setError('Documents could not be loaded. Please try again.');
       }
     };
     loadDocs();
@@ -52,17 +62,22 @@ export const ComparePage: React.FC = () => {
     if (!docAId || !docBId || docAId === docBId) return;
     setLoading(true);
     setComparison(null);
+    setPromotedIndices([]);
+    setError('');
     try {
       const data = await api.compareDocuments(docAId, docBId);
       setComparison(data);
     } catch (err) {
-      console.error(err);
+      setError('The comparison could not be completed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handlePromoteFinding = async (cand: ContradictionCandidate, index: number) => {
+    if (!comparison || promoting || promotedIndices.includes(index)) return;
+    setPromoting(true);
+    setError('');
     try {
       await api.createFinding({
         category: 'possible_contradiction',
@@ -70,19 +85,21 @@ export const ComparePage: React.FC = () => {
         description: cand.explanation,
         severity: cand.confidence === 'high' ? 'high' : 'medium',
         status: 'open',
-        doc_a_id: docAId,
+        doc_a_id: comparison.doc_a.id,
         doc_a_title: comparison?.doc_a.title,
         doc_a_page: cand.page_a,
         doc_a_quote: cand.statement_a,
-        doc_b_id: docBId,
+        doc_b_id: comparison.doc_b.id,
         doc_b_title: comparison?.doc_b.title,
         doc_b_page: cand.page_b,
         doc_b_quote: cand.statement_b,
         reviewer_notes: 'Promoted directly from Comparative Diff Workbench.'
       });
-      setPromotedIndex(index);
+      setPromotedIndices(previous => [...previous, index]);
     } catch (err) {
-      console.error(err);
+      setError('The finding could not be saved. Please try again.');
+    } finally {
+      setPromoting(false);
     }
   };
 
@@ -106,9 +123,10 @@ export const ComparePage: React.FC = () => {
             <label htmlFor="docAId" className="block text-[11px] font-semibold text-clario-navy uppercase tracking-wider mb-1.5">
               Document A (Base / Prior Version)
             </label>
-            <select id="docAId" value={docAId}
-              onChange={(e) => setDocAId(e.target.value)}
-              className="w-full text-xs bg-white border border-clario-border rounded-lg px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium"
+            <Select id="docAId" value={docAId}
+              disabled={loading || promoting}
+              onChange={(e) => changeDocument('a', e.target.value)}
+              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium"
             >
               <option value="">Select Document A</option>
               {documents.map((d) => (
@@ -116,7 +134,7 @@ export const ComparePage: React.FC = () => {
                   {d.title} ({d.file_type.toUpperCase()})
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Compare Action Button in Middle */}
@@ -124,7 +142,7 @@ export const ComparePage: React.FC = () => {
             <Button
               variant="secondary"
               size="md"
-              disabled={!docAId || !docBId || docAId === docBId || loading}
+              disabled={!docAId || !docBId || docAId === docBId || loading || promoting}
               loading={loading}
               onClick={handleCompare}
               className="w-full"
@@ -139,9 +157,10 @@ export const ComparePage: React.FC = () => {
             <label htmlFor="docBId" className="block text-[11px] font-semibold text-clario-navy uppercase tracking-wider mb-1.5">
               Document B (Target / Revised Version)
             </label>
-            <select id="docBId" value={docBId}
-              onChange={(e) => setDocBId(e.target.value)}
-              className="w-full text-xs bg-white border border-clario-border rounded-lg px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium"
+            <Select id="docBId" value={docBId}
+              disabled={loading || promoting}
+              onChange={(e) => changeDocument('b', e.target.value)}
+              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium"
             >
               <option value="">Select Document B</option>
               {documents.map((d) => (
@@ -149,7 +168,7 @@ export const ComparePage: React.FC = () => {
                   {d.title} ({d.file_type.toUpperCase()})
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 
@@ -159,6 +178,8 @@ export const ComparePage: React.FC = () => {
           </p>
         )}
       </Card>
+
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
       {/* Comparison Analysis Results */}
       {comparison && (
@@ -235,7 +256,7 @@ export const ComparePage: React.FC = () => {
                 {comparison.contradiction_candidates.map((cand, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-xl bg-white border border-amber-200 shadow-xs space-y-3"
+                    className="p-4 rounded-md bg-white border border-amber-200 shadow-xs space-y-3"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -243,12 +264,12 @@ export const ComparePage: React.FC = () => {
                         <Badge variant="gold" size="sm">Confidence: {cand.confidence}</Badge>
                       </div>
                       <Button
-                        variant={promotedIndex === idx ? 'outline' : 'secondary'}
+                        variant={promotedIndices.includes(idx) ? 'outline' : 'secondary'}
                         size="sm"
-                        disabled={promotedIndex === idx}
+                        disabled={promoting || promotedIndices.includes(idx)}
                         onClick={() => handlePromoteFinding(cand, idx)}
                       >
-                        {promotedIndex === idx ? (
+                        {promotedIndices.includes(idx) ? (
                           <>
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mr-1" />
                             <span>Promoted to Findings</span>
@@ -267,7 +288,7 @@ export const ComparePage: React.FC = () => {
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                      <div className="p-3 rounded-lg bg-rose-50/60 border border-rose-200">
+                      <div className="p-3 rounded-md bg-rose-50/60 border border-rose-200">
                         <span className="text-[10px] font-semibold text-rose-800 uppercase block mb-1">
                           {comparison.doc_a.title} (Page {cand.page_a})
                         </span>
@@ -276,7 +297,7 @@ export const ComparePage: React.FC = () => {
                         </p>
                       </div>
 
-                      <div className="p-3 rounded-lg bg-emerald-50/60 border border-emerald-200">
+                      <div className="p-3 rounded-md bg-emerald-50/60 border border-emerald-200">
                         <span className="text-[10px] font-semibold text-emerald-800 uppercase block mb-1">
                           {comparison.doc_b.title} (Page {cand.page_b})
                         </span>
@@ -316,7 +337,7 @@ export const ComparePage: React.FC = () => {
             {/* Split Screen Container */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Left Column: Doc A */}
-              <div className="border border-clario-border rounded-xl bg-white overflow-hidden shadow-subtle flex flex-col">
+              <div className="border border-clario-border rounded-md bg-white overflow-hidden shadow-subtle flex flex-col">
                 <div className="p-3 bg-clario-navy text-white text-xs font-semibold flex items-center justify-between">
                   <span className="truncate max-w-xs">{comparison.doc_a.title}</span>
                   <Badge variant="sage" size="sm">{comparison.doc_a.file_type.toUpperCase()}</Badge>
@@ -352,7 +373,7 @@ export const ComparePage: React.FC = () => {
               </div>
 
               {/* Right Column: Doc B */}
-              <div className="border border-clario-border rounded-xl bg-white overflow-hidden shadow-subtle flex flex-col">
+              <div className="border border-clario-border rounded-md bg-white overflow-hidden shadow-subtle flex flex-col">
                 <div className="p-3 bg-clario-teal text-white text-xs font-semibold flex items-center justify-between">
                   <span className="truncate max-w-xs">{comparison.doc_b.title}</span>
                   <Badge variant="navy" size="sm">{comparison.doc_b.file_type.toUpperCase()}</Badge>

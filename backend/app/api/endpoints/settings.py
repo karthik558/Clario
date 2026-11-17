@@ -1,9 +1,11 @@
 import httpx
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Literal
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text, inspect
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+from urllib.parse import urlsplit
+from app.services.settings_service import save_settings
 
 from app.core.config import settings
 from app.database.session import get_db, engine
@@ -12,15 +14,32 @@ from app.services.search_service import search_service
 router = APIRouter()
 
 class SettingsUpdateRequest(BaseModel):
-    llm_provider: Optional[str] = None
+    llm_provider: Optional[Literal["extractive", "ollama", "gemini", "openai"]] = None
     ollama_base_url: Optional[str] = None
-    ollama_model: Optional[str] = None
+    ollama_model: Optional[str] = Field(default=None, min_length=1, max_length=200)
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
-    bm25_k1: Optional[float] = None
-    bm25_b: Optional[float] = None
-    rrf_k: Optional[int] = None
-    default_top_k: Optional[int] = None
+    bm25_k1: Optional[float] = Field(default=None, gt=0, le=10, allow_inf_nan=False)
+    bm25_b: Optional[float] = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+    rrf_k: Optional[int] = Field(default=None, ge=1, le=1000)
+    default_top_k: Optional[int] = Field(default=None, ge=1, le=50)
+
+    @field_validator("ollama_base_url")
+    @classmethod
+    def valid_ollama_url(cls, value):
+        if value is None:
+            return value
+        parsed = urlsplit(value.strip())
+        if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError("Enter an HTTP(S) server URL without credentials, query, or fragment")
+        return value.strip().rstrip("/")
+
+    @field_validator("ollama_model")
+    @classmethod
+    def nonempty_model(cls, value):
+        if value is not None and not value.strip():
+            raise ValueError("Model name is required")
+        return value.strip() if value is not None else value
 
 @router.get("/settings")
 def get_system_settings():
@@ -44,33 +63,16 @@ def get_system_settings():
 
 @router.post("/settings")
 def update_system_settings(data: SettingsUpdateRequest, db: Session = Depends(get_db)):
-    if data.llm_provider is not None:
-        settings.LLM_PROVIDER = data.llm_provider
-    if data.ollama_base_url is not None:
-        settings.OLLAMA_BASE_URL = data.ollama_base_url
-    if data.ollama_model is not None:
-        settings.OLLAMA_MODEL = data.ollama_model
+    save_settings(db, data.model_dump(exclude_none=True))
+    # Existing credential updates stay in memory; never include secrets in the database explorer.
     if data.gemini_api_key is not None:
         settings.GEMINI_API_KEY = data.gemini_api_key
     if data.openai_api_key is not None:
         settings.OPENAI_API_KEY = data.openai_api_key
-    if data.bm25_k1 is not None:
-        settings.BM25_K1 = data.bm25_k1
-        search_service.bm25_engine.k1 = data.bm25_k1
-    if data.bm25_b is not None:
-        settings.BM25_B = data.bm25_b
-        search_service.bm25_engine.b = data.bm25_b
-    if data.rrf_k is not None:
-        settings.RRF_K = data.rrf_k
-        search_service.hybrid_engine.rrf_k = data.rrf_k
-    if data.default_top_k is not None:
-        settings.DEFAULT_TOP_K = data.default_top_k
-
-    search_service.reload_index(db)
 
     return {
         "status": "success",
-        "message": "Settings updated successfully.",
+        "message": "Settings saved to the database.",
         "settings": {
             "llm_provider": settings.LLM_PROVIDER,
             "ollama_base_url": settings.OLLAMA_BASE_URL,
@@ -103,14 +105,15 @@ def check_ollama_status():
                     "active_model": settings.OLLAMA_MODEL,
                     "message": f"Connected to Ollama. {len(models)} model(s) available."
                 }
-    except Exception as e:
-        return {
-            "running": False,
-            "url": settings.OLLAMA_BASE_URL,
-            "models": [],
-            "active_model": settings.OLLAMA_MODEL,
-            "message": f"Could not reach Ollama at {settings.OLLAMA_BASE_URL}. Ensure 'ollama serve' is active."
-        }
+    except (httpx.HTTPError, ValueError, TypeError):
+        pass
+    return {
+        "running": False,
+        "url": settings.OLLAMA_BASE_URL,
+        "models": [],
+        "active_model": settings.OLLAMA_MODEL,
+        "message": f"Could not reach Ollama at {settings.OLLAMA_BASE_URL}. Start Ollama and check the saved server address."
+    }
 
 @router.get("/settings/database/tables")
 def get_database_tables():

@@ -1,3 +1,5 @@
+import { workspaceDate } from '../utils/date';
+import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
 import {
   FileText,
@@ -15,6 +17,7 @@ import { ReportItem, DocumentItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { Markdown } from '../components/ui/Markdown';
 import { Modal } from '../components/ui/Modal';
 
 export const ReportsPage: React.FC = () => {
@@ -24,6 +27,8 @@ export const ReportsPage: React.FC = () => {
   const [generating, setGenerating] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
+
+  const [error, setError] = useState('');
 
   // Form State
   const [title, setTitle] = useState('');
@@ -44,7 +49,7 @@ export const ReportsPage: React.FC = () => {
         setSelectedDocIds(docsData.slice(0, 2).map((d) => d.id));
       }
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : 'The report could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -58,20 +63,22 @@ export const ReportsPage: React.FC = () => {
     e.preventDefault();
     if (!title.trim()) return;
 
+    setError('');
     setGenerating(true);
     try {
-      await api.createReport({
+      const report = await api.createReport({
         title,
         report_type: reportType,
         document_ids: selectedDocIds,
         custom_notes: customNotes
       });
       setShowGenerateModal(false);
+      setSelectedReport(report);
       setTitle('');
       setCustomNotes('');
       fetchReports();
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : 'The report could not be loaded.');
     } finally {
       setGenerating(false);
     }
@@ -86,7 +93,7 @@ export const ReportsPage: React.FC = () => {
             <span>Intelligence Reports & Dossiers</span>
           </h2>
           <p className="text-xs text-clario-text-secondary">
-            Generate publication-quality executive summaries, comparative audits, and methodology reports
+            Export selected documents, saved comparisons, findings, and reviewer notes as a PDF.
           </p>
         </div>
 
@@ -103,6 +110,7 @@ export const ReportsPage: React.FC = () => {
         </Button>
       </div>
 
+      {error && !showGenerateModal && <p role="alert" className="rounded-md p-3 text-sm text-rose-800 bg-rose-50">{error}</p>}
       {/* Reports Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
@@ -154,7 +162,7 @@ export const ReportsPage: React.FC = () => {
               >
                 <span className="text-[10px] text-clario-text-muted flex items-center space-x-1">
                   <Calendar className="w-3 h-3" />
-                  <span>{new Date(rep.created_at).toLocaleDateString()}</span>
+                  <span>{workspaceDate(rep.created_at).toLocaleDateString()}</span>
                 </span>
 
                 <div className="flex items-center space-x-2">
@@ -187,11 +195,12 @@ export const ReportsPage: React.FC = () => {
       {/* Generation Modal */}
       <Modal
         isOpen={showGenerateModal}
-        onClose={() => setShowGenerateModal(false)}
+        onClose={() => { if (!generating) setShowGenerateModal(false); }}
         title="Generate Official Intelligence Report"
         maxWidth="lg"
       >
         <form onSubmit={handleGenerate} className="space-y-4 text-xs">
+          {error && <p role="alert" className="text-rose-800">{error}</p>}
           <div>
             <label htmlFor="title" className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
               Report Title
@@ -200,7 +209,7 @@ export const ReportsPage: React.FC = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full text-xs px-3 py-2 rounded-lg border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
             />
           </div>
 
@@ -208,23 +217,23 @@ export const ReportsPage: React.FC = () => {
             <label htmlFor="reportType" className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
               Report Template Type
             </label>
-            <select id="reportType" value={reportType}
+            <Select id="reportType" value={reportType}
               onChange={(e) => setReportType(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-lg border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
             >
               <option value="comparative">Comparative Version Analysis</option>
               <option value="summary">Document Intelligence Summary</option>
               <option value="contradictions">Contradiction & Compliance Findings</option>
-              <option value="search_benchmark">Search & Retrieval Benchmark Report</option>
+              <option value="search_benchmark">Recorded Search Performance</option>
               <option value="research_dossier">Comprehensive Research Dossier</option>
-            </select>
+            </Select>
           </div>
 
           <div>
             <label className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
-              Scope (Select Analysed Documents)
+              Document scope (none selected = all documents)
             </label>
-            <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-lg border border-clario-border bg-clario-ivory">
+            <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-md border border-clario-border bg-clario-ivory">
               {documents.map((d) => {
                 const isChecked = selectedDocIds.includes(d.id);
                 return (
@@ -256,12 +265,12 @@ export const ReportsPage: React.FC = () => {
               onChange={(e) => setCustomNotes(e.target.value)}
               rows={2}
               placeholder="e.g. Conducted ahead of 2024 compliance audit review."
-              className="w-full text-xs px-3 py-2 rounded-lg border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs px-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
             />
           </div>
 
           <div className="pt-3 border-t border-clario-border flex justify-end space-x-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setShowGenerateModal(false)}>
+            <Button variant="outline" size="sm" type="button" disabled={generating} onClick={() => setShowGenerateModal(false)}>
               Cancel
             </Button>
             <Button variant="primary" size="sm" type="submit" loading={generating}>
@@ -286,7 +295,7 @@ export const ReportsPage: React.FC = () => {
                   {selectedReport.report_type.replace('_', ' ').toUpperCase()}
                 </Badge>
                 <p className="text-[11px] text-clario-text-secondary">
-                  Compiled on {new Date(selectedReport.created_at).toLocaleString()}
+                  Compiled on {workspaceDate(selectedReport.created_at).toLocaleString()}
                 </p>
               </div>
 
@@ -294,10 +303,10 @@ export const ReportsPage: React.FC = () => {
                 <a
                   href={api.getReportDownloadUrl(selectedReport.id)}
                   download={`Clario_${selectedReport.title}.pdf`}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-clario-navy text-white rounded-lg text-xs font-medium hover:bg-clario-navy-light shadow-xs"
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-clario-navy text-white rounded-md text-xs font-medium hover:bg-clario-navy-light shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download ReportLab PDF</span>
+                  <span>Download PDF</span>
                 </a>
               )}
             </div>
@@ -306,7 +315,7 @@ export const ReportsPage: React.FC = () => {
               <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider mb-1">
                 Executive Summary
               </h4>
-              <p className="text-xs text-clario-text leading-relaxed bg-clario-ivory p-3.5 rounded-xl border border-clario-border">
+              <p className="text-xs text-clario-text leading-relaxed bg-clario-ivory p-3.5 rounded-md border border-clario-border">
                 {selectedReport.executive_summary}
               </p>
             </div>
@@ -314,21 +323,32 @@ export const ReportsPage: React.FC = () => {
             {selectedReport.content?.findings_summary && (
               <div>
                 <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider mb-2">
-                  Verified Evidence Findings
+                  Saved findings
                 </h4>
                 <div className="space-y-2">
                   {selectedReport.content.findings_summary.map((f: any, idx: number) => (
-                    <div key={idx} className="p-3 rounded-lg border border-clario-border bg-white">
+                    <div key={idx} className="p-3 rounded-md border border-clario-border bg-white">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-semibold text-clario-navy">[{f.category}] {f.title}</span>
                         <Badge variant={f.severity === 'high' ? 'red' : 'gold'} size="sm">{f.severity}</Badge>
                       </div>
-                      {f.evidence_a && <p className="text-[11px] text-clario-text-secondary italic">"{f.evidence_a}"</p>}
+                      <p className="text-xs text-clario-text-secondary">Review status: {f.status}</p>
+                      {f.evidence_a && <p className="text-sm text-clario-text-secondary">{f.evidence_a}</p>}
+                      {f.evidence_b && <p className="text-sm text-clario-text-secondary">{f.evidence_b}</p>}
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            <section className="space-y-2">
+              <h4 className="font-semibold text-clario-navy">Documents in this report</h4>
+              <ul className="list-disc pl-5 space-y-1">{selectedReport.content?.documents_analyzed?.map((doc: any) => <li key={doc.id}>{doc.title} · {doc.pages} pages</li>)}</ul>
+            </section>
+            {selectedReport.content?.source_excerpts?.map((item: any, index: number) => <section key={index} className="space-y-2 border-t border-clario-border pt-4"><h4 className="font-semibold text-clario-navy">{item.document_title} · Page {item.page}</h4><Markdown>{item.text}</Markdown></section>)}
+            {selectedReport.content?.comparisons?.map((item: any, index: number) => <section key={index} className="space-y-2 border-t border-clario-border pt-4"><h4 className="font-semibold text-clario-navy">{item.title}</h4><p className="text-sm leading-relaxed">{item.summary}</p></section>)}
+            {selectedReport.content?.retrieval_runs?.map((item: any, index: number) => <section key={index} className="space-y-1 border-t border-clario-border pt-3"><h4 className="font-semibold text-clario-navy">{item.query}</h4><p>{item.mode} · {item.latency_ms} ms · {item.result_count} results</p></section>)}
+            {selectedReport.content?.custom_notes && <section className="space-y-2 border-t border-clario-border pt-4"><h4 className="font-semibold text-clario-navy">Reviewer notes</h4><p className="text-sm whitespace-pre-wrap">{selectedReport.content.custom_notes}</p></section>}
 
             <div>
               <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider mb-1">
@@ -339,7 +359,7 @@ export const ReportsPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px]">
+            <div className="p-3 rounded-md bg-amber-50 border border-amber-200 text-amber-900 text-[11px]">
               <span className="font-semibold block mb-0.5">Academic Limitations:</span>
               {selectedReport.content?.limitations}
             </div>

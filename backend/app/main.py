@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.logging import setup_logging, logger
-from app.database.session import engine, Base
+from app.database.session import engine, Base, SessionLocal
 from app.database.seed import seed_sample_documents
 from app.api.router import api_router
 
@@ -15,7 +15,11 @@ async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("Initializing Clario database models...")
     Base.metadata.create_all(bind=engine)
-    
+    # Restore persisted public configuration before accepting requests.
+    from app.services.settings_service import load_saved_settings
+    with SessionLocal() as db:
+        load_saved_settings(db)
+
     logger.info("Verifying seed corpus...")
     seed_sample_documents()
 

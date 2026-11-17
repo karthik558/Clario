@@ -140,3 +140,21 @@ class Report(Base):
     document_ids_json = Column(Text, default="[]")
     pdf_path = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AppConfiguration(Base):
+    __tablename__ = "app_configuration"
+
+    id = Column(String(30), primary_key=True, default="workspace")
+    settings_json = Column(Text, nullable=False, default="{}")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class AnswerRecord(Base):
+    __tablename__ = "answer_history"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    query = Column(Text, nullable=False)
+    document_ids_json = Column(Text, nullable=False, default="[]")
+    response_json = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

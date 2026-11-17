@@ -1,3 +1,5 @@
+import { workspaceDate } from '../utils/date';
+import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
 import {
   Search,
@@ -69,7 +71,7 @@ export const DocumentsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {error && <div role="alert" className="p-4 rounded-lg bg-rose-50 text-rose-800 text-sm">{error} <button onClick={fetchDocuments} className="underline">Retry</button></div>}
+      {error && <div role="alert" className="p-4 rounded-md bg-rose-50 text-rose-800 text-sm">{error} <button onClick={fetchDocuments} className="underline">Retry</button></div>}
       {/* Top Action Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -114,7 +116,7 @@ export const DocumentsPage: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search documents by name..."
-              className="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs pl-9 pr-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
             />
           </div>
 
@@ -123,33 +125,33 @@ export const DocumentsPage: React.FC = () => {
             <div className="flex items-center space-x-1.5 text-xs text-clario-text-secondary">
               <Filter className="w-3.5 h-3.5" />
               <span>Status:</span>
-              <select
+              <Select
                 aria-label="Document status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
+                className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-1.5 focus:outline-none"
               >
                 <option value="">All Statuses</option>
                 <option value="READY">Ready</option>
                 <option value="PROCESSING">Processing</option>
                 <option value="ERROR">Error</option>
-              </select>
+              </Select>
             </div>
 
             {collections.length > 0 && (
               <div className="flex items-center space-x-1.5 text-xs text-clario-text-secondary">
                 <span>Collection:</span>
-                <select
+                <Select
                   aria-label="Document collection"
                   value={collectionFilter}
                   onChange={(e) => setCollectionFilter(e.target.value)}
-                  className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
+                  className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-1.5 focus:outline-none"
                 >
                   <option value="">All Collections</option>
                   {collections.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
           </div>
@@ -163,7 +165,7 @@ export const DocumentsPage: React.FC = () => {
             Loading corpus documents...
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="col-span-full text-center py-12 bg-white rounded-2xl border border-clario-border p-8">
+          <div className="col-span-full text-center py-12 bg-white rounded-md border border-clario-border p-8">
             <FileText className="w-8 h-8 text-clario-text-muted mx-auto mb-2" />
             <h4 className="text-sm font-semibold text-clario-text mb-1">No documents found</h4>
             <p className="text-xs text-clario-text-secondary max-w-sm mx-auto mb-4">
@@ -198,7 +200,7 @@ export const DocumentsPage: React.FC = () => {
                   {doc.filename}
                 </p>
 
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-clario-text-secondary bg-clario-ivory p-2.5 rounded-lg border border-clario-border mb-3">
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-clario-text-secondary bg-clario-ivory p-2.5 rounded-md border border-clario-border mb-3">
                   <div>
                     <span className="text-clario-text-muted block text-[10px]">PAGES</span>
                     <span className="font-semibold text-clario-text">{doc.page_count}</span>
@@ -234,7 +236,7 @@ export const DocumentsPage: React.FC = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 <span className="text-[10px] text-clario-text-muted">
-                  {new Date(doc.created_at).toLocaleDateString()}
+                  {workspaceDate(doc.created_at).toLocaleDateString()}
                 </span>
                 <div className="flex items-center space-x-1.5">
                   <a
