@@ -8,7 +8,9 @@ import {
   ReportItem,
   SearchMethodComparison,
   BenchmarkSummary,
-  SystemSettings
+  SystemSettings,
+  OllamaStatus,
+  DBTableInfo
 } from '../types';
 
 const API_BASE = '/api';
@@ -198,6 +200,24 @@ export const api = {
       body: JSON.stringify(settingsData),
     });
     if (!res.ok) throw new Error('Failed to update settings');
+    return res.json();
+  },
+
+  getOllamaStatus: async (): Promise<OllamaStatus> => {
+    const res = await fetch(`${API_BASE}/settings/ollama/status`);
+    if (!res.ok) throw new Error('Failed to check Ollama status');
+    return res.json();
+  },
+
+  getDatabaseTables: async (): Promise<{ database_file: string; tables: DBTableInfo[] }> => {
+    const res = await fetch(`${API_BASE}/settings/database/tables`);
+    if (!res.ok) throw new Error('Failed to fetch tables');
+    return res.json();
+  },
+
+  inspectDatabaseTable: async (tableName: string, limit: number = 25): Promise<{ table: string; columns: string[]; rows: any[] }> => {
+    const res = await fetch(`${API_BASE}/settings/database/table/${tableName}?limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to inspect table');
     return res.json();
   },
 

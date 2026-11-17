@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Briefcase,
   Layers,
-  Sparkles
+  Sparkles,
+  Bot
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,31 +33,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     { name: 'Search Lab', path: '/search-lab', icon: FlaskConical },
     { name: 'Findings', path: '/findings', icon: AlertTriangle },
     { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'Settings & Ollama', path: '/settings', icon: Settings },
   ];
 
   return (
     <aside
-      className={`fixed top-0 bottom-0 left-0 z-30 flex flex-col bg-clario-navy text-white transition-all duration-300 border-r border-clario-navy-light ${
+      className={`fixed top-0 bottom-0 left-0 z-30 flex flex-col bg-[#0F1D30] text-white transition-all duration-300 border-r border-[#1B2F4B] shadow-elevated ${
         collapsed ? 'w-20' : 'w-64'
       }`}
     >
       {/* Brand Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-white/[0.08] bg-[#0C1726]/60 backdrop-blur-xs">
         <div className="flex items-center space-x-3 overflow-hidden">
-          {/* Clario Minimal Layered Document Icon */}
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-clario-teal to-clario-navy-light p-1.5 flex items-center justify-center relative shadow-sm shrink-0">
-            <Layers className="w-5 h-5 text-clario-sage" />
-            <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-clario-gold animate-pulse" />
+          {/* Minimal Layered Document Icon */}
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#477E88] to-[#1E3553] p-2 flex items-center justify-center relative shadow-md shrink-0 border border-white/10">
+            <Layers className="w-5 h-5 text-[#A9D5C3]" />
+            <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#D4AE72] shadow-xs" />
           </div>
 
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-semibold text-lg tracking-tight text-white flex items-center space-x-1">
+              <span className="font-bold text-lg tracking-tight text-white flex items-center space-x-1.5">
                 <span>Clario</span>
-                <span className="text-xs font-normal px-1.5 py-0.5 rounded bg-clario-teal/30 text-clario-sage font-mono">v1.0</span>
               </span>
-              <span className="text-[10px] text-clario-sage-light tracking-wide truncate max-w-[140px]">
+              <span className="text-[10.5px] text-[#A9D5C3]/80 font-medium tracking-wide truncate max-w-[140px]">
                 Every document. A clearer answer.
               </span>
             </div>
@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
         <button
           onClick={onToggle}
-          className="p-1 rounded-md text-clario-sage-light hover:text-white hover:bg-white/10 transition-colors"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -74,31 +74,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
       {/* Workspace Selector */}
       {!collapsed ? (
-        <div className="px-3 py-3 border-b border-white/5">
-          <label className="text-[10px] font-medium tracking-wider uppercase text-clario-sage-light/70 px-2 mb-1 block">
-            Workspace
-          </label>
-          <div className="flex items-center space-x-2 bg-white/5 hover:bg-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white border border-white/10 cursor-pointer transition-colors">
-            <Briefcase className="w-3.5 h-3.5 text-clario-gold" />
-            <select
-              value={workspace}
-              onChange={(e) => setWorkspace(e.target.value)}
-              className="bg-transparent text-white text-xs w-full focus:outline-none cursor-pointer"
-            >
-              <option value="Legal & Compliance" className="bg-clario-navy text-white">Legal & Compliance</option>
-              <option value="Enterprise Policies" className="bg-clario-navy text-white">Enterprise Policies</option>
-              <option value="Research & ML Labs" className="bg-clario-navy text-white">Research & ML Labs</option>
-            </select>
+        <div className="px-3.5 py-3 border-b border-white/[0.06]">
+          <div className="flex items-center space-x-2 bg-white/[0.04] hover:bg-white/[0.08] rounded-xl px-3 py-2 text-xs text-white border border-white/[0.08] transition-all cursor-pointer">
+            <Briefcase className="w-3.5 h-3.5 text-[#D4AE72] shrink-0" />
+            <div className="flex-1 overflow-hidden">
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block -mb-0.5">Workspace</span>
+              <select
+                value={workspace}
+                onChange={(e) => setWorkspace(e.target.value)}
+                className="bg-transparent text-white text-xs font-medium w-full focus:outline-none cursor-pointer truncate"
+              >
+                <option value="Legal & Compliance" className="bg-[#0F1D30] text-white">Legal & Compliance</option>
+                <option value="Enterprise Policies" className="bg-[#0F1D30] text-white">Enterprise Policies</option>
+                <option value="Research & ML Labs" className="bg-[#0F1D30] text-white">Research & ML Labs</option>
+              </select>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="py-3 flex justify-center border-b border-white/5">
-          <Briefcase className="w-4 h-4 text-clario-gold" />
+        <div className="py-3 flex justify-center border-b border-white/[0.06]">
+          <Briefcase className="w-4 h-4 text-[#D4AE72]" />
         </div>
       )}
 
       {/* Navigation Links */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-3 py-3.5 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -106,43 +106,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center space-x-3 px-3 py-2.5 rounded-clario text-sm font-medium transition-all group ${
+                `flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all group ${
                   isActive
-                    ? 'bg-clario-teal text-white shadow-sm border border-clario-teal-light/40'
-                    : 'text-clario-sage-light/80 hover:text-white hover:bg-white/5'
+                    ? 'bg-[#477E88] text-white shadow-card border border-[#A9D5C3]/30 font-semibold'
+                    : 'text-slate-300/80 hover:text-white hover:bg-white/[0.06]'
                 }`
               }
               title={collapsed ? item.name : undefined}
             >
-              <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-105`} />
+              <Icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110`} />
               {!collapsed && <span>{item.name}</span>}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* AI Engine Status Pill */}
+      {/* Ollama / Engine Status Pill */}
       {!collapsed && (
-        <div className="mx-3 mb-3 p-2.5 rounded-lg bg-white/5 border border-white/10 text-xs">
-          <div className="flex items-center space-x-2 text-clario-sage font-medium mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-clario-gold" />
-            <span>Hybrid Retrieval Ready</span>
+        <div className="mx-3.5 mb-3 p-3 rounded-xl bg-gradient-to-br from-white/[0.05] to-white/[0.02] border border-white/[0.08] text-xs">
+          <div className="flex items-center justify-between text-[#A9D5C3] font-semibold mb-1">
+            <span className="flex items-center space-x-1.5">
+              <Bot className="w-3.5 h-3.5 text-[#D4AE72]" />
+              <span>Local Model Enabled</span>
+            </span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
-          <p className="text-[11px] text-clario-sage-light/70 leading-relaxed">
-            BM25 + Semantic Vector Search enabled with zero external cost.
+          <p className="text-[11px] text-slate-300/70 leading-relaxed font-normal">
+            Ollama local inference & hybrid BM25 + dense vectors ready.
           </p>
         </div>
       )}
 
       {/* User Profile */}
-      <div className="p-3 border-t border-white/10 flex items-center space-x-3">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-clario-gold to-clario-sage flex items-center justify-center font-bold text-xs text-clario-navy shrink-0 shadow">
+      <div className="p-3.5 border-t border-white/[0.08] bg-[#0C1726]/40 flex items-center space-x-3">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#D4AE72] to-[#A9D5C3] flex items-center justify-center font-bold text-xs text-[#0F1D30] shrink-0 shadow-md ring-1 ring-white/20">
           AR
         </div>
         {!collapsed && (
           <div className="flex-1 overflow-hidden">
             <p className="text-xs font-semibold text-white truncate">Alex Rivera</p>
-            <p className="text-[10px] text-clario-sage-light/70 truncate">Enterprise Research Analyst</p>
+            <p className="text-[10.5px] text-slate-400 truncate font-medium">Enterprise Intelligence</p>
           </div>
         )}
       </div>

@@ -1,5 +1,6 @@
 import re
 import time
+import httpx
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 
@@ -8,7 +9,6 @@ from app.schemas.dtos import AskRequest, AskResponse, CitationItem
 from app.services.search_service import search_service
 
 def extract_relevant_sentences(query: str, text: str, max_sentences: int = 3) -> List[str]:
-    # Split into sentences
     sentences = re.split(r'(?<=[.!?])\s+', text)
     query_words = set(re.sub(r'[^a-z0-9\s]', '', query.lower()).split())
     scored = []
@@ -68,13 +68,11 @@ class AskService:
         has_conflict = False
         conflict_notes = None
 
-        # Look for differing numeric specs or temporal terms across distinct documents
         doc_snippets = {}
         for c in citations:
             doc_snippets.setdefault(c.document_title, []).append(c.snippet)
 
         if len(doc_snippets) > 1:
-            # Check for numbers associated with days, limits, dollars
             nums_by_doc = {}
             for doc_title, snips in doc_snippets.items():
                 combined = " ".join(snips)
@@ -91,24 +89,31 @@ class AskService:
                     has_conflict = True
                     conflict_notes = f"Discrepancy detected between '{doc_a}' ({', '.join(list(diff_a)[:3])}) and '{doc_b}' ({', '.join(list(diff_b)[:3])})."
 
-        # Check if external LLM configured (Gemini or OpenAI)
-        if settings.LLM_PROVIDER == "gemini" and settings.GEMINI_API_KEY:
+        # Check configured LLM Provider (Ollama local, Gemini, OpenAI, or Extractive)
+        if settings.LLM_PROVIDER == "ollama":
+            try:
+                answer = AskService._generate_ollama_answer(request.query, citations)
+                mode = f"ollama_local ({settings.OLLAMA_MODEL})"
+            except Exception as e:
+                answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
+                mode = f"extractive_synthesis (Ollama offline fallback: {str(e)[:40]}...)"
+        elif settings.LLM_PROVIDER == "gemini" and settings.GEMINI_API_KEY:
             try:
                 answer = AskService._generate_gemini_answer(request.query, citations)
                 mode = "llm_generated (Gemini)"
             except Exception as e:
                 answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-                mode = f"extractive_synthesis (Fallback: {str(e)[:50]})"
+                mode = f"extractive_synthesis (Gemini fallback: {str(e)[:40]})"
         elif settings.LLM_PROVIDER == "openai" and settings.OPENAI_API_KEY:
             try:
                 answer = AskService._generate_openai_answer(request.query, citations)
                 mode = "llm_generated (OpenAI)"
             except Exception as e:
                 answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-                mode = f"extractive_synthesis (Fallback: {str(e)[:50]})"
+                mode = f"extractive_synthesis (OpenAI fallback: {str(e)[:40]})"
         else:
             answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-            mode = "extractive_synthesis (Zero-hallucination local engine)"
+            mode = "extractive_synthesis (Local verified engine)"
 
         synth_latency_ms = round((time.perf_counter() - t_retrieved) * 1000, 2)
 
@@ -124,20 +129,57 @@ class AskService:
         )
 
     @staticmethod
+    def _generate_ollama_answer(query: str, citations: List[CitationItem]) -> str:
+        """
+        Sends grounded context to local Ollama API (http://localhost:11434).
+        """
+        url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
+        context_str = "\n\n".join([
+            f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet}"
+            for c in citations
+        ])
+
+        system_prompt = (
+            "You are Clario, an elite AI Document Intelligence assistant. "
+            "Answer the user's question clearly, precisely, and objectively using ONLY the retrieved document passages below. "
+            "Cite every claim with bracketed source numbers like [1], [2]. "
+            "If the documents state different policies or contain conflicts, explicitly contrast them."
+        )
+
+        prompt = f"""{system_prompt}
+
+Retrieved Document Context:
+{context_str}
+
+User Question: {query}
+
+Provide a well-structured answer with source citations [1], [2]:"""
+
+        payload = {
+            "model": settings.OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.2
+            }
+        }
+
+        with httpx.Client(timeout=45.0) as client:
+            resp = client.post(url, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("response", "").strip()
+
+    @staticmethod
     def _extractive_synthesis(
         query: str,
         citations: List[CitationItem],
         has_conflict: bool,
         conflict_notes: Optional[str]
     ) -> str:
-        """
-        Generates rigorous, evidence-based extractive answers using verbatim retrieved passages.
-        Clearly labels each claim with source citations [1], [2] and outlines topic summaries.
-        """
         lines = []
         lines.append(f"### Evidence Summary for: *\"{query}\"*\n")
 
-        # Group citations by document
         by_doc: Dict[str, List[CitationItem]] = {}
         for c in citations:
             by_doc.setdefault(c.document_title, []).append(c)
@@ -160,8 +202,6 @@ class AskService:
 
     @staticmethod
     def _generate_gemini_answer(query: str, citations: List[CitationItem]) -> str:
-        # Implementation when GEMINI_API_KEY is supplied
-        import httpx
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent?key={settings.GEMINI_API_KEY}"
         context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet}" for c in citations])
         prompt = f"""You are Clario, an AI Document Intelligence assistant. Answer the user's question based strictly on the provided retrieved passages.
@@ -172,14 +212,14 @@ Retrieved Context:
 
 User Question: {query}
 """
-        response = httpx.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=15.0)
-        response.raise_for_status()
-        data = response.json()
-        return data["candidates"][0]["content"]["parts"][0]["text"]
+        with httpx.Client(timeout=15.0) as client:
+            response = client.post(url, json={"contents": [{"parts": [{"text": prompt}]}]})
+            response.raise_for_status()
+            data = response.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"]
 
     @staticmethod
     def _generate_openai_answer(query: str, citations: List[CitationItem]) -> str:
-        import httpx
         url = "https://api.openai.com/v1/chat/completions"
         headers = {"Authorization": f"Bearer {settings.OPENAI_API_KEY}"}
         context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet}" for c in citations])
@@ -196,7 +236,8 @@ Question: {query}
             ],
             "temperature": 0.2
         }
-        response = httpx.post(url, json=payload, headers=headers, timeout=15.0)
-        response.raise_for_status()
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
+        with httpx.Client(timeout=15.0) as client:
+            response = client.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]

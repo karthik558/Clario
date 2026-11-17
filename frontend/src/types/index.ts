@@ -185,6 +185,8 @@ export interface SystemSettings {
   project_name: string;
   tagline: string;
   llm_provider: string;
+  ollama_base_url?: string;
+  ollama_model?: string;
   gemini_api_key?: string;
   openai_api_key?: string;
   gemini_api_key_configured: boolean;
@@ -195,4 +197,19 @@ export interface SystemSettings {
   default_top_k: number;
   chunk_size: number;
   chunk_overlap: number;
+  storage_dir?: string;
+  database_url?: string;
+}
+
+export interface OllamaStatus {
+  running: boolean;
+  url: string;
+  models: string[];
+  active_model: string;
+  message: string;
+}
+
+export interface DBTableInfo {
+  name: string;
+  row_count: number;
 }

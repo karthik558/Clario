@@ -36,7 +36,10 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 150
     
     # AI / LLM Configuration
+    # Options: "extractive", "ollama", "gemini", "openai"
     LLM_PROVIDER: str = "extractive"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2"
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-flash"
