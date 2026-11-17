@@ -10,7 +10,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onOpenNavigation }) => {
   return (
     <header className="h-14 shrink-0 bg-white border-b border-clario-border sticky top-0 z-20 px-4 md:px-8 flex items-center justify-between gap-3 shadow-subtle">
-      <div className="flex items-center space-x-2 text-xs text-clario-text-secondary">
+      <div className="flex items-center space-x-2">
         {onOpenNavigation && (
           <button
             type="button"
@@ -21,9 +21,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onOpenNavigation }
             <Menu className="w-5 h-5" />
           </button>
         )}
-        <span className="font-semibold text-clario-navy text-sm md:text-xs">Clario</span>
-        <span className="text-clario-border hidden sm:inline">/</span>
-        <span className="hidden sm:inline">Intelligence</span>
       </div>
 
       <div className="flex items-center space-x-3">

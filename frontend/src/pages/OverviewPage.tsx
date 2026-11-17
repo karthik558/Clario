@@ -76,7 +76,9 @@ export const OverviewPage: React.FC = () => {
       {/* Top Action Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
         <div>
-          <h2 className="text-xl font-bold text-clario-navy tracking-tight">Overview</h2>
+          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
+            <span>Overview</span>
+          </h2>
           <p className="text-xs text-clario-text-secondary">Workspace metrics, document status, and recent activity</p>
         </div>
         <div className="flex items-center space-x-2">

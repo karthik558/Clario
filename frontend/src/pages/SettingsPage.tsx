@@ -181,10 +181,10 @@ export const SettingsPage: React.FC = () => {
       {error && <p role="alert" className="p-4 rounded-md bg-rose-50 text-rose-800 text-sm">{error}</p>}
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-clario-navy tracking-tight flex items-center space-x-2">
-          <span>Workspace settings</span>
+        <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
+          <span>Workspace Settings</span>
         </h2>
-        <p className="text-xs text-clario-text-secondary mt-0.5">
+        <p className="text-xs text-clario-text-secondary">
           Connect local Ollama models, inspect the SQLite database, and configure retrieval parameters
         </p>
       </div>

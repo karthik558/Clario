@@ -66,8 +66,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-black/50 md:hidden" />}
       <aside ref={sidebarRef} id="workspace-navigation" aria-label="Workspace navigation" className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-open' : ''}`}>
         <div className="flex h-20 shrink-0 items-center gap-3 px-5 border-b border-white/10">
-          <Layers className="w-7 h-7 text-white shrink-0" aria-hidden="true" />
-          <div className="sidebar-label"><span className="text-xl font-semibold tracking-tight text-white">Clario</span><p className="text-xs text-slate-400">Document intelligence</p></div>
+          <a
+            href="https://karthiklal.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 text-white hover:opacity-90 transition-opacity"
+            title="Clario"
+          >
+            <Layers className="w-7 h-7 text-white shrink-0" aria-hidden="true" />
+            <div className="sidebar-label">
+              <span className="text-xl font-semibold tracking-tight text-white">Clario</span>
+            </div>
+          </a>
           <button aria-label="Close navigation" onClick={onCloseMobile} className="md:hidden ml-auto p-2 text-slate-300 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
         <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-1">
@@ -83,7 +93,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="hidden md:flex w-full items-center gap-3 p-3 rounded-md text-slate-300 hover:bg-white/10 hover:text-white text-sm transition-colors">
             {collapsed ? <PanelLeftOpen className="w-5 h-5 shrink-0" /> : <PanelLeftClose className="w-5 h-5 shrink-0" />}<span className="sidebar-label">Collapse navigation</span>
           </button>
-          <p className="sidebar-label px-3 pt-3 pb-2 text-xs text-slate-400">Your documents. Clearer decisions.</p>
+          <div className="sidebar-label px-3 pt-3 pb-2 text-xs text-slate-400">
+            © 2026{' '}
+            <a
+              href="https://karthiklal.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-300 hover:text-white underline transition-colors"
+            >
+              Clario
+            </a>
+            . All rights reserved.
+          </div>
         </div>
       </aside>
     </>

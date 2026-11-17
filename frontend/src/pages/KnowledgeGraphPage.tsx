@@ -278,11 +278,10 @@ export const KnowledgeGraphPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-xl font-bold text-clario-navy tracking-tight flex items-center gap-2">
-            <Network className="w-5 h-5 text-clario-navy" />
+          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
             <span>Interactive Knowledge & Citation Graph</span>
           </h2>
-          <p className="text-xs text-clario-text-secondary mt-0.5">
+          <p className="text-xs text-clario-text-secondary">
             2D semantic topology mapping documents, governing provisions, cross-clause contradictions, and evidence citations
           </p>
         </div>

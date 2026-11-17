@@ -125,11 +125,10 @@ export const NegotiatePage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Scale className="w-5 h-5 text-slate-800" />
+          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
             <span>Clause Redline & Negotiation Studio</span>
           </h2>
-          <p className="text-xs text-slate-600 mt-0.5">
+          <p className="text-xs text-clario-text-secondary">
             Autonomous contract drafting engine bridging discrepancies with balanced, customer-protective, or vendor-favorable stances
           </p>
         </div>

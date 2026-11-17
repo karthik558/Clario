@@ -270,10 +270,10 @@ export const AskPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-xl font-bold text-clario-navy tracking-tight flex items-center space-x-2">
+          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
             <span>Ask Clario</span>
           </h2>
-          <p className="text-xs text-clario-text-secondary mt-0.5">
+          <p className="text-xs text-clario-text-secondary">
             Universal Local AI Gateway: Ask questions across contracts, view step-by-step reasoning, and verify against cited evidence
           </p>
         </div>
