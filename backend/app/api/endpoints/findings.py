@@ -46,6 +46,11 @@ def delete_finding(finding_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Finding not found")
     return {"message": "Finding deleted successfully"}
 
+@router.delete("/findings")
+def clear_all_findings(db: Session = Depends(get_db)):
+    count = FindingService.clear_all_findings(db)
+    return {"message": f"Successfully cleared {count} finding(s).", "cleared_count": count}
+
 @router.post("/findings/scan")
 def trigger_contradiction_scan(db: Session = Depends(get_db)):
     """
@@ -71,11 +76,25 @@ def trigger_contradiction_scan(db: Session = Depends(get_db)):
                         Finding.doc_b_id == doc_b.id
                     ).first()
                     if not existing:
+                        severity = "high"
+                        if "Liability" in cand.topic or "Financial" in cand.topic:
+                            severity = "critical"
+                        elif "Copyright" in cand.topic or "Retention" in cand.topic or "Incident" in cand.topic or "HIPAA" in cand.topic:
+                            severity = "high"
+                        else:
+                            severity = "medium"
+
+                        category = "possible_contradiction"
+                        if "Healthcare" in cand.topic or "Sovereignty" in cand.topic or "Safety" in cand.topic or "Regulatory" in cand.topic:
+                            category = "changed_obligation"
+                        elif "Training" in cand.topic:
+                            category = "agreement"
+
                         f = FindingCreate(
-                            category="possible_contradiction",
+                            category=category,
                             title=cand.topic,
                             description=cand.explanation,
-                            severity="high" if cand.confidence == "high" else "medium",
+                            severity=severity,
                             status="open",
                             doc_a_id=doc_a.id,
                             doc_a_title=doc_a.title,

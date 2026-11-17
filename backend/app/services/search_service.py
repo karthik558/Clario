@@ -103,33 +103,39 @@ class SearchService:
         suite = custom_queries if custom_queries else [
             {
                 "id": "q1",
-                "query": "data retention termination deletion days",
-                "target_keywords": ["retention", "days", "termination"],
-                "target_doc_titles": ["Data Retention", "Retention Policy"]
+                "query": "data retention zero data retention ZDR API storage 30 days",
+                "target_keywords": ["retention", "days", "zdr"],
+                "target_doc_titles": ["OpenAI Policy 2023", "OpenAI Policy 2023 2024 Report", "Policy"]
             },
             {
                 "id": "q2",
-                "query": "limitation of liability cap monetary damages",
-                "target_keywords": ["liability", "capped", "damages"],
-                "target_doc_titles": ["Service Agreement", "Terms of Service"]
+                "query": "limitation of liability aggregate monetary ceiling $100 $250,000 USD damages cap",
+                "target_keywords": ["liability", "ceiling", "cap"],
+                "target_doc_titles": ["OpenAI Policy 2023", "OpenAI Policy 2023 2024 Report", "Policy"]
             },
             {
                 "id": "q3",
-                "query": "differential privacy epsilon synthetic EHR healthcare",
-                "target_keywords": ["differential privacy", "synthetic", "healthcare", "epsilon"],
-                "target_doc_titles": ["Synthetic Data", "EHR Privacy"]
+                "query": "security incident breach notification timeline preliminary alert 72 hours 60 days",
+                "target_keywords": ["breach", "incident", "notification"],
+                "target_doc_titles": ["OpenAI Policy 2023", "OpenAI Policy 2023 2024 Report", "Report"]
             },
             {
                 "id": "q4",
-                "query": "employee personal data processing GDPR obligations",
-                "target_keywords": ["employee", "privacy", "gdpr", "processing"],
-                "target_doc_titles": ["Privacy", "Compliance"]
+                "query": "intellectual property copyright shield infringement legal defense warranty",
+                "target_keywords": ["copyright", "shield", "indemnification"],
+                "target_doc_titles": ["OpenAI Policy 2023 2024 Report", "Report"]
             },
             {
                 "id": "q5",
-                "query": "conflicting notice period breach indemnification",
-                "target_keywords": ["notice", "breach", "indemnification"],
-                "target_doc_titles": ["Agreement", "Contract"]
+                "query": "HIPAA business associate agreement BAA healthcare compliance",
+                "target_keywords": ["hipaa", "baa", "healthcare"],
+                "target_doc_titles": ["OpenAI Policy 2023 2024 Report", "Report"]
+            },
+            {
+                "id": "q6",
+                "query": "sovereign data residency EU data boundary GDPR processing mesh",
+                "target_keywords": ["residency", "boundary", "gdpr"],
+                "target_doc_titles": ["OpenAI Policy 2023 2024 Report", "Report"]
             }
         ]
 

@@ -177,6 +177,12 @@ export const api = {
     if (!res.ok) throw new Error('Failed to delete finding');
   },
 
+  clearAllFindings: async (): Promise<{ message: string; cleared_count: number }> => {
+    const res = await fetch(`${API_BASE}/findings`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to clear findings');
+    return res.json();
+  },
+
   scanContradictions: async () => {
     const res = await fetch(`${API_BASE}/findings/scan`, { method: 'POST' });
     if (!res.ok) throw new Error('Scan failed');
@@ -197,6 +203,17 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) { const error = await res.json().catch(() => ({})); throw new Error(typeof error.detail === 'string' ? error.detail : 'Report generation failed. Check the title and document scope.'); }
+    return res.json();
+  },
+
+  deleteReport: async (id: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/reports/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete report');
+  },
+
+  clearAllReports: async (): Promise<{ message: string; cleared_count: number }> => {
+    const res = await fetch(`${API_BASE}/reports`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to clear reports');
     return res.json();
   },
 

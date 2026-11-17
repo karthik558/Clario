@@ -260,3 +260,31 @@ class ReportService:
     @staticmethod
     def get_report(report_id: str, db: Session) -> Optional[Report]:
         return db.query(Report).filter(Report.id == report_id).first()
+
+    @staticmethod
+    def delete_report(report_id: str, db: Session) -> bool:
+        report = db.query(Report).filter(Report.id == report_id).first()
+        if not report:
+            return False
+        if report.pdf_path and os.path.exists(report.pdf_path):
+            try:
+                os.remove(report.pdf_path)
+            except OSError:
+                pass
+        db.delete(report)
+        db.commit()
+        return True
+
+    @staticmethod
+    def clear_all_reports(db: Session) -> int:
+        reports = db.query(Report).all()
+        count = len(reports)
+        for r in reports:
+            if r.pdf_path and os.path.exists(r.pdf_path):
+                try:
+                    os.remove(r.pdf_path)
+                except OSError:
+                    pass
+            db.delete(r)
+        db.commit()
+        return count

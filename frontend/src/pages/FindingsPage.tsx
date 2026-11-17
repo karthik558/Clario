@@ -13,7 +13,8 @@ import {
   SearchCheck,
   Check,
   X,
-  FileText
+  FileText,
+  Trash2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { FindingItem } from '../types';
@@ -25,6 +26,7 @@ export const FindingsPage: React.FC = () => {
   const [findings, setFindings] = useState<FindingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [severityFilter, setSeverityFilter] = useState('');
@@ -40,6 +42,20 @@ export const FindingsPage: React.FC = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClearAllFindings = async () => {
+    if (window.confirm('Are you sure you want to clear all reviewable findings?')) {
+      setClearing(true);
+      try {
+        await api.clearAllFindings();
+        setFindings([]);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setClearing(false);
+      }
     }
   };
 
@@ -118,15 +134,29 @@ export const FindingsPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleTriggerScan}
-          loading={scanning}
-        >
-          <Scan className="w-4 h-4 mr-1.5" />
-          {scanning ? 'Scanning Corpus...' : 'Run Contradiction Scan'}
-        </Button>
+        <div className="flex items-center space-x-2">
+          {findings.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearAllFindings}
+              disabled={clearing || scanning}
+              className="text-rose-600 border-rose-200 hover:bg-rose-50"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              {clearing ? 'Clearing…' : 'Clear All Findings'}
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleTriggerScan}
+            loading={scanning}
+          >
+            <Scan className="w-4 h-4 mr-1.5" />
+            {scanning ? 'Scanning Corpus...' : 'Run Aggressive Contradiction Scan'}
+          </Button>
+        </div>
       </div>
 
       {/* Filter Ribbon */}

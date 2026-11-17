@@ -70,3 +70,15 @@ def download_report_pdf(report_id: str, db: Session = Depends(get_db)):
         filename=f"Clario_Report_{report.title.replace(' ', '_')}.pdf",
         media_type="application/pdf"
     )
+
+@router.delete("/reports/{report_id}")
+def delete_report(report_id: str, db: Session = Depends(get_db)):
+    success = ReportService.delete_report(report_id, db)
+    if not success:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return {"message": "Report deleted successfully"}
+
+@router.delete("/reports")
+def clear_all_reports(db: Session = Depends(get_db)):
+    count = ReportService.clear_all_reports(db)
+    return {"message": f"Successfully cleared {count} report(s).", "cleared_count": count}

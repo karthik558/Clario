@@ -10,7 +10,8 @@ import {
   Layers,
   ShieldCheck,
   Eye,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { ReportItem, DocumentItem } from '../types';
@@ -25,6 +26,7 @@ export const ReportsPage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
 
@@ -52,6 +54,35 @@ export const ReportsPage: React.FC = () => {
       setError(err instanceof Error ? err.message : 'The report could not be loaded.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClearAllReports = async () => {
+    if (window.confirm('Are you sure you want to clear all generated reports? This will remove all previous dossiers.')) {
+      setClearing(true);
+      setError('');
+      try {
+        await api.clearAllReports();
+        setReports([]);
+        setSelectedReport(null);
+      } catch (err) {
+        setError('Failed to clear reports. Please try again.');
+      } finally {
+        setClearing(false);
+      }
+    }
+  };
+
+  const handleDeleteReport = async (reportId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Delete this report?')) {
+      try {
+        await api.deleteReport(reportId);
+        if (selectedReport?.id === reportId) setSelectedReport(null);
+        setReports(prev => prev.filter(r => r.id !== reportId));
+      } catch (err) {
+        setError('Could not delete report.');
+      }
     }
   };
 
@@ -97,17 +128,31 @@ export const ReportsPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => {
-            setTitle(`Executive Intelligence Audit - ${new Date().toLocaleDateString()}`);
-            setShowGenerateModal(true);
-          }}
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          Generate New Report
-        </Button>
+        <div className="flex items-center space-x-2">
+          {reports.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearAllReports}
+              disabled={clearing}
+              className="text-rose-600 border-rose-200 hover:bg-rose-50"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              {clearing ? 'Clearing…' : 'Clear All Reports'}
+            </Button>
+          )}
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setTitle(`Executive Intelligence Audit - ${new Date().toLocaleDateString()}`);
+              setShowGenerateModal(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            Generate New Report
+          </Button>
+        </div>
       </div>
 
       {error && !showGenerateModal && <p role="alert" className="rounded-md p-3 text-sm text-rose-800 bg-rose-50">{error}</p>}
@@ -185,6 +230,14 @@ export const ReportsPage: React.FC = () => {
                       <span>PDF</span>
                     </a>
                   )}
+
+                  <button
+                    onClick={(e) => handleDeleteReport(rep.id, e)}
+                    className="p-1.5 rounded text-clario-text-secondary hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    title="Delete Report"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             </Card>

@@ -75,3 +75,9 @@ class FindingService:
         db.delete(finding)
         db.commit()
         return True
+
+    @staticmethod
+    def clear_all_findings(db: Session) -> int:
+        count = db.query(Finding).delete()
+        db.commit()
+        return count

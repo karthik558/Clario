@@ -20,7 +20,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 
 export const SearchLabPage: React.FC = () => {
-  const [query, setQuery] = useState('data retention termination days deletion');
+  const [query, setQuery] = useState('data retention zero data retention ZDR 30 days vs 60 days audit');
   const [topK, setTopK] = useState(5);
   const [comparison, setComparison] = useState<SearchMethodComparison | null>(null);
   const [benchmark, setBenchmark] = useState<BenchmarkSummary | null>(null);
@@ -133,10 +133,12 @@ export const SearchLabPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2 pt-2 text-[11px] text-clario-text-secondary">
                 <span className="font-medium">Test queries:</span>
                 {[
-                  'customer data deletion days after contract termination',
-                  'limitation of liability capped damages',
-                  'differential privacy epsilon membership inference',
-                  'notice of breach cure period 60 days'
+                  'data retention zero data retention ZDR 30 days vs 60 days audit',
+                  'limitation of liability aggregate monetary damages $100 vs $250,000 USD',
+                  'cybersecurity breach notification preliminary alert 72 hours forensic report 60 days',
+                  'intellectual property Copyright Shield defense indemnification',
+                  'HIPAA compliance Business Associate Agreement BAA protected health information',
+                  'sovereign EU data boundary regional processing mesh GDPR'
                 ].map((sq, idx) => (
                   <button
                     key={idx}
