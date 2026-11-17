@@ -39,7 +39,15 @@ export const AskPage: React.FC = () => {
   const [pendingQuery, setPendingQuery] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [clearing, setClearing] = useState(false);
+  const [expandedCitations, setExpandedCitations] = useState<Record<number, boolean>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const toggleCitations = (idx: number) => {
+    setExpandedCitations(prev => ({
+      ...prev,
+      [idx]: !prev[idx]
+    }));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -311,50 +319,66 @@ export const AskPage: React.FC = () => {
                 <Markdown>{item.response.answer}</Markdown>
               </div>
 
-              {/* Citations Grid */}
+              {/* Citations Grid (Collapsible, Hidden by default) */}
               {item.response.citations.length > 0 && (
-                <div className="pt-4 border-t border-clario-border">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <span className="text-[11px] font-semibold text-clario-navy uppercase tracking-wider flex items-center space-x-1.5">
+                <div className="pt-3 border-t border-clario-border">
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => toggleCitations(idx)}
+                      className="inline-flex items-center space-x-1.5 text-[11px] font-semibold text-clario-navy hover:text-clario-teal px-2.5 py-1 rounded bg-clario-ivory hover:bg-clario-ivory-muted border border-clario-border transition-colors cursor-pointer"
+                    >
                       <Bookmark className="w-3.5 h-3.5 text-clario-navy" />
-                      <span>Source citations ({item.response.citations.length})</span>
-                    </span>
-                    <span className="text-[10px] text-clario-text-muted">Click to open source page & passage</span>
+                      <span>
+                        {expandedCitations[idx] ? 'Hide' : 'View'} source citations ({item.response.citations.length})
+                      </span>
+                      <ChevronRight
+                        className={`w-3.5 h-3.5 text-clario-text-secondary transition-transform duration-200 ${
+                          expandedCitations[idx] ? 'rotate-90' : ''
+                        }`}
+                      />
+                    </button>
+                    {expandedCitations[idx] && (
+                      <span className="text-[10px] text-clario-text-muted">Click any citation to inspect page & passage</span>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                    {item.response.citations.map((cit) => (
-                      <button type="button"
-                        key={cit.citation_id}
-                        onClick={() => setSelectedCitation(cit)}
-                        className="text-left p-3 rounded-md border border-clario-border bg-clario-ivory/60 hover:border-clario-navy/30 hover:bg-clario-ivory transition-all cursor-pointer group flex flex-col justify-between"
-                      >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center space-x-2 truncate">
-                            <span className="w-4 h-4 rounded bg-clario-navy text-white text-[10px] flex items-center justify-center font-bold shrink-0">
-                              {cit.citation_id}
-                            </span>
-                            <span className="font-semibold text-xs text-clario-navy truncate max-w-[180px]">
-                              {cit.document_title}
+                  {expandedCitations[idx] && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-2.5">
+                      {item.response.citations.map((cit) => (
+                        <button
+                          type="button"
+                          key={cit.citation_id}
+                          onClick={() => setSelectedCitation(cit)}
+                          className="text-left p-3 rounded-md border border-clario-border bg-clario-ivory/60 hover:border-clario-navy/30 hover:bg-clario-ivory transition-all cursor-pointer group flex flex-col justify-between"
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center space-x-2 truncate">
+                              <span className="w-4 h-4 rounded bg-clario-navy text-white text-[10px] flex items-center justify-center font-bold shrink-0">
+                                {cit.citation_id}
+                              </span>
+                              <span className="font-semibold text-xs text-clario-navy truncate max-w-[180px]">
+                                {cit.document_title}
+                              </span>
+                            </div>
+                            <Badge variant="sage" size="sm">
+                              Page {cit.page_number}
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-clario-text-secondary line-clamp-2 italic leading-relaxed">
+                            "{cit.snippet}"
+                          </p>
+                          <div className="mt-2 flex items-center justify-between text-[10px] text-clario-text-muted">
+                            <span className="font-mono">Relevance: {cit.relevance_score}</span>
+                            <span className="text-clario-navy font-medium group-hover:underline flex items-center space-x-1">
+                              <span>View Passage</span>
+                              <ChevronRight className="w-3 h-3 text-clario-navy" />
                             </span>
                           </div>
-                          <Badge variant="sage" size="sm">
-                            Page {cit.page_number}
-                          </Badge>
-                        </div>
-                        <p className="text-[11px] text-clario-text-secondary line-clamp-2 italic leading-relaxed">
-                          "{cit.snippet}"
-                        </p>
-                        <div className="mt-2 flex items-center justify-between text-[10px] text-clario-text-muted">
-                          <span className="font-mono">Relevance: {cit.relevance_score}</span>
-                          <span className="text-clario-navy font-medium group-hover:underline flex items-center space-x-1">
-                            <span>View Passage</span>
-                            <ChevronRight className="w-3 h-3 text-clario-navy" />
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

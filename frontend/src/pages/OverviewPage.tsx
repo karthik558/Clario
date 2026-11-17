@@ -64,16 +64,27 @@ export const OverviewPage: React.FC = () => {
 
   return (
     <div className="space-y-7">
-      <section className="border-b border-clario-border pb-7">
-        <p className="text-xs font-semibold tracking-widest uppercase text-clario-teal mb-3">Document review workspace</p>
-        <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-clario-navy">Understand your documents.<br />Support every decision.</h2>
-        <p className="text-sm text-clario-text-secondary leading-relaxed max-w-2xl mt-4">Bring contracts, policies, and research into one place. Find cited answers, compare versions, and turn evidence into reviewable findings.</p>
-        <div className="flex flex-wrap gap-3 mt-6">
-          <Button onClick={() => navigate('/documents')}><Upload className="w-4 h-4" />Manage documents</Button>
-          <Button variant="outline" onClick={() => navigate('/ask')}><MessageSquareQuote className="w-4 h-4" />Ask a question</Button>
-          <Button variant="outline" onClick={() => navigate('/compare')}><GitCompare className="w-4 h-4" />Compare versions</Button>
+      {/* Top Action Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
+        <div>
+          <h2 className="text-xl font-bold text-clario-navy tracking-tight">Overview</h2>
+          <p className="text-xs text-clario-text-secondary">Workspace metrics, document status, and recent activity</p>
         </div>
-      </section>
+        <div className="flex items-center space-x-2">
+          <Button size="sm" onClick={() => navigate('/documents')}>
+            <Upload className="w-3.5 h-3.5 mr-1.5" />
+            Upload
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/ask')}>
+            <MessageSquareQuote className="w-3.5 h-3.5 mr-1.5" />
+            Ask Clario
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/compare')}>
+            <GitCompare className="w-3.5 h-3.5 mr-1.5" />
+            Compare
+          </Button>
+        </div>
+      </div>
       {error && <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error} <button className="underline ml-2" onClick={fetchDashboardData}>Retry</button></div>}
 
       {/* Metric Cards Grid */}

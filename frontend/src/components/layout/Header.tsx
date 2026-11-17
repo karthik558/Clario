@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Search, Settings } from 'lucide-react';
 
 interface HeaderProps {
@@ -7,24 +7,13 @@ interface HeaderProps {
   onOpenNavigation?: () => void;
 }
 
-const titles: Record<string, string> = {
-  '/': 'Overview',
-  '/documents': 'Document Library',
-  '/ask': 'Ask Clario',
-  '/compare': 'Document Comparison',
-  '/findings': 'Reviewable Findings',
-  '/reports': 'Intelligence Reports',
-  '/search-lab': 'Search Lab',
-  '/settings': 'System Settings'
-};
-
 export const Header: React.FC<HeaderProps> = ({ onOpenSearch }) => {
-  const { pathname } = useLocation();
-
   return (
-    <header className="h-16 shrink-0 bg-white border-b border-clario-border sticky top-0 z-20 px-6 md:px-8 flex items-center justify-between gap-4 shadow-subtle">
-      <div>
-        <h1 className="text-lg font-bold text-clario-navy tracking-tight">{titles[pathname] || 'Clario'}</h1>
+    <header className="h-14 shrink-0 bg-white border-b border-clario-border sticky top-0 z-20 px-6 md:px-8 flex items-center justify-between gap-4 shadow-subtle">
+      <div className="flex items-center space-x-2 text-xs text-clario-text-secondary">
+        <span className="font-medium text-clario-navy">Workspace</span>
+        <span className="text-clario-border">/</span>
+        <span>Intelligence</span>
       </div>
 
       <div className="flex items-center space-x-3">
