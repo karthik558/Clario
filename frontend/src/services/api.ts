@@ -115,6 +115,11 @@ export const api = {
     if (!res.ok) throw new Error('Could not load saved answers');
     return res.json();
   },
+  clearAnswerHistory: async (): Promise<{ status: string; message: string; deleted_count: number }> => {
+    const res = await fetch(`${API_BASE}/ask/history`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to clear answer history');
+    return res.json();
+  },
   ask: async (query: string, document_ids?: string[], top_k?: number): Promise<AskResponse> => {
     const res = await fetch(`${API_BASE}/ask`, {
       method: 'POST',

@@ -19,6 +19,7 @@ class HybridSearchEngine:
         Executes BM25 and Vector search, records their latencies, computes RRF fusion,
         and returns both hybrid results and comparative metrics.
         """
+        top_k = top_k or 5
         # Run BM25
         t0 = time.perf_counter()
         bm25_results = self.bm25_engine.search(query, top_k=top_k * 2, document_ids=document_ids)

@@ -58,6 +58,23 @@ class DocumentParser:
         try:
             with open(file_path, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read()
+
+            # Check for explicit page break markers first
+            if "<!-- pagebreak -->" in content:
+                raw_pages = content.split("<!-- pagebreak -->")
+                for i, page_str in enumerate(raw_pages, start=1):
+                    if page_str.strip():
+                        pages.append(PageText(page_number=i, text=page_str.strip()))
+                if pages:
+                    return pages
+
+            if "\f" in content:
+                raw_pages = content.split("\f")
+                for i, page_str in enumerate(raw_pages, start=1):
+                    if page_str.strip():
+                        pages.append(PageText(page_number=i, text=page_str.strip()))
+                if pages:
+                    return pages
             
             # Divide into pages by ~2500 characters
             chars_per_page = 2500

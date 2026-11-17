@@ -17,7 +17,7 @@ class AskService:
         results, ret_latency_ms = search_service.search(
             query=request.query,
             mode="hybrid",
-            top_k=request.top_k,
+            top_k=request.top_k or settings.DEFAULT_TOP_K or 5,
             document_ids=request.document_ids,
             db=db
         )
@@ -114,6 +114,24 @@ class AskService:
         )
 
     @staticmethod
+    def _get_active_ollama_model(client: httpx.Client) -> str:
+        """Determines the active Ollama model, falling back to any installed model if needed."""
+        try:
+            tags_resp = client.get(f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/tags", timeout=5.0)
+            if tags_resp.status_code == 200:
+                tags_data = tags_resp.json()
+                available = [m.get("name") for m in tags_data.get("models", []) if m.get("name")]
+                if available:
+                    if settings.OLLAMA_MODEL in available:
+                        return settings.OLLAMA_MODEL
+                    # Fallback to the first available model
+                    settings.OLLAMA_MODEL = available[0]
+                    return available[0]
+        except Exception:
+            pass
+        return settings.OLLAMA_MODEL
+
+    @staticmethod
     def _generate_ollama_answer(query: str, citations: List[CitationItem]) -> str:
         url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
         context_str = "\n\n".join([
@@ -137,16 +155,16 @@ User Question: {query}
 
 Comprehensive Answer with source citations [1], [2]:"""
 
-        payload = {
-            "model": settings.OLLAMA_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.2
+        with httpx.Client(timeout=120.0) as client:
+            model = AskService._get_active_ollama_model(client)
+            payload = {
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.2
+                }
             }
-        }
-
-        with httpx.Client(timeout=45.0) as client:
             resp = client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()

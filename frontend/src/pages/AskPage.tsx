@@ -11,7 +11,9 @@ import {
   ChevronRight,
   Info,
   Copy,
-  Check
+  Check,
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 import { api } from '../services/api';
 import { AskResponse, CitationItem, DocumentItem } from '../types';
@@ -34,6 +36,7 @@ export const AskPage: React.FC = () => {
   const [error, setError] = useState('');
   const [pendingQuery, setPendingQuery] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [clearing, setClearing] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,6 +91,23 @@ export const AskPage: React.FC = () => {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
+  const handleClearHistory = async () => {
+    if (loading || clearing) return;
+    setClearing(true);
+    try {
+      await api.clearAnswerHistory();
+      setHistory([]);
+      setResponse(null);
+      setQuery('');
+      setPendingQuery('');
+      setError('');
+    } catch (err) {
+      setError('Could not clear conversation history. Please try again.');
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const presets = [
     'What is the data retention policy for API inputs and outputs?',
     'What limitation of liability caps appear in the 2023 vs 2024 policies?',
@@ -98,7 +118,7 @@ export const AskPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
             <span>Ask Clario</span>
@@ -106,6 +126,20 @@ export const AskPage: React.FC = () => {
           <p className="text-xs text-clario-text-secondary">
             Ask questions across your documents and verify answers against cited passages.
           </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          {history.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearHistory}
+              disabled={clearing || loading}
+              className="text-xs text-clario-text-secondary hover:text-rose-600 hover:border-rose-300"
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+              {clearing ? 'Clearing…' : 'New Conversation'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -299,11 +333,19 @@ export const AskPage: React.FC = () => {
           className="flex items-center space-x-2"
         >
           <textarea
-            rows={3} disabled={loading || loadingHistory}
+            rows={2}
+            disabled={loading || loadingHistory}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ask anything about policies, contracts, findings, or research..."
-            aria-label="Question about your documents" className="min-w-0 flex-1 text-xs px-3.5 py-2.5 rounded-md border border-clario-border bg-clario-ivory focus:outline-none focus:border-clario-teal text-clario-text"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleAsk();
+              }
+            }}
+            placeholder="Ask anything about policies, contracts, findings, or research... (Press Enter to send, Shift+Enter for newline)"
+            aria-label="Question about your documents"
+            className="min-w-0 flex-1 text-xs px-3.5 py-2.5 rounded-md border border-clario-border bg-clario-ivory focus:outline-none focus:border-clario-teal text-clario-text resize-none"
           />
           <Button
             type="submit"

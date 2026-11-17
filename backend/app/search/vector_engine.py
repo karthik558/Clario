@@ -88,6 +88,7 @@ class VectorSearchEngine:
             self.chunk_vectors.append(vec)
 
     def search(self, query: str, top_k: int = 5, document_ids: List[str] = None) -> List[Dict[str, Any]]:
+        top_k = top_k or 5
         if not self.chunks or not self.chunk_vectors:
             return []
 

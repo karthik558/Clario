@@ -41,6 +41,7 @@ class BM25SearchEngine:
             self.bm25 = None
 
     def search(self, query: str, top_k: int = 5, document_ids: List[str] = None) -> List[Dict[str, Any]]:
+        top_k = top_k or 5
         if not self.bm25 or not self.chunks:
             return []
 

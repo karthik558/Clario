@@ -77,6 +77,19 @@ def test_ask_clario():
     assert len(data["answer"]) > 20
     assert "retrieval_latency_ms" in data
 
+    # Test history retrieval and deletion
+    hist_res = client.get("/api/ask/history")
+    assert hist_res.status_code == 200
+    assert len(hist_res.json()) > 0
+
+    del_res = client.delete("/api/ask/history")
+    assert del_res.status_code == 200
+    assert del_res.json()["status"] == "success"
+
+    hist_after = client.get("/api/ask/history")
+    assert hist_after.status_code == 200
+    assert len(hist_after.json()) == 0
+
 def test_document_comparison():
     db = SessionLocal()
     docs = db.query(Document).all()
@@ -93,10 +106,23 @@ def test_document_comparison():
     assert "shared_topics" in data
 
 def test_findings_workflow():
-    # List findings
+    # Ensure at least one finding exists
     response = client.get("/api/findings")
     assert response.status_code == 200
     findings = response.json()
+    if len(findings) == 0:
+        create_res = client.post("/api/findings", json={
+            "title": "Data Retention Policy Discrepancy",
+            "category": "conflict",
+            "description": "30-day API retention in 2023 vs 60-day in 2024.",
+            "severity": "high",
+            "status": "flagged",
+            "doc_a_title": "OpenAI Policy 2023",
+            "doc_b_title": "OpenAI Policy 2023 2024 Report"
+        })
+        assert create_res.status_code == 200
+        findings = [create_res.json()]
+
     assert len(findings) > 0
     fid = findings[0]["id"]
 
