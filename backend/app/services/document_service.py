@@ -1,0 +1,223 @@
+import os
+import json
+import shutil
+import uuid
+from pathlib import Path
+from typing import List, Optional
+from fastapi import UploadFile, HTTPException
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.core.logging import logger
+from app.models.entities import Document, DocumentChunk, IngestionJob
+from app.ingestion.parser import DocumentParser
+from app.ingestion.chunker import SemanticChunker
+from app.search.vector_engine import FastSemanticEmbeddingProvider
+
+chunker = SemanticChunker(target_chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP)
+embedder = FastSemanticEmbeddingProvider(dim=384)
+
+class DocumentService:
+    @staticmethod
+    def process_file_content(
+        doc_id: str,
+        file_path: str,
+        file_type: str,
+        db: Session
+    ):
+        job = db.query(IngestionJob).filter(IngestionJob.document_id == doc_id).first()
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            return
+
+        try:
+            # Stage 1: Parsing / Text Extraction
+            if job:
+                job.status = "EXTRACTING"
+                job.progress_percent = 20
+                job.current_stage = "Extracting text and page boundaries"
+                db.commit()
+
+            pages = DocumentParser.parse(file_path, file_type)
+            page_count = len(pages)
+            total_text = "\n\n".join([p.text for p in pages])
+            word_count = len(total_text.split())
+
+            doc.page_count = max(1, page_count)
+            doc.word_count = word_count
+            db.commit()
+
+            # Stage 2: Chunking
+            if job:
+                job.status = "CHUNKING"
+                job.progress_percent = 50
+                job.current_stage = f"Segmenting {page_count} pages into semantic chunks"
+                db.commit()
+
+            chunks_data = chunker.chunk_pages(pages)
+            if not chunks_data and total_text.strip():
+                # Fallback if chunker didn't produce chunks
+                from app.ingestion.chunker import ChunkData
+                chunks_data = [
+                    ChunkData(
+                        chunk_index=0,
+                        page_number=1,
+                        start_char=0,
+                        end_char=len(total_text),
+                        content=total_text[:1000],
+                        token_count=len(total_text[:1000].split())
+                    )
+                ]
+
+            # Stage 3: Embedding
+            if job:
+                job.status = "EMBEDDING"
+                job.progress_percent = 75
+                job.current_stage = f"Generating vector embeddings for {len(chunks_data)} passages"
+                db.commit()
+
+            db_chunks = []
+            for cd in chunks_data:
+                embedding_vector = embedder.encode(cd.content)
+                db_chunk = DocumentChunk(
+                    id=str(uuid.uuid4()),
+                    document_id=doc.id,
+                    chunk_index=cd.chunk_index,
+                    page_number=cd.page_number,
+                    start_char=cd.start_char,
+                    end_char=cd.end_char,
+                    content=cd.content,
+                    token_count=cd.token_count,
+                    embedding_json=json.dumps(embedding_vector),
+                    metadata_json=json.dumps({
+                        "document_title": doc.title,
+                        "file_type": doc.file_type,
+                        "page": cd.page_number
+                    })
+                )
+                db_chunks.append(db_chunk)
+
+            db.bulk_save_objects(db_chunks)
+            doc.chunk_count = len(db_chunks)
+            doc.status = "READY"
+
+            if job:
+                job.status = "COMPLETED"
+                job.progress_percent = 100
+                job.current_stage = "Ready for semantic search and comparative analysis"
+                job.message = f"Successfully indexed {len(db_chunks)} chunks across {page_count} pages."
+                db.commit()
+
+            db.commit()
+            logger.info(f"Document {doc.title} ({doc.id}) processed successfully with {len(db_chunks)} chunks.")
+
+        except Exception as e:
+            logger.error(f"Failed to process document {doc_id}: {str(e)}", exc_info=True)
+            doc.status = "ERROR"
+            doc.error_message = str(e)
+            if job:
+                job.status = "FAILED"
+                job.message = str(e)
+            db.commit()
+
+    @classmethod
+    def upload_document(
+        cls,
+        file: UploadFile,
+        title: Optional[str],
+        tags: Optional[List[str]],
+        collection: Optional[str],
+        db: Session
+    ) -> Document:
+        filename = file.filename or "uploaded_document"
+        ext = filename.split(".")[-1].lower() if "." in filename else "txt"
+        
+        valid_exts = ["pdf", "docx", "doc", "txt", "md"]
+        if ext not in valid_exts:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file format '.{ext}'. Supported formats are: PDF, DOCX, TXT, MD."
+            )
+
+        doc_id = str(uuid.uuid4())
+        safe_filename = f"{doc_id}_{filename}"
+        storage_path = str(settings.DOCUMENTS_DIR / safe_filename)
+
+        with open(storage_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        file_size = os.path.getsize(storage_path)
+        if file_size == 0:
+            os.remove(storage_path)
+            raise HTTPException(status_code=400, detail="Uploaded file is empty (0 bytes).")
+
+        doc_title = title.strip() if title and title.strip() else filename.rsplit(".", 1)[0]
+        tags_list = tags if tags is not None else []
+        coll_name = collection.strip() if collection and collection.strip() else "General"
+
+        doc = Document(
+            id=doc_id,
+            title=doc_title,
+            filename=filename,
+            file_type=ext,
+            file_size=file_size,
+            storage_path=storage_path,
+            status="PROCESSING",
+            tags_json=json.dumps(tags_list),
+            collection=coll_name
+        )
+        db.add(doc)
+
+        job = IngestionJob(
+            id=str(uuid.uuid4()),
+            document_id=doc_id,
+            status="PENDING",
+            progress_percent=10,
+            current_stage="Queued for ingestion",
+            message="File received and validated."
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(doc)
+
+        # Synchronously process for local reliability
+        cls.process_file_content(doc_id, storage_path, ext, db)
+        db.refresh(doc)
+        return doc
+
+    @staticmethod
+    def get_document(doc_id: str, db: Session) -> Optional[Document]:
+        return db.query(Document).filter(Document.id == doc_id).first()
+
+    @staticmethod
+    def list_documents(
+        db: Session,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
+        collection: Optional[str] = None
+    ) -> List[Document]:
+        q = db.query(Document)
+        if search:
+            q = q.filter(Document.title.ilike(f"%{search}%") | Document.filename.ilike(f"%{search}%"))
+        if status:
+            q = q.filter(Document.status == status.upper())
+        if collection:
+            q = q.filter(Document.collection == collection)
+        return q.order_by(Document.created_at.desc()).all()
+
+    @staticmethod
+    def delete_document(doc_id: str, db: Session) -> bool:
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            return False
+        
+        # Remove file from disk
+        try:
+            if os.path.exists(doc.storage_path):
+                os.remove(doc.storage_path)
+        except Exception as e:
+            logger.warning(f"Could not remove file {doc.storage_path}: {e}")
+
+        db.delete(doc)
+        db.commit()
+        return True

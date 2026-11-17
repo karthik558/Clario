@@ -1,0 +1,86 @@
+import os
+from pathlib import Path
+from typing import List, Dict, Any
+import fitz  # PyMuPDF
+import docx
+
+class PageText:
+    def __init__(self, page_number: int, text: str):
+        self.page_number = page_number
+        self.text = text
+
+class DocumentParser:
+    @staticmethod
+    def parse_pdf(file_path: str) -> List[PageText]:
+        pages: List[PageText] = []
+        try:
+            doc = fitz.open(file_path)
+            for i, page in enumerate(doc):
+                text = page.get_text("text") or ""
+                # Clean up repeated trailing newlines
+                cleaned = "\n".join([line.strip() for line in text.splitlines() if line.strip()])
+                pages.append(PageText(page_number=i + 1, text=cleaned))
+            doc.close()
+        except Exception as e:
+            # Fallback reading
+            pages.append(PageText(page_number=1, text=f"Error extracting PDF: {str(e)}"))
+        return pages
+
+    @staticmethod
+    def parse_docx(file_path: str) -> List[PageText]:
+        pages: List[PageText] = []
+        try:
+            doc = docx.Document(file_path)
+            full_text = []
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    full_text.append(para.text.strip())
+            
+            # Approximate 350-400 words per page for DOCX
+            combined = "\n\n".join(full_text)
+            words = combined.split()
+            words_per_page = 350
+            if len(words) <= words_per_page:
+                pages.append(PageText(page_number=1, text=combined))
+            else:
+                current_page = 1
+                for i in range(0, len(words), words_per_page):
+                    page_slice = " ".join(words[i:i + words_per_page])
+                    pages.append(PageText(page_number=current_page, text=page_slice))
+                    current_page += 1
+        except Exception as e:
+            pages.append(PageText(page_number=1, text=f"Error extracting DOCX: {str(e)}"))
+        return pages
+
+    @staticmethod
+    def parse_plain_text(file_path: str) -> List[PageText]:
+        pages: List[PageText] = []
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+            
+            # Divide into pages by ~2500 characters
+            chars_per_page = 2500
+            if len(content) <= chars_per_page:
+                pages.append(PageText(page_number=1, text=content.strip()))
+            else:
+                current_page = 1
+                for i in range(0, len(content), chars_per_page):
+                    chunk_text = content[i:i + chars_per_page].strip()
+                    pages.append(PageText(page_number=current_page, text=chunk_text))
+                    current_page += 1
+        except Exception as e:
+            pages.append(PageText(page_number=1, text=f"Error extracting text: {str(e)}"))
+        return pages
+
+    @classmethod
+    def parse(cls, file_path: str, file_type: str) -> List[PageText]:
+        ext = file_type.lower().replace(".", "")
+        if ext == "pdf":
+            return cls.parse_pdf(file_path)
+        elif ext in ["docx", "doc"]:
+            return cls.parse_docx(file_path)
+        elif ext in ["txt", "md", "markdown", "csv", "json"]:
+            return cls.parse_plain_text(file_path)
+        else:
+            return cls.parse_plain_text(file_path)
