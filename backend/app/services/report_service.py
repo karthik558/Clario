@@ -45,7 +45,11 @@ class ReportService:
                 pair = (row.doc_a_id, row.doc_b_id)
                 if pair not in pairs:
                     pairs.add(pair)
-                    comparisons.append({"title": row.title, "summary": row.summary or "", "created_at": row.created_at.isoformat()})
+                    comparisons.append({
+                        "title": row.title,
+                        "summary": row.summary or "",
+                        "created_at": row.created_at.isoformat() if row.created_at else datetime.now(timezone.utc).isoformat()
+                    })
         excerpts = []
         if data.report_type in ("summary", "research_dossier"):
             for document in docs:

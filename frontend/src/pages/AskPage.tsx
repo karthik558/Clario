@@ -1,5 +1,5 @@
 import { Select } from '../components/ui/Select';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Send,
   SearchCheck,
@@ -234,12 +234,36 @@ export const AskPage: React.FC = () => {
     }
   };
 
-  const presets = [
-    'What is the data retention policy for API inputs and outputs?',
-    'What limitation of liability caps appear in the 2023 vs 2024 policies?',
-    'How does the security incident notification timeline change between 2023 and 2024?',
-    'Are API customer inputs used to train or improve models?'
-  ];
+  const presets: string[] = useMemo(() => {
+    if (!documents || documents.length === 0) {
+      return [
+        'How do I upload and index my documents in Clario?',
+        'What file formats does Clario support for clause extraction?',
+        'How does Clario compare multiple contracts side by side?',
+        'What local AI models can I connect for offline verification?'
+      ];
+    }
+    const readyDocs = documents.filter((d) => d.status === 'READY' || !d.status);
+    const pool = readyDocs.length > 0 ? readyDocs : documents;
+    const docA = pool[0]?.title || 'Document 1';
+    const docB = pool[1]?.title || 'Document 2';
+
+    if (pool.length >= 2) {
+      return [
+        `What are the key differences between ${docA} and ${docB}?`,
+        `Compare the liability limits, warranties, and indemnification caps in ${docA} vs ${docB}.`,
+        `What are the data retention and security commitments specified in ${docA}?`,
+        `Are there conflicting terms or termination notice deltas between ${docA} and ${docB}?`
+      ];
+    } else {
+      return [
+        `Provide a comprehensive summary of key clauses in ${docA}.`,
+        `What are the governing terms, liability caps, and breach notifications in ${docA}?`,
+        `What data privacy, retention, and security commitments are outlined in ${docA}?`,
+        `Identify any potential risks, warranties, or unhedged indemnities in ${docA}.`
+      ];
+    }
+  }, [documents]);
 
   return (
     <div className="space-y-6">
@@ -350,16 +374,16 @@ export const AskPage: React.FC = () => {
 
         {/* Model Picker for Local Endpoints */}
         {llmProvider !== 'extractive' && (
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-100 text-xs">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2.5 border-t border-slate-100 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-slate-500 font-medium">Model:</span>
               {availableModels.length > 0 ? (
-                <div className="w-52">
+                <div className="w-full sm:w-60">
                   <Select
                     aria-label="Active Model"
                     value={localModel}
                     onChange={(e) => setLocalModel(e.target.value)}
-                    className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-1.5 focus:outline-none font-medium text-clario-navy"
+                    className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2 focus:outline-none focus:border-clario-navy font-medium text-clario-text shadow-xs"
                   >
                     {availableModels.map((m) => (
                       <option key={m} value={m}>
@@ -374,13 +398,13 @@ export const AskPage: React.FC = () => {
                   value={localModel}
                   onChange={(e) => setLocalModel(e.target.value)}
                   placeholder="e.g. gemma3:latest, deepseek-r1:8b"
-                  className="text-xs px-2.5 py-1.5 border border-slate-300 rounded bg-white text-slate-800 w-44 focus:outline-none"
+                  className="text-xs px-3 py-2 border border-clario-border rounded-md bg-white text-clario-text w-full sm:w-60 focus:outline-none focus:border-clario-navy shadow-xs"
                 />
               )}
               <button
                 type="button"
                 onClick={() => refreshModelList(llmProvider)}
-                className="text-[11px] text-clario-teal hover:underline ml-1"
+                className="text-[11px] text-clario-navy hover:underline ml-1 font-medium"
               >
                 Refresh Models
               </button>

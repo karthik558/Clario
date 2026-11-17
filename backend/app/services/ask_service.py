@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.models.entities import Document
 from app.schemas.dtos import AskRequest, AskResponse, CitationItem
 from app.services.search_service import search_service
 
@@ -44,6 +45,57 @@ class AskService:
         return any(re.search(pat, q) for pat in patterns)
 
     @staticmethod
+    def _build_dynamic_greeting(db: Session, document_ids: Optional[List[str]] = None) -> str:
+        query = db.query(Document).filter(Document.status == "READY")
+        if document_ids:
+            query = query.filter(Document.id.in_(document_ids))
+        docs = query.order_by(Document.created_at.desc()).all()
+
+        base_intro = (
+            "Hello, I am Clario, your AI document intelligence research assistant.\n\n"
+            "I analyze, search, and verify clauses across your uploaded documents. "
+            "Every answer I provide is cross-referenced with exact citations.\n\n"
+        )
+
+        if not docs:
+            return (
+                base_intro +
+                "**No indexed documents found in this workspace.**\n\n"
+                "Please upload one or more documents (PDF, DOCX, TXT, or Markdown) in the Document Library. "
+                "Once indexed, you can ask questions, verify facts, and compare clauses here."
+            )
+
+        doc_titles = [d.title or d.filename for d in docs]
+        suggestions = []
+
+        if len(docs) >= 2:
+            suggestions.append(f"Compare key obligations and differences between **{doc_titles[0]}** and **{doc_titles[1]}**.")
+            suggestions.append(f"What are the liability limits, warranties, and indemnification caps in **{doc_titles[0]}** vs **{doc_titles[1]}**?")
+            suggestions.append(f"What data retention and security commitments are specified in **{doc_titles[0]}**?")
+            suggestions.append(f"Are there conflicting terms or termination notice deltas between **{doc_titles[0]}** and **{doc_titles[1]}**?")
+        else:
+            d = doc_titles[0]
+            suggestions.append(f"Provide a comprehensive summary of key clauses in **{d}**.")
+            suggestions.append(f"What are the governing terms, liability caps, and breach notifications in **{d}**?")
+            suggestions.append(f"What are the data privacy and retention commitments outlined in **{d}**?")
+            suggestions.append(f"Identify potential risks or unhedged indemnities in **{d}**.")
+
+        docs_summary_lines = "\n".join([f"- **{d.title or d.filename}** ({d.page_count or 1} pages, {d.chunk_count or 0} chunks)" for d in docs[:4]])
+        if len(docs) > 4:
+            docs_summary_lines += f"\n- *...and {len(docs) - 4} more document(s)*"
+
+        suggestions_lines = "\n".join([f"- *{s}*" for s in suggestions])
+
+        return (
+            f"{base_intro}"
+            f"**Indexed workspace documents ({len(docs)} total):**\n"
+            f"{docs_summary_lines}\n\n"
+            f"**Suggested questions for your workspace documents:**\n"
+            f"{suggestions_lines}\n\n"
+            f"You can also use the Compare view to inspect side-by-side differences, or the Search Lab to evaluate retrieval performance."
+        )
+
+    @staticmethod
     def answer_question(request: AskRequest, db: Session) -> AskResponse:
         t0 = time.perf_counter()
 
@@ -51,17 +103,7 @@ class AskService:
         if AskService._is_greeting(request.query):
             return AskResponse(
                 query=request.query,
-                answer=(
-                    "Hello, I am Clario, your AI document intelligence research assistant.\n\n"
-                    "I analyze, search, and verify clauses across your uploaded documents. "
-                    "Every answer I provide is cross-referenced with exact citations.\n\n"
-                    "**Suggested questions for your workspace documents:**\n"
-                    "- *What is the data retention policy for API interactions?*\n"
-                    "- *Compare the liability limits between the 2023 and 2024 policies.*\n"
-                    "- *What is the incident notification timeline after a security breach?*\n"
-                    "- *Are customer inputs used to train foundation models?*\n\n"
-                    "You can also use the Compare view to inspect side-by-side differences, or the Search Lab to evaluate retrieval performance."
-                ),
+                answer=AskService._build_dynamic_greeting(db, request.document_ids),
                 mode="conversational_assistant",
                 citations=[],
                 retrieval_latency_ms=0.5,
@@ -74,7 +116,7 @@ class AskService:
         is_comparative = AskService._is_comparative_query(request.query)
         search_query = request.query
         if is_comparative:
-            search_query = f"{request.query} Comparative Policy Delta Summary side by side matrix 2023 2024 data retention liability cap incident reporting IP copyright shield"
+            search_query = f"{request.query} comparison difference clauses obligations terms"
 
         results, ret_latency_ms = search_service.search(
             query=search_query,
@@ -97,13 +139,8 @@ class AskService:
                 has_conflicting_evidence=False
             )
 
-        if is_comparative:
-            def sort_key(item):
-                text = item.get("snippet", "")
-                if "Side-by-Side Regulatory Matrix" in text or "Comparative Policy Delta Summary" in text or ("Data Retention" in text and "Liability Cap" in text):
-                    return 0
-                return 1
-            results = sorted(results, key=sort_key)
+        # Sort results by relevance score descending
+        results = sorted(results, key=lambda x: x.get("score", 0), reverse=True)
 
         citations: List[CitationItem] = []
         for i, item in enumerate(results, start=1):
@@ -255,11 +292,10 @@ class AskService:
         system_prompt = (
             "You are Clario, an elite document intelligence research assistant. "
             "Answer the user's question directly, accurately, and concisely using ONLY the retrieved document context below.\n"
-            "- When comparing policies or answering what is the difference / what changed:\n"
-            "  1. Clearly list each distinct difference with structured bullet points (e.g., Data Retention, Liability Cap, Incident Reporting, IP Protection / Copyright Shield, HIPAA, Data Residency).\n"
-            "  2. For each area, state the exact metrics, dollar amounts, and timelines for 2023 vs 2024.\n"
-            "- Cite key claims with bracketed numbers like [1], [2].\n"
-            "- Keep the response direct, clear, and factual without conversational filler or irrelevant tangential text."
+            "- Synthesize the answer clearly with concise, structured bullet points.\n"
+            "- When comparing documents or identifying differences, contrast the clauses across the retrieved documents directly, noting document titles and exact figures, terms, and timelines.\n"
+            "- Cite factual claims with bracketed numbers corresponding to the context like [1], [2].\n"
+            "- Keep the response direct, clear, and factual without conversational filler or unverified assumptions."
         )
 
         prompt = f"""{system_prompt}
@@ -349,16 +385,7 @@ Direct Cited Answer:"""
 
         # Handle greetings
         if AskService._is_greeting(request.query):
-            greeting_text = (
-                "Hello, I am Clario, your AI document intelligence research assistant.\n\n"
-                "I analyze, search, and verify clauses across your uploaded documents. "
-                "Every answer I provide is cross-referenced with exact citations.\n\n"
-                "**Suggested questions for your workspace documents:**\n"
-                "- *What is the data retention policy for API interactions?*\n"
-                "- *Compare the liability limits between the 2023 and 2024 policies.*\n"
-                "- *What is the incident notification timeline after a security breach?*\n"
-                "- *Are customer inputs used to train foundation models?*\n"
-            )
+            greeting_text = AskService._build_dynamic_greeting(db, request.document_ids)
             yield f"event: citations\ndata: {json.dumps([])}\n\n"
             words = greeting_text.split(" ")
             for w in words:
@@ -371,7 +398,7 @@ Direct Cited Answer:"""
         is_comparative = AskService._is_comparative_query(request.query)
         search_query = request.query
         if is_comparative:
-            search_query = f"{request.query} Comparative Policy Delta Summary side by side matrix 2023 2024 data retention liability cap incident reporting IP copyright shield"
+            search_query = f"{request.query} comparison difference clauses obligations terms"
 
         results, ret_latency_ms = search_service.search(
             query=search_query,
@@ -381,13 +408,7 @@ Direct Cited Answer:"""
             db=db
         )
 
-        if is_comparative:
-            def sort_key(item):
-                text = item.get("snippet", "")
-                if "Side-by-Side Regulatory Matrix" in text or "Comparative Policy Delta Summary" in text or ("Data Retention" in text and "Liability Cap" in text):
-                    return 0
-                return 1
-            results = sorted(results, key=sort_key)
+        results = sorted(results, key=lambda x: x.get("score", 0), reverse=True)
 
         citations: List[CitationItem] = []
         for i, item in enumerate(results, start=1):
@@ -469,33 +490,56 @@ Direct Cited Answer:"""
     ) -> str:
         """
         Generates a direct, clean, structured answer using retrieved passages.
-        Provides direct answers with exact citations without dumping unformatted raw quotes.
+        Provides clear, synthesized bullet points with exact citations.
         """
-        lines = []
+        if not citations:
+            return "No matching clauses or relevant evidence were found in the uploaded documents for this query."
 
-        if AskService._is_comparative_query(query):
-            cit_ref = f"[{citations[0].citation_id}]" if citations else ""
-            lines.append("#### 1. Executive Synthesis: Comparative Policy Delta")
-            lines.append(
-                f"Based on the comparative policy delta analysis across the 2023 Baseline Terms and 2024 Modernized Policy, the primary differences are:\n\n"
-                f"*   **Data Retention:** 2023 Baseline Terms mandated a standard **30-day** retention window for API logs for abuse monitoring. In contrast, the 2024 Modernized Policy defaults to **Zero Data Retention (ZDR)** in volatile memory, with an optional configurable audit logging window of up to **60 days** {cit_ref}.\n"
-                f"*   **Liability Cap:** 2023 Baseline Terms strictly capped aggregate cumulative liability at **$100.00 USD**. The 2024 Modernized Policy substantially expanded the ceiling to **$250,000 USD** (or 12 months of aggregate platform fees paid) {cit_ref}.\n"
-                f"*   **Incident Reporting:** 2023 Baseline Terms required formal breach notification within **30 days**. The 2024 Modernized Policy mandates an accelerated preliminary alert within **72 hours** and a comprehensive third-party audited forensic report within **60 days** {cit_ref}.\n"
-                f"*   **IP Protection:** 2023 Baseline Terms provided no formal copyright indemnification. The 2024 Modernized Policy introduces the full **Copyright Shield**, covenanting to defend commercial customers and pay adverse judgments from third-party copyright claims {cit_ref}.\n"
-                f"*   **HIPAA Compliance:** 2023 Baseline Terms did not offer Business Associate Agreements (BAAs) and prohibited PHI. The 2024 Modernized Policy enables BAAs for dedicated zero-retention health endpoints {cit_ref}.\n"
-                f"*   **Data Residency:** 2023 Baseline Terms were restricted to United States data centers. The 2024 Modernized Policy introduces a sovereign EU data boundary and regional processing hubs {cit_ref}."
-            )
+        # Group citations by document
+        doc_citations: Dict[str, List[CitationItem]] = {}
+        for c in citations:
+            doc_citations.setdefault(c.document_title, []).append(c)
+
+        lines = []
+        is_comp = AskService._is_comparative_query(query)
+
+        if is_comp and len(doc_citations) >= 2:
+            lines.append("#### 1. Executive Synthesis: Comparative Analysis\n")
+            doc_names = list(doc_citations.keys())
+            lines.append(f"Comparing key provisions across **{doc_names[0]}** and **{doc_names[1]}** based on verified indexed passages:\n")
+
+            for doc_title, cits in doc_citations.items():
+                lines.append(f"**From {doc_title}:**")
+                for c in cits[:3]:
+                    clean_snip = c.snippet.strip().replace("\r\n", " ").replace("\n", " ")
+                    sentences = [s.strip() for s in clean_snip.split(". ") if s.strip()]
+                    summary_point = ". ".join(sentences[:2])
+                    if summary_point and not summary_point.endswith("."):
+                        summary_point += "."
+                    lines.append(f"- {summary_point} [{c.citation_id}]")
+                lines.append("")
         else:
-            lines.append("#### 1. Executive Synthesis")
-            doc_count = len(set(c.document_title for c in citations))
+            lines.append("#### 1. Executive Synthesis\n")
+            doc_count = len(doc_citations)
             lines.append(
                 f"Retrieved **{len(citations)} relevant passage(s)** across **{doc_count} document(s)**. "
                 f"Key provisions and verified clauses addressing your query are outlined below with exact source attribution:\n"
             )
+            for doc_title, cits in doc_citations.items():
+                if len(doc_citations) > 1:
+                    lines.append(f"**From {doc_title}:**")
+                for c in cits[:3]:
+                    clean_snip = c.snippet.strip().replace("\r\n", " ").replace("\n", " ")
+                    sentences = [s.strip() for s in clean_snip.split(". ") if s.strip()]
+                    summary_point = ". ".join(sentences[:2])
+                    if summary_point and not summary_point.endswith("."):
+                        summary_point += "."
+                    lines.append(f"- {summary_point} [{c.citation_id}]")
+                lines.append("")
 
         lines.append("\n#### 2. Detailed Evidence & Verified Passages")
         for cit in citations:
-            snippet_clean = cit.snippet.strip().replace("\n\n", "\n")
+            snippet_clean = cit.snippet.strip().replace("\r\n", "\n")
             lines.append(
                 f"\n*   **Source: [{cit.citation_id}] Page {cit.page_number} ({cit.document_title}):**\n"
                 f"    {snippet_clean}"
@@ -504,7 +548,7 @@ Direct Cited Answer:"""
         if has_conflict and conflict_notes:
             lines.append(f"\n\n**Discrepancy Note:** {conflict_notes}")
 
-        return "\n".join(lines)
+        return "\n".join(lines).strip()
 
     @staticmethod
     def _generate_gemini_answer(query: str, citations: List[CitationItem]) -> str:

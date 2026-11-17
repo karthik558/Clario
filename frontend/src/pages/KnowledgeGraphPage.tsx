@@ -142,7 +142,7 @@ export const KnowledgeGraphPage: React.FC = () => {
     // Documents placed at core center
     docs.forEach((doc, idx) => {
       const angle = (idx / Math.max(docs.length, 1)) * 2 * Math.PI - Math.PI / 2;
-      const radius = docs.length === 1 ? 0 : 130;
+      const radius = docs.length === 1 ? 0 : 70;
       result.push({
         ...doc,
         x: centerX + radius * Math.cos(angle),
@@ -153,7 +153,7 @@ export const KnowledgeGraphPage: React.FC = () => {
     // Topics in mid orbit
     topics.forEach((topic, idx) => {
       const angle = (idx / Math.max(topics.length, 1)) * 2 * Math.PI;
-      const radius = 250;
+      const radius = 145;
       result.push({
         ...topic,
         x: centerX + radius * Math.cos(angle),
@@ -164,7 +164,7 @@ export const KnowledgeGraphPage: React.FC = () => {
     // Findings in outer lower/upper arcs
     findings.forEach((finding, idx) => {
       const angle = (idx / Math.max(findings.length, 1)) * 2 * Math.PI + Math.PI / 4;
-      const radius = 340;
+      const radius = 210;
       result.push({
         ...finding,
         x: centerX + radius * Math.cos(angle),
@@ -175,7 +175,7 @@ export const KnowledgeGraphPage: React.FC = () => {
     // Chunks clustered near outer perimeter
     chunks.forEach((chunk, idx) => {
       const angle = (idx / Math.max(chunks.length, 1)) * 2 * Math.PI - Math.PI / 4;
-      const radius = 390;
+      const radius = 255;
       result.push({
         ...chunk,
         x: centerX + radius * Math.cos(angle),
@@ -216,14 +216,24 @@ export const KnowledgeGraphPage: React.FC = () => {
   }, [selectedNodeId, filteredEdges]);
 
   // Pan handlers
+  const [hasDragged, setHasDragged] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     setIsDragging(true);
+    setHasDragged(false);
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
     setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
+    const dx = Math.abs(e.clientX - dragStartRef.current.x);
+    const dy = Math.abs(e.clientY - dragStartRef.current.y);
+    if (dx > 4 || dy > 4) {
+      setHasDragged(true);
+    }
     setPan({
       x: e.clientX - dragStart.x,
       y: e.clientY - dragStart.y,
@@ -439,7 +449,7 @@ export const KnowledgeGraphPage: React.FC = () => {
       {/* Main Canvas + Inspector Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* SVG Network Visualizer */}
-        <div className="lg:col-span-3 border border-slate-200 rounded-lg bg-[#FAF9F5] overflow-hidden shadow-sm relative h-[620px] select-none">
+        <div className="lg:col-span-3 border border-slate-200 rounded-lg bg-[#FAF9F5] overflow-hidden shadow-sm relative h-[440px] sm:h-[520px] lg:h-[620px] select-none">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2">
               <div className="w-6 h-6 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin" />
@@ -535,7 +545,9 @@ export const KnowledgeGraphPage: React.FC = () => {
                       transform={`translate(${node.x}, ${node.y})`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedNodeId(node.id === selectedNodeId ? null : node.id);
+                        if (!hasDragged) {
+                          setSelectedNodeId(node.id === selectedNodeId ? null : node.id);
+                        }
                       }}
                       onMouseEnter={() => setHoveredNodeId(node.id)}
                       onMouseLeave={() => setHoveredNodeId(null)}
@@ -588,7 +600,7 @@ export const KnowledgeGraphPage: React.FC = () => {
           )}
 
           {/* Quick Graph Legend Overlay */}
-          <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur border border-slate-200 rounded-md px-3 py-2 text-[10px] space-y-1 shadow-sm">
+          <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur border border-slate-200 rounded-md px-3 py-2 text-[10px] space-y-1 shadow-sm pointer-events-none">
             <div className="font-semibold text-slate-700">Topology Legend</div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">

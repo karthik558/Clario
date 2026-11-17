@@ -43,7 +43,7 @@ class DashboardService:
             activities.append({
                 "type": "document_indexed" if d.status == "READY" else "document_uploaded",
                 "title": f"Document '{d.title}' ingested ({d.chunk_count} passages)",
-                "timestamp": d.created_at.strftime("%Y-%m-%d %H:%M"),
+                "timestamp": d.created_at.strftime("%Y-%m-%d %H:%M") if d.created_at else "",
                 "status": d.status
             })
 
@@ -52,7 +52,7 @@ class DashboardService:
             activities.append({
                 "type": "search_executed",
                 "title": f"Hybrid search executed for \"{s.query_text[:40]}\"",
-                "timestamp": s.created_at.strftime("%Y-%m-%d %H:%M"),
+                "timestamp": s.created_at.strftime("%Y-%m-%d %H:%M") if s.created_at else "",
                 "status": f"{s.latency_ms}ms"
             })
 
@@ -60,7 +60,7 @@ class DashboardService:
             activities.append({
                 "type": "finding_detected",
                 "title": f"Candidate flagged: {f.title[:45]}",
-                "timestamp": f.created_at.strftime("%Y-%m-%d %H:%M"),
+                "timestamp": f.created_at.strftime("%Y-%m-%d %H:%M") if f.created_at else "",
                 "status": f.severity
             })
 

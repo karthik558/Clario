@@ -1,19 +1,29 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Settings } from 'lucide-react';
+import { Search, Settings, Menu } from 'lucide-react';
 
 interface HeaderProps {
   onOpenSearch: () => void;
   onOpenNavigation?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSearch }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onOpenNavigation }) => {
   return (
-    <header className="h-14 shrink-0 bg-white border-b border-clario-border sticky top-0 z-20 px-6 md:px-8 flex items-center justify-between gap-4 shadow-subtle">
+    <header className="h-14 shrink-0 bg-white border-b border-clario-border sticky top-0 z-20 px-4 md:px-8 flex items-center justify-between gap-3 shadow-subtle">
       <div className="flex items-center space-x-2 text-xs text-clario-text-secondary">
-        <span className="font-medium text-clario-navy">Workspace</span>
-        <span className="text-clario-border">/</span>
-        <span>Intelligence</span>
+        {onOpenNavigation && (
+          <button
+            type="button"
+            onClick={onOpenNavigation}
+            aria-label="Open navigation menu"
+            className="md:hidden p-1.5 -ml-1 rounded-md text-clario-navy hover:bg-slate-100 transition-colors mr-1"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+        <span className="font-semibold text-clario-navy text-sm md:text-xs">Clario</span>
+        <span className="text-clario-border hidden sm:inline">/</span>
+        <span className="hidden sm:inline">Intelligence</span>
       </div>
 
       <div className="flex items-center space-x-3">
