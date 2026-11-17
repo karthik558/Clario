@@ -157,17 +157,17 @@ class CompareService:
         patterns = [
             (
                 "Data Retention & Deletion Timeline",
-                r'(?:retain|retention|delete|deletion|purge|purged)\s+(?:within|after|for)?\s*(\d+\s*(?:days|months|years))',
-                "Retention period altered between versions."
+                r'(?:retain|retained|retention|delete|deleted|deletion|purge|purged)(?:[^\d]{1,60})?(\d+\s*(?:days|business days|months|years)|zero data retention)',
+                "Retention period or zero-data retention window altered between versions."
             ),
             (
-                "Liability & Financial Limitations",
-                r'(?:liability|damages|cap|capped|aggregate)\s+(?:at|to|shall not exceed)?\s*(\$\d+(?:,\d+)*(?:\.\d+)?|\d+\s*(?:months?\s+fees?|USD))',
+                "Liability & Financial Ceilings",
+                r'(?:liability|damages|cap|capped|aggregate|ceiling)(?:[^\$\d]{1,120})?(\$\d+(?:,\d+)*(?:\.\d+)?|\d+\s*(?:months?\s+fees?|USD))',
                 "Liability cap or financial ceiling differed between agreements."
             ),
             (
                 "Notice of Breach Period",
-                r'(?:notice|cure|remedy)\s+(?:period|within|of)?\s*(\d+\s*(?:days|business days))',
+                r'(?:notice|cure|remedy)(?:[^\d]{1,60})?(\d+\s*(?:days|business days))|(\d+\s*(?:days|business days))(?:[^\.\n]{1,60})?(?:notice|cure|remedy)',
                 "Notice period for breach or default was modified."
             ),
             (
@@ -205,10 +205,10 @@ class CompareService:
             match_b = re.search(pattern, text_b_combined, re.IGNORECASE)
 
             if match_a and match_b:
-                val_a = match_a.group(1).strip()
-                val_b = match_b.group(1).strip()
+                val_a = (match_a.group(1) or (match_a.group(2) if match_a.lastindex and match_a.lastindex >= 2 else "")).strip()
+                val_b = (match_b.group(1) or (match_b.group(2) if match_b.lastindex and match_b.lastindex >= 2 else "")).strip()
 
-                if val_a.lower() != val_b.lower():
+                if val_a and val_b and val_a.lower() != val_b.lower():
                     # Find chunk and page for Doc A
                     page_a = 1
                     quote_a = ""

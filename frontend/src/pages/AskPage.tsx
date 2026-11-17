@@ -89,10 +89,10 @@ export const AskPage: React.FC = () => {
   };
 
   const presets = [
-    'What are the main differences between Data Retention v1 and v2?',
-    'What limitation of liability caps appear in the service agreements?',
-    'What conclusions do the differential privacy research papers reach?',
-    'Do any uploaded documents contain conflicting notice or cure periods?'
+    'What is the data retention policy for API inputs and outputs?',
+    'What limitation of liability caps appear in the 2023 vs 2024 policies?',
+    'How does the security incident notification timeline change between 2023 and 2024?',
+    'Are API customer inputs used to train or improve models?'
   ];
 
   return (
@@ -224,7 +224,7 @@ export const AskPage: React.FC = () => {
               )}
 
               {/* Formatted Markdown Content */}
-              <div className="min-w-0">
+              <div className="min-w-0 text-clario-text">
                 <Markdown>{item.response.answer}</Markdown>
               </div>
 

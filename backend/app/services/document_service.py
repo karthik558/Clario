@@ -221,3 +221,23 @@ class DocumentService:
         db.delete(doc)
         db.commit()
         return True
+
+    @staticmethod
+    def clear_all_documents(db: Session) -> int:
+        from app.models.entities import Finding, Comparison, IngestionJob, DocumentChunk
+        docs = db.query(Document).all()
+        count = len(docs)
+        for doc in docs:
+            try:
+                if os.path.exists(doc.storage_path):
+                    os.remove(doc.storage_path)
+            except Exception as e:
+                logger.warning(f"Could not remove file {doc.storage_path}: {e}")
+            db.delete(doc)
+        
+        db.query(DocumentChunk).delete()
+        db.query(IngestionJob).delete()
+        db.query(Finding).delete()
+        db.query(Comparison).delete()
+        db.commit()
+        return count

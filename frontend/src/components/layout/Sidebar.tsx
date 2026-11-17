@@ -5,11 +5,16 @@ import { LayoutDashboard, Files, MessageSquareQuote, GitCompare, FlaskConical, A
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
-  mobileOpen: boolean;
-  onCloseMobile: () => void;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen, onCloseMobile }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  collapsed,
+  onToggle,
+  mobileOpen = false,
+  onCloseMobile = () => {}
+}) => {
   const sidebarRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!mobileOpen) return;

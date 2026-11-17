@@ -70,6 +70,12 @@ export const api = {
     if (!res.ok) throw new Error('Failed to delete document');
   },
 
+  clearAllDocuments: async (): Promise<{ message: string; cleared_count: number }> => {
+    const res = await fetch(`${API_BASE}/documents/clear-all`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to clear documents');
+    return res.json();
+  },
+
   getDocumentFileUrl: (id: string) => `${API_BASE}/documents/${id}/file`,
 
   // Search & Lab

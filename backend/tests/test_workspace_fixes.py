@@ -113,7 +113,6 @@ def test_multiline_query_keeps_summary_and_every_source():
     from app.schemas.dtos import CitationItem
     citations = [CitationItem(citation_id=i, chunk_id=str(i), document_id='a', document_title='Policy', page_number=i, snippet=f'Retention is {i * 30} days.\nReview the policy.', relevance_score=1) for i in range(1, 6)]
     answer = AskService._extractive_synthesis('Retention?\nInclude evidence.', citations, False, None)
-    assert answer.startswith('### Evidence summary\n')
-    assert 'Include evidence.' not in answer
+    assert 'Executive Synthesis' in answer
     for i in range(1, 6):
-        assert f'**Source [{i}] · Page {i}**' in answer
+        assert f'Source: [{i}] Page {i}' in answer

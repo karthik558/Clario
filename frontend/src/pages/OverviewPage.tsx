@@ -78,15 +78,15 @@ export const OverviewPage: React.FC = () => {
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-md">
-          <div className="flex items-center justify-between text-[#748293] mb-3">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-teal/40 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Total Documents</span>
-            <div className="p-1.5 rounded-md bg-[#477E88]/10 text-[#477E88]">
+            <div className="p-1.5 rounded-md bg-clario-teal/10 text-clario-teal">
               <Files className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-[#14263D]">{loading ? '…' : stats?.total_documents ?? '—'}</span>
-          <span className="text-[10px] text-[#748293] font-medium mt-1">Uploaded & stored</span>
+          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.total_documents ?? '—'}</span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Uploaded & stored</span>
         </Card>
 
         <Card className="p-4 flex flex-col justify-between hover:border-emerald-300 transition-all shadow-subtle rounded-md">
@@ -100,26 +100,26 @@ export const OverviewPage: React.FC = () => {
           <span className="text-[10px] text-emerald-600 font-semibold mt-1">Available for review</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-md">
-          <div className="flex items-center justify-between text-[#748293] mb-3">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-teal/40 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Searchable Passages</span>
-            <div className="p-1.5 rounded-md bg-[#477E88]/10 text-[#477E88]">
+            <div className="p-1.5 rounded-md bg-clario-teal/10 text-clario-teal">
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-[#14263D]">{loading ? '…' : stats?.total_searchable_passages ?? '—'}</span>
-          <span className="text-[10px] text-[#748293] font-medium mt-1">Dense vector chunks</span>
+          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.total_searchable_passages ?? '—'}</span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Dense vector chunks</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-[#D4AE72]/50 transition-all shadow-subtle rounded-md">
-          <div className="flex items-center justify-between text-[#748293] mb-3">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-gold/50 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Analyses Run</span>
-            <div className="p-1.5 rounded-md bg-[#D4AE72]/15 text-[#D4AE72]">
-              <SearchCheck className="w-3.5 h-3.5 text-[#A9844B]" />
+            <div className="p-1.5 rounded-md bg-clario-gold/15 text-clario-gold">
+              <SearchCheck className="w-3.5 h-3.5 text-clario-gold-dark" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-[#14263D]">{loading ? '…' : stats?.recent_analyses_count ?? '—'}</span>
-          <span className="text-[10px] text-[#748293] font-medium mt-1">Searches & diffs</span>
+          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.recent_analyses_count ?? '—'}</span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Searches & diffs</span>
         </Card>
 
         <Card className="p-4 flex flex-col justify-between border-amber-200 bg-amber-50/20 shadow-subtle rounded-md">
@@ -133,17 +133,17 @@ export const OverviewPage: React.FC = () => {
           <span className="text-[10px] text-amber-700 font-semibold mt-1">Candidate differences</span>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-md">
-          <div className="flex items-center justify-between text-[#748293] mb-3">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-teal/40 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Avg Latency</span>
-            <div className="p-1.5 rounded-md bg-[#477E88]/10 text-[#477E88]">
+            <div className="p-1.5 rounded-md bg-clario-teal/10 text-clario-teal">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-[#14263D] font-mono">
+          <span className="text-2xl font-extrabold text-clario-navy font-mono">
             {stats?.average_latency_ms != null ? `${stats.average_latency_ms}ms` : '—'}
           </span>
-          <span className="text-[10px] text-[#748293] font-medium mt-1">Hybrid retrieval</span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Hybrid retrieval</span>
         </Card>
       </div>
 
@@ -226,8 +226,8 @@ export const OverviewPage: React.FC = () => {
       <Card className="rounded-md p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-bold text-sm text-[#14263D] tracking-tight">Recent documents</h3>
-            <p className="text-xs text-[#748293] mt-0.5">Open a document to inspect its text and source passages.</p>
+            <h3 className="font-bold text-sm text-clario-navy tracking-tight">Recent documents</h3>
+            <p className="text-xs text-clario-text-secondary mt-0.5">Open a document to inspect its text and source passages.</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/documents')}>
             View All Documents
@@ -237,7 +237,7 @@ export const OverviewPage: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-[#E4E8E6] text-[#748293] font-semibold text-[11px] uppercase tracking-wider">
+              <tr className="border-b border-clario-border text-clario-text-secondary font-semibold text-[11px] uppercase tracking-wider">
                 <th className="pb-3 px-3">Document Name</th>
                 <th className="pb-3 px-3">Format</th>
                 <th className="pb-3 px-3">Collection</th>
@@ -246,16 +246,16 @@ export const OverviewPage: React.FC = () => {
                 <th className="pb-3 px-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E4E8E6]/60">
+            <tbody className="divide-y divide-clario-border/60">
               {!loading && !error && !stats?.recent_documents?.length && <tr><td colSpan={6} className="p-8 text-center text-clario-text-secondary">No documents yet. Upload a file to begin your review.</td></tr>}
               {stats?.recent_documents?.map((doc: DocumentItem) => (
                 <tr
                   key={doc.id}
                   onClick={() => setSelectedDocId(doc.id)}
-                  className="hover:bg-[#F8F7F3] cursor-pointer transition-colors group"
+                  className="hover:bg-clario-ivory cursor-pointer transition-colors group"
                 >
-                  <td className="py-3 px-3 font-semibold text-[#14263D] flex items-center space-x-2.5">
-                    <div className="p-1.5 rounded-md bg-[#477E88]/10 text-[#477E88]">
+                  <td className="py-3 px-3 font-semibold text-clario-navy flex items-center space-x-2.5">
+                    <div className="p-1.5 rounded-md bg-clario-teal/10 text-clario-teal">
                       <FileText className="w-3.5 h-3.5" />
                     </div>
                     <span className="truncate max-w-sm">{doc.title}</span>
@@ -265,10 +265,10 @@ export const OverviewPage: React.FC = () => {
                       {doc.file_type.toUpperCase()}
                     </Badge>
                   </td>
-                  <td className="py-3 px-3 text-[#748293] font-medium">
+                  <td className="py-3 px-3 text-clario-text-secondary font-medium">
                     {doc.collection}
                   </td>
-                  <td className="py-3 px-3 font-mono text-[#477E88] font-bold">
+                  <td className="py-3 px-3 font-mono text-clario-teal font-bold">
                     {doc.chunk_count} chunks
                   </td>
                   <td className="py-3 px-3">
@@ -279,14 +279,14 @@ export const OverviewPage: React.FC = () => {
                   <td className="py-3 px-3 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setSelectedDocId(doc.id)}
-                      className="p-1.5 rounded-md text-[#748293] hover:text-[#477E88] hover:bg-white transition-colors"
+                      className="p-1.5 rounded-md text-clario-text-secondary hover:text-clario-teal hover:bg-white transition-colors"
                       title="Inspect chunks"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => handleDelete(doc.id, e)}
-                      className="p-1.5 rounded-md text-[#748293] hover:text-rose-600 hover:bg-white transition-colors"
+                      className="p-1.5 rounded-md text-clario-text-secondary hover:text-rose-600 hover:bg-white transition-colors"
                       title="Delete document"
                     >
                       <Trash2 className="w-4 h-4" />

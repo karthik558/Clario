@@ -43,12 +43,22 @@ export const ComparePage: React.FC = () => {
           // Pre-select policies or contracts if available
           const ret1 = docs.find((d) => d.title.includes('2023') || d.title.includes('v1.0'));
           const ret2 = docs.find((d) => d.title.includes('2024') || d.title.includes('v2.0'));
-          if (ret1 && ret2) {
-            setDocAId(ret1.id);
-            setDocBId(ret2.id);
-          } else {
-            setDocAId(docs[0].id);
-            setDocBId(docs[1].id);
+          const aId = ret1 ? ret1.id : docs[0].id;
+          const bId = ret2 ? ret2.id : docs[1].id;
+          setDocAId(aId);
+          setDocBId(bId);
+
+          // Automatically trigger compare for immediate feedback
+          if (aId && bId && aId !== bId) {
+            setLoading(true);
+            try {
+              const data = await api.compareDocuments(aId, bId);
+              setComparison(data);
+            } catch (compareErr) {
+              // Ignore initial auto-compare failure
+            } finally {
+              setLoading(false);
+            }
           }
         }
       } catch (err) {
@@ -108,7 +118,7 @@ export const ComparePage: React.FC = () => {
       {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-          <span>Compare document versions</span>
+          <span>Compare Document Versions</span>
         </h2>
         <p className="text-xs text-clario-text-secondary">
           Compare version revisions, identify added/removed clauses, and detect semantic contradiction candidates
@@ -126,7 +136,7 @@ export const ComparePage: React.FC = () => {
             <Select id="docAId" value={docAId}
               disabled={loading || promoting}
               onChange={(e) => changeDocument('a', e.target.value)}
-              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium"
+              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium text-clario-text"
             >
               <option value="">Select Document A</option>
               {documents.map((d) => (
@@ -160,7 +170,7 @@ export const ComparePage: React.FC = () => {
             <Select id="docBId" value={docBId}
               disabled={loading || promoting}
               onChange={(e) => changeDocument('b', e.target.value)}
-              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium"
+              className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium text-clario-text"
             >
               <option value="">Select Document B</option>
               {documents.map((d) => (
@@ -318,7 +328,7 @@ export const ComparePage: React.FC = () => {
               <h3 className="font-semibold text-sm text-clario-navy">
                 Side-by-Side Textual Diff View
               </h3>
-              <div className="flex items-center space-x-3 text-[11px]">
+              <div className="flex items-center space-x-3 text-[11px] text-clario-text-secondary">
                 <span className="flex items-center space-x-1">
                   <span className="w-2.5 h-2.5 rounded bg-emerald-400 inline-block" />
                   <span>Added Text</span>
@@ -342,7 +352,7 @@ export const ComparePage: React.FC = () => {
                   <span className="truncate max-w-xs">{comparison.doc_a.title}</span>
                   <Badge variant="sage" size="sm">{comparison.doc_a.file_type.toUpperCase()}</Badge>
                 </div>
-                <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto text-xs leading-relaxed font-sans">
+                <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto text-xs leading-relaxed font-sans text-clario-text">
                   {comparison.diff_blocks.map((block, idx) => {
                     if (block.type === 'delete') {
                       return (
@@ -362,7 +372,7 @@ export const ComparePage: React.FC = () => {
                     }
                     if (block.type === 'equal') {
                       return (
-                        <div key={idx} className="p-1 text-clario-text/80 whitespace-pre-line">
+                        <div key={idx} className="p-1 text-clario-text/90 whitespace-pre-line">
                           {block.text_a}
                         </div>
                       );
@@ -378,7 +388,7 @@ export const ComparePage: React.FC = () => {
                   <span className="truncate max-w-xs">{comparison.doc_b.title}</span>
                   <Badge variant="navy" size="sm">{comparison.doc_b.file_type.toUpperCase()}</Badge>
                 </div>
-                <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto text-xs leading-relaxed font-sans">
+                <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto text-xs leading-relaxed font-sans text-clario-text">
                   {comparison.diff_blocks.map((block, idx) => {
                     if (block.type === 'insert') {
                       return (
@@ -398,7 +408,7 @@ export const ComparePage: React.FC = () => {
                     }
                     if (block.type === 'equal') {
                       return (
-                        <div key={idx} className="p-1 text-clario-text/80 whitespace-pre-line">
+                        <div key={idx} className="p-1 text-clario-text/90 whitespace-pre-line">
                           {block.text_b}
                         </div>
                       );

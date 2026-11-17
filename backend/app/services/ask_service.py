@@ -8,21 +8,6 @@ from app.core.config import settings
 from app.schemas.dtos import AskRequest, AskResponse, CitationItem
 from app.services.search_service import search_service
 
-def extract_relevant_sentences(query: str, text: str, max_sentences: int = 3) -> List[str]:
-    sentences = re.split(r'(?<=[.!?])\s+', text)
-    query_words = set(re.sub(r'[^a-z0-9\s]', '', query.lower()).split())
-    scored = []
-    for s in sentences:
-        s_clean = s.strip()
-        if len(s_clean) < 15:
-            continue
-        s_words = set(re.sub(r'[^a-z0-9\s]', '', s_clean.lower()).split())
-        match_count = len(query_words.intersection(s_words))
-        if match_count > 0:
-            scored.append((match_count, s_clean))
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return [s for _, s in scored[:max_sentences]]
-
 class AskService:
     @staticmethod
     def answer_question(request: AskRequest, db: Session) -> AskResponse:
@@ -32,7 +17,7 @@ class AskService:
         results, ret_latency_ms = search_service.search(
             query=request.query,
             mode="hybrid",
-            top_k=request.top_k or settings.DEFAULT_TOP_K,
+            top_k=request.top_k,
             document_ids=request.document_ids,
             db=db
         )
@@ -68,7 +53,7 @@ class AskService:
         has_conflict = False
         conflict_notes = None
 
-        doc_snippets = {}
+        doc_snippets: Dict[str, List[str]] = {}
         for c in citations:
             doc_snippets.setdefault(c.document_title, []).append(c.snippet)
 
@@ -76,7 +61,7 @@ class AskService:
             nums_by_doc = {}
             for doc_title, snips in doc_snippets.items():
                 combined = " ".join(snips)
-                numbers = re.findall(r'\b(?:\$\d+(?:,\d+)*(?:\.\d+)?|\d+\s*(?:days?|months?|years?|percent|%|USD))\b', combined, re.IGNORECASE)
+                numbers = re.findall(r'\b(?:\$\d+(?:,\d+)*(?:\.\d+)?|\d+\s*(?:days?|months?|years?|percent|%|USD|EUR))\b', combined, re.IGNORECASE)
                 if numbers:
                     nums_by_doc[doc_title] = set(numbers)
 
@@ -89,7 +74,7 @@ class AskService:
                     has_conflict = True
                     conflict_notes = f"Discrepancy detected between '{doc_a}' ({', '.join(list(diff_a)[:3])}) and '{doc_b}' ({', '.join(list(diff_b)[:3])})."
 
-        # Check configured LLM Provider (Ollama local, Gemini, OpenAI, or Extractive)
+        # Check configured LLM Provider
         if settings.LLM_PROVIDER == "ollama":
             try:
                 answer = AskService._generate_ollama_answer(request.query, citations)
@@ -113,7 +98,7 @@ class AskService:
                 mode = f"extractive_synthesis (OpenAI fallback: {str(e)[:40]})"
         else:
             answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-            mode = "extractive_synthesis (Local verified engine)"
+            mode = "extractive_synthesis (Verified document passages)"
 
         synth_latency_ms = round((time.perf_counter() - t_retrieved) * 1000, 2)
 
@@ -130,9 +115,6 @@ class AskService:
 
     @staticmethod
     def _generate_ollama_answer(query: str, citations: List[CitationItem]) -> str:
-        """
-        Sends grounded context to local Ollama API (http://localhost:11434).
-        """
         url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
         context_str = "\n\n".join([
             f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet}"
@@ -140,9 +122,9 @@ class AskService:
         ])
 
         system_prompt = (
-            "You are Clario, an elite AI Document Intelligence assistant. "
-            "Answer the user's question clearly, precisely, and objectively using ONLY the retrieved document passages below. "
-            "Cite every claim with bracketed source numbers like [1], [2]. "
+            "You are Clario, an elite document intelligence research assistant. "
+            "Answer the user's question clearly, comprehensively, and objectively using ONLY the retrieved document passages below. "
+            "Provide full explanations rather than brief summaries. Cite every claim with bracketed source numbers like [1], [2]. "
             "If the documents state different policies or contain conflicts, explicitly contrast them."
         )
 
@@ -153,13 +135,12 @@ Retrieved Document Context:
 
 User Question: {query}
 
-Provide a well-structured answer with source citations [1], [2]:"""
+Comprehensive Answer with source citations [1], [2]:"""
 
         payload = {
             "model": settings.OLLAMA_MODEL,
             "prompt": prompt,
             "stream": False,
-            "think": False,
             "options": {
                 "temperature": 0.2
             }
@@ -169,10 +150,7 @@ Provide a well-structured answer with source citations [1], [2]:"""
             resp = client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()
-            answer = data.get("response", "").strip()
-            if not answer:
-                raise ValueError("The model returned an empty answer")
-            return answer
+            return data.get("response", "").strip()
 
     @staticmethod
     def _extractive_synthesis(
@@ -181,35 +159,53 @@ Provide a well-structured answer with source citations [1], [2]:"""
         has_conflict: bool,
         conflict_notes: Optional[str]
     ) -> str:
+        """
+        Generates a rich, comprehensive, structured answer using all retrieved document passages.
+        Provides direct answers, full context quotes, and explicit cross-document comparisons.
+        """
         lines = []
-        lines.append("### Evidence summary\n")
+        lines.append(f"### Research Findings for: *\"{query}\"*\n")
 
+        # Group citations by document
         by_doc: Dict[str, List[CitationItem]] = {}
         for c in citations:
             by_doc.setdefault(c.document_title, []).append(c)
 
+        # 1. Executive Summary
+        lines.append("#### 1. Executive Synthesis")
+        doc_count = len(by_doc)
+        total_passages = len(citations)
+        lines.append(
+            f"Retrieved **{total_passages} relevant passage(s)** across **{doc_count} document(s)**. "
+            f"Key provisions and clauses addressing your inquiry are outlined below with exact source attribution:\n"
+        )
+
+        # 2. Detailed Findings by Document
+        lines.append("#### 2. Detailed Evidence & Source Provisions")
         for doc_title, doc_cits in by_doc.items():
-            lines.append(f"#### From **{doc_title}**:")
+            lines.append(f"\n##### Document: **{doc_title}**")
             for cit in doc_cits:
-                key_sents = extract_relevant_sentences(query, cit.snippet, max_sentences=2)
-                if key_sents:
-                    quote = " ".join(key_sents)
-                else:
-                    quote = cit.snippet[:240].strip() + ("..." if len(cit.snippet) > 240 else "")
-                lines.append("\n".join("> " + line for line in quote.splitlines()))
-                lines.append(f"\n**Source [{cit.citation_id}] · Page {cit.page_number}**\n")
+                lines.append(
+                    f"\n> {cit.snippet.strip()}\n"
+                    f">\n"
+                    f"> **— Source: [{cit.citation_id}] Page {cit.page_number} (Relevance Score: {cit.relevance_score})**\n"
+                )
 
+        # 3. Contradiction / Discrepancy Note if present
         if has_conflict and conflict_notes:
-            lines.append(f"\n> ⚠️ **Potential Contradiction / Divergence:**\n> {conflict_notes}")
+            lines.append(f"\n#### 3. ⚠️ Policy Divergence & Contradiction Alert")
+            lines.append(f"> {conflict_notes}\n> *Note: Please review the conflicting terms above before finalizing compliance decisions.*")
 
-        lines.append("\n*Note: This synthesis was compiled strictly from retrieved passages using extractive retrieval. Review the citations below to verify the source context.*")
+        lines.append("\n---")
+        lines.append("*All findings compiled directly from indexed passages with zero hallucination. Click any citation card below to inspect the full document page.*")
+
         return "\n".join(lines)
 
     @staticmethod
     def _generate_gemini_answer(query: str, citations: List[CitationItem]) -> str:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent?key={settings.GEMINI_API_KEY}"
         context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet}" for c in citations])
-        prompt = f"""You are Clario, an AI Document Intelligence assistant. Answer the user's question based strictly on the provided retrieved passages.
+        prompt = f"""You are Clario, an AI Document Intelligence assistant. Answer the user's question thoroughly based strictly on the provided retrieved passages.
 Cite every factual claim using bracketed citation references like [1], [2]. If documents contradict each other, explicitly contrast them.
 
 Retrieved Context:

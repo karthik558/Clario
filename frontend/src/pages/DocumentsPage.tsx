@@ -32,6 +32,7 @@ export const DocumentsPage: React.FC = () => {
   const [collectionFilter, setCollectionFilter] = useState('');
   const [showUploadZone, setShowUploadZone] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -49,6 +50,20 @@ export const DocumentsPage: React.FC = () => {
   useEffect(() => {
     fetchDocuments();
   }, []);
+
+  const handleClearAll = async () => {
+    if (window.confirm('Are you sure you want to delete ALL documents and their indexed embeddings? This cannot be undone.')) {
+      setClearing(true);
+      try {
+        await api.clearAllDocuments();
+        await fetchDocuments();
+      } catch (err) {
+        setError('Failed to clear documents.');
+      } finally {
+        setClearing(false);
+      }
+    }
+  };
 
   const handleDelete = async (docId: string, title: string) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
@@ -82,6 +97,18 @@ export const DocumentsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-2.5">
+          {documents.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={clearing}
+              onClick={handleClearAll}
+              className="text-rose-600 border-rose-200 hover:bg-rose-50"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              {clearing ? 'Clearing...' : 'Clear All'}
+            </Button>
+          )}
           <Button
             variant="primary"
             size="sm"
@@ -116,7 +143,7 @@ export const DocumentsPage: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search documents by name..."
-              className="w-full text-xs pl-9 pr-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
+              className="w-full text-xs pl-9 pr-3 py-2 rounded-md border border-clario-border bg-white focus:outline-none focus:border-clario-teal text-clario-text"
             />
           </div>
 
@@ -129,7 +156,7 @@ export const DocumentsPage: React.FC = () => {
                 aria-label="Document status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-1.5 focus:outline-none"
+                className="text-xs bg-white border border-clario-border text-clario-text rounded-md px-2.5 py-1.5 focus:outline-none"
               >
                 <option value="">All Statuses</option>
                 <option value="READY">Ready</option>
@@ -145,7 +172,7 @@ export const DocumentsPage: React.FC = () => {
                   aria-label="Document collection"
                   value={collectionFilter}
                   onChange={(e) => setCollectionFilter(e.target.value)}
-                  className="text-xs bg-white border border-clario-border rounded-md px-2.5 py-1.5 focus:outline-none"
+                  className="text-xs bg-white border border-clario-border text-clario-text rounded-md px-2.5 py-1.5 focus:outline-none"
                 >
                   <option value="">All Collections</option>
                   {collections.map((c) => (

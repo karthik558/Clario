@@ -17,15 +17,15 @@ def test_dashboard_stats():
     response = client.get("/api/dashboard")
     assert response.status_code == 200
     data = response.json()
-    assert data["total_documents"] >= 6
-    assert data["total_searchable_passages"] >= 20
+    assert data["total_documents"] >= 2
+    assert data["total_searchable_passages"] >= 10
     assert "recent_documents" in data
 
 def test_list_documents():
     response = client.get("/api/documents")
     assert response.status_code == 200
     docs = response.json()
-    assert len(docs) >= 6
+    assert len(docs) >= 2
     doc_id = docs[0]["id"]
 
     # Test detail

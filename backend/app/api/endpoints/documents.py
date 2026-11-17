@@ -88,6 +88,12 @@ def get_document_file(doc_id: str, db: Session = Depends(get_db)):
         media_type=media_type
     )
 
+@router.delete("/documents/clear-all")
+def clear_all_documents(db: Session = Depends(get_db)):
+    count = DocumentService.clear_all_documents(db)
+    search_service.reload_index(db)
+    return {"message": f"Successfully cleared all {count} documents and associated indices.", "cleared_count": count}
+
 @router.delete("/documents/{doc_id}")
 def delete_document(doc_id: str, db: Session = Depends(get_db)):
     success = DocumentService.delete_document(doc_id, db)
