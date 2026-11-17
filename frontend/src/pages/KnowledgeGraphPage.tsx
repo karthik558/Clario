@@ -300,19 +300,19 @@ export const KnowledgeGraphPage: React.FC = () => {
 
       {/* Multi-Document Scope Selector Bar */}
       {documents.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-clario-border text-xs shadow-xs">
-          <span className="text-clario-navy font-semibold flex items-center gap-1.5 mr-1">
-            <FileText className="w-3.5 h-3.5 text-clario-navy" />
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-slate-200 text-xs shadow-xs">
+          <span className="text-slate-800 font-semibold flex items-center gap-1.5 mr-1 shrink-0">
+            <FileText className="w-3.5 h-3.5 text-slate-700" />
             Document Scope:
           </span>
           <button
             type="button"
             aria-pressed={selectedDocIds.length === 0}
             onClick={selectAllDocuments}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 ${
               selectedDocIds.length === 0
-                ? 'bg-clario-navy text-white shadow-xs'
-                : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
             }`}
           >
             All Workspace Documents ({documents.length})
@@ -325,15 +325,17 @@ export const KnowledgeGraphPage: React.FC = () => {
                 type="button"
                 aria-pressed={isSelected}
                 onClick={() => toggleDocumentScope(d.id)}
-                className={`px-2.5 py-1 rounded text-xs transition-colors truncate max-w-[220px] flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 shrink-0 border ${
                   isSelected
-                    ? 'bg-clario-teal text-white font-medium shadow-xs'
-                    : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
+                    ? 'bg-slate-900 text-white font-medium border-slate-900 shadow-xs'
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
                 }`}
-                title={d.title}
+                title={`${d.title} (${d.file_type.toUpperCase()})`}
               >
-                <span>{d.title}</span>
-                <span className="text-[10px] opacity-75 font-mono">({d.file_type.toUpperCase()})</span>
+                <span className="truncate min-w-0 block flex-1 text-left">{d.title}</span>
+                <span className={`text-[10px] font-mono shrink-0 ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                  ({d.file_type.toUpperCase()})
+                </span>
               </button>
             );
           })}

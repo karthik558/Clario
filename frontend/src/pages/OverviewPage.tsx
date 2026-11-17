@@ -19,7 +19,8 @@ import {
   Bot,
   BarChart3,
   Network,
-  Activity
+  Activity,
+  Scale
 } from 'lucide-react';
 import { api } from '../services/api';
 import { DashboardStats, DocumentItem, FindingItem } from '../types';
@@ -90,6 +91,10 @@ export const OverviewPage: React.FC = () => {
           <Button variant="outline" size="sm" onClick={() => navigate('/compare')}>
             <GitCompare className="w-3.5 h-3.5 mr-1.5" />
             Compare
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/negotiate')}>
+            <Scale className="w-3.5 h-3.5 mr-1.5" />
+            Redline
           </Button>
         </div>
       </div>
@@ -189,50 +194,66 @@ export const OverviewPage: React.FC = () => {
               <div className="space-y-3">
                 <button
                   onClick={() => navigate('/ask')}
-                  className="w-full flex items-center justify-between p-3.5 rounded-md border border-[#E4E8E6] bg-[#FCFBF8] hover:bg-[#F8F7F3] hover:border-slate-300 transition-all text-left group shadow-xs"
+                  className="w-full flex items-center justify-between p-3 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="p-2 rounded bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
                       <MessageSquareQuote className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-[#14263D]">Ask Clario</p>
-                      <p className="text-[11px] text-[#748293]">Evidence-backed Q&A</p>
+                      <p className="text-xs font-bold text-slate-900">Ask Clario</p>
+                      <p className="text-[11px] text-slate-500">Evidence-backed Q&A</p>
                     </div>
                   </div>
-                  <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#14263D] transition-colors" />
+                  <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
                 </button>
 
                 <button
                   onClick={() => navigate('/compare')}
-                  className="w-full flex items-center justify-between p-3.5 rounded-md border border-[#E4E8E6] bg-[#FCFBF8] hover:bg-[#F8F7F3] hover:border-slate-300 transition-all text-left group shadow-xs"
+                  className="w-full flex items-center justify-between p-3 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="p-2 rounded bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
                       <GitCompare className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-[#14263D]">Compare Versions</p>
-                      <p className="text-[11px] text-[#748293]">Side-by-side diff & contradictions</p>
+                      <p className="text-xs font-bold text-slate-900">Compare Versions</p>
+                      <p className="text-[11px] text-slate-500">Side-by-side diff & contradictions</p>
                     </div>
                   </div>
-                  <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#14263D] transition-colors" />
+                  <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
+                </button>
+
+                <button
+                  onClick={() => navigate('/negotiate')}
+                  className="w-full flex items-center justify-between p-3 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group shadow-xs"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
+                      <Scale className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">Clause Redline</p>
+                      <p className="text-[11px] text-slate-500">Autonomous AI compromise drafting</p>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
                 </button>
 
                 <button
                   onClick={() => navigate('/search-lab')}
-                  className="w-full flex items-center justify-between p-3.5 rounded-md border border-[#E4E8E6] bg-[#FCFBF8] hover:bg-[#F8F7F3] hover:border-slate-300 transition-all text-left group shadow-xs"
+                  className="w-full flex items-center justify-between p-3 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="p-2 rounded bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
                       <FlaskConical className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-[#14263D]">Search Lab</p>
-                      <p className="text-[11px] text-[#748293]">BM25 vs Vector vs Hybrid</p>
+                      <p className="text-xs font-bold text-slate-900">Search Lab</p>
+                      <p className="text-[11px] text-slate-500">BM25 vs Vector vs Hybrid</p>
                     </div>
                   </div>
-                  <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#14263D] transition-colors" />
+                  <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
                 </button>
               </div>
             </div>

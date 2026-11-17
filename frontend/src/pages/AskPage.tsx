@@ -419,15 +419,17 @@ export const AskPage: React.FC = () => {
 
       {/* Scope Selector */}
       {documents.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-clario-border text-xs">
-          <span className="text-clario-text-secondary font-medium">Search Scope:</span>
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-slate-200 text-xs shadow-xs">
+          <span className="text-slate-700 font-semibold flex items-center gap-1.5 mr-1 shrink-0">
+            Search Scope:
+          </span>
           <button
             aria-pressed={selectedDocIds.length === 0}
             onClick={() => setSelectedDocIds([])}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 ${
               selectedDocIds.length === 0
-                ? 'bg-clario-navy text-white'
-                : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
             }`}
           >
             Entire Workspace ({documents.length} Docs)
@@ -445,14 +447,14 @@ export const AskPage: React.FC = () => {
                     setSelectedDocIds([...selectedDocIds, d.id]);
                   }
                 }}
-                className={`px-2.5 py-1 rounded-md text-xs transition-colors truncate max-w-[200px] ${
+                className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 shrink-0 border ${
                   isSelected
-                    ? 'bg-clario-teal text-white font-medium'
-                    : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
+                    ? 'bg-slate-900 text-white font-medium border-slate-900 shadow-xs'
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
                 }`}
                 title={d.title}
               >
-                {d.title}
+                <span className="truncate min-w-0 block flex-1 text-left">{d.title}</span>
               </button>
             );
           })}

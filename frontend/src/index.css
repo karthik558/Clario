@@ -4,8 +4,8 @@
 
 @layer base {
   body {
-    background-color: #F8F7F3;
-    color: #233448;
+    background-color: #F8FAFC;
+    color: #0F172A;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
@@ -16,14 +16,14 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(20, 38, 61, 0.03);
+  background: rgba(15, 23, 42, 0.03);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(71, 126, 136, 0.25);
+  background: rgba(100, 116, 139, 0.25);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(71, 126, 136, 0.45);
+  background: rgba(100, 116, 139, 0.45);
 }
 
 .font-mono {
@@ -31,7 +31,7 @@
 }
 
 /* Navigation keeps one width contract with the content area. */
-.sidebar { position: fixed; inset: 0 auto 0 0; z-index: 40; display: flex; flex-direction: column; width: 16rem; background: #14263D; color: white; transition: width 200ms, transform 200ms; }
+.sidebar { position: fixed; inset: 0 auto 0 0; z-index: 40; display: flex; flex-direction: column; width: 16rem; background: #0F172A; color: white; transition: width 200ms, transform 200ms; border-right: 1px solid rgba(255, 255, 255, 0.08); }
 @media (min-width: 768px) {
   .sidebar-collapsed { width: 5rem; }
   .sidebar-collapsed .sidebar-label { display: none; }
@@ -42,10 +42,10 @@
   .sidebar-open { transform: translateX(0); visibility: visible; }
 }
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid #477E88 !important;
+  outline: 2px solid #0F172A !important;
   outline-offset: 3px;
 }
-:where(input, select, textarea) { accent-color: #477E88; }
+:where(input, select, textarea) { accent-color: #0F172A; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }

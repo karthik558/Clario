@@ -29,7 +29,7 @@ export const Layout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-clario-ivory text-clario-text flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row">
       {/* Sidebar */}
       <Sidebar
         collapsed={sidebarCollapsed}
@@ -49,7 +49,7 @@ export const Layout: React.FC = () => {
           onOpenNavigation={() => setMobileNavOpen(true)}
         />
 
-        <main className="flex-1 p-3.5 sm:p-5 md:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
           <Outlet />
         </main>
       </div>

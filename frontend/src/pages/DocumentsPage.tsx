@@ -92,7 +92,7 @@ export const DocumentsPage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-clario-text tracking-tight">Document Library</h2>
           <p className="text-xs text-clario-text-secondary">
-            Manage, inspect, and segment enterprise documents across formats (PDF, DOCX, TXT, MD)
+            Manage, inspect, and segment enterprise documents across formats (PDF, DOCX, TXT, MD, Excel, CSV)
           </p>
         </div>
 

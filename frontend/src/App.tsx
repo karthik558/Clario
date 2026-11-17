@@ -11,6 +11,7 @@ import { FindingsPage } from './pages/FindingsPage';
 import { KnowledgeGraphPage } from './pages/KnowledgeGraphPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { NegotiatePage } from './pages/NegotiatePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +35,7 @@ export const App: React.FC = () => {
             <Route path="graph" element={<KnowledgeGraphPage />} />
             <Route path="search-lab" element={<SearchLabPage />} />
             <Route path="findings" element={<FindingsPage />} />
+            <Route path="negotiate" element={<NegotiatePage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

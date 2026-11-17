@@ -132,11 +132,11 @@ class DocumentService:
         filename = file.filename or "uploaded_document"
         ext = filename.split(".")[-1].lower() if "." in filename else "txt"
         
-        valid_exts = ["pdf", "docx", "doc", "txt", "md"]
+        valid_exts = ["pdf", "docx", "doc", "txt", "md", "xlsx", "xls", "xlsm", "csv", "json"]
         if ext not in valid_exts:
             raise HTTPException(
                 status_code=400,
-                detail=f"Unsupported file format '.{ext}'. Supported formats are: PDF, DOCX, TXT, MD."
+                detail=f"Unsupported file format '.{ext}'. Supported formats are: PDF, DOCX, TXT, MD, Excel (.xlsx, .xls), CSV, JSON."
             )
 
         doc_id = str(uuid.uuid4())

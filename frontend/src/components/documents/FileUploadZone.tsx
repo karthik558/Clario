@@ -39,10 +39,10 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
   const handleFileSelected = (file: File) => {
     setError(null);
     setSuccessMsg(null);
-    const validExts = ['pdf', 'docx', 'txt', 'md'];
+    const validExts = ['pdf', 'docx', 'doc', 'txt', 'md', 'xlsx', 'xls', 'csv', 'json'];
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     if (!validExts.includes(ext)) {
-      setError(`Unsupported format ".${ext}". Please upload PDF, DOCX, TXT, or MD documents.`);
+      setError(`Unsupported format ".${ext}". Please upload PDF, DOCX, TXT, MD, Excel (.xlsx, .xls), or CSV documents.`);
       return;
     }
     if (file.size > 50 * 1024 * 1024) { setError('Files must be 50 MB or smaller.'); return; }
@@ -97,7 +97,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
             type="file"
             ref={fileInputRef}
             className="hidden"
-            accept=".pdf,.docx,.txt,.md"
+            accept=".pdf,.docx,.doc,.txt,.md,.xlsx,.xls,.csv,.json"
             onChange={(e) => {
               if (e.target.files && e.target.files[0]) {
                 handleFileSelected(e.target.files[0]);
@@ -111,7 +111,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
             Drag & drop documents here, or <span className="text-clario-navy underline font-medium">browse</span>
           </h4>
           <p className="text-xs text-clario-text-secondary">
-            Supported formats: PDF, DOCX, TXT, Markdown (Max 50MB per file)
+            Supported formats: PDF, DOCX, TXT, Markdown, Excel (.xlsx, .xls), CSV (Max 50MB per file)
           </p>
         </div>
       ) : (

@@ -1,6 +1,21 @@
 import React, { useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Files, MessageSquareQuote, GitCompare, Network, FlaskConical, AlertTriangle, FileText, Settings, PanelLeftClose, PanelLeftOpen, Layers, X } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Files,
+  MessageSquareQuote,
+  GitCompare,
+  Network,
+  FlaskConical,
+  AlertTriangle,
+  FileText,
+  Settings,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Layers,
+  X,
+  Scale
+} from 'lucide-react';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -41,30 +56,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Compare versions', path: '/compare', icon: GitCompare },
     { name: 'Knowledge Graph', path: '/graph', icon: Network },
     { name: 'Findings', path: '/findings', icon: AlertTriangle },
+    { name: 'Clause Redline', path: '/negotiate', icon: Scale },
     { name: 'Reports', path: '/reports', icon: FileText },
     { name: 'Search Lab', path: '/search-lab', icon: FlaskConical },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
   return (
     <>
-      {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-clario-navy/40 md:hidden" />}
+      {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-black/50 md:hidden" />}
       <aside ref={sidebarRef} id="workspace-navigation" aria-label="Workspace navigation" className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-open' : ''}`}>
         <div className="flex h-20 shrink-0 items-center gap-3 px-5 border-b border-white/10">
-          <Layers className="w-7 h-7 text-slate-200 shrink-0" aria-hidden="true" />
-          <div className="sidebar-label"><span className="text-xl font-semibold tracking-tight">Clario</span><p className="text-xs text-slate-400">Document intelligence</p></div>
-          <button aria-label="Close navigation" onClick={onCloseMobile} className="md:hidden ml-auto p-2"><X className="w-5 h-5" /></button>
+          <Layers className="w-7 h-7 text-white shrink-0" aria-hidden="true" />
+          <div className="sidebar-label"><span className="text-xl font-semibold tracking-tight text-white">Clario</span><p className="text-xs text-slate-400">Document intelligence</p></div>
+          <button aria-label="Close navigation" onClick={onCloseMobile} className="md:hidden ml-auto p-2 text-slate-300 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
-        <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-6 space-y-1">
+        <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-1">
           {navItems.map(({ name, path, icon: Icon }) => (
             <NavLink key={path} to={path} end={path === '/'} onClick={onCloseMobile} aria-label={name} title={name}
-              className={({ isActive }) => `sidebar-link flex items-center gap-3 px-3 py-3 rounded-md text-sm transition-colors ${isActive ? 'bg-clario-teal text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
+              className={({ isActive }) => `sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all ${isActive ? 'bg-white/15 text-white font-medium shadow-xs border-l-2 border-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
               <Icon className="w-5 h-5 shrink-0" aria-hidden="true" /><span className="sidebar-label">{name}</span>
             </NavLink>
           ))}
         </nav>
         <div className="p-3 border-t border-white/10">
           <button onClick={onToggle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="workspace-navigation"
-            className="hidden md:flex w-full items-center gap-3 p-3 rounded-md text-slate-300 hover:bg-white/10 hover:text-white text-sm">
+            className="hidden md:flex w-full items-center gap-3 p-3 rounded-md text-slate-300 hover:bg-white/10 hover:text-white text-sm transition-colors">
             {collapsed ? <PanelLeftOpen className="w-5 h-5 shrink-0" /> : <PanelLeftClose className="w-5 h-5 shrink-0" />}<span className="sidebar-label">Collapse navigation</span>
           </button>
           <p className="sidebar-label px-3 pt-3 pb-2 text-xs text-slate-400">Your documents. Clearer decisions.</p>
