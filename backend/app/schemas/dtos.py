@@ -113,6 +113,9 @@ class AskRequest(BaseModel):
     document_ids: Optional[List[str]] = None
     collection: Optional[str] = None
     top_k: Optional[int] = Field(default=None, ge=1, le=50)
+    thinking_mode: Optional[bool] = False
+    local_model: Optional[str] = None
+    llm_provider: Optional[str] = None
 
 class CitationItem(BaseModel):
     citation_id: int
@@ -132,6 +135,7 @@ class AskResponse(BaseModel):
     synthesis_latency_ms: float
     has_conflicting_evidence: bool = False
     conflict_notes: Optional[str] = None
+    thinking_process: Optional[str] = None
 
 # ---------------- Document Comparison ----------------
 
@@ -250,3 +254,53 @@ class DashboardStatsResponse(BaseModel):
     recent_documents: List[DocumentResponse]
     recent_findings: List[FindingResponse]
     recent_activities: List[Dict[str, Any]]
+
+# ---------------- Autonomous Clause Negotiation (P3) ----------------
+
+class NegotiateRequest(BaseModel):
+    finding_id: Optional[str] = None
+    topic: Optional[str] = None
+    statement_a: Optional[str] = None
+    statement_b: Optional[str] = None
+    doc_a_title: Optional[str] = None
+    doc_b_title: Optional[str] = None
+    page_a: Optional[int] = 1
+    page_b: Optional[int] = 1
+    stance: Literal["balanced", "customer_protective", "vendor_favorable", "strict_compliance"] = "balanced"
+    custom_instructions: Optional[str] = None
+
+class NegotiateResponse(BaseModel):
+    topic: str
+    stance: str
+    original_a: Dict[str, Any]
+    original_b: Dict[str, Any]
+    proposed_clause: str
+    rationale: str
+    risk_level: str
+    key_concessions: List[str]
+    mode: str = "local_ai_autonomous_negotiation"
+
+# ---------------- Interactive Knowledge Graph (P4) ----------------
+
+class GraphNode(BaseModel):
+    id: str
+    label: str
+    type: Literal["document", "topic", "finding", "chunk"]
+    size: float
+    color: str
+    metadata: Dict[str, Any] = {}
+
+class GraphEdge(BaseModel):
+    id: str
+    source: str
+    target: str
+    label: Optional[str] = None
+    type: Literal["contains", "governs", "contradicts", "cites"]
+    color: str = "#94A3B8"
+    dashed: bool = False
+    weight: float = 1.0
+
+class GraphDataResponse(BaseModel):
+    nodes: List[GraphNode]
+    edges: List[GraphEdge]
+    stats: Dict[str, Any]

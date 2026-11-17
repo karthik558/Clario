@@ -14,13 +14,15 @@ import {
   Check,
   X,
   FileText,
-  Trash2
+  Trash2,
+  Scale
 } from 'lucide-react';
 import { api } from '../services/api';
 import { FindingItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { ClauseNegotiatorModal } from '../components/negotiate/ClauseNegotiatorModal';
 
 export const FindingsPage: React.FC = () => {
   const [findings, setFindings] = useState<FindingItem[]>([]);
@@ -32,6 +34,7 @@ export const FindingsPage: React.FC = () => {
   const [severityFilter, setSeverityFilter] = useState('');
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [notesInput, setNotesInput] = useState('');
+  const [negotiateFindingItem, setNegotiateFindingItem] = useState<FindingItem | null>(null);
 
   const fetchFindings = async () => {
     setLoading(true);
@@ -243,8 +246,17 @@ export const FindingsPage: React.FC = () => {
                   </Badge>
                 </div>
 
-                {/* Status Dropdown */}
+                {/* Status Dropdown & Redline Action */}
                 <div className="flex items-center space-x-2 text-xs">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setNegotiateFindingItem(f)}
+                    className="text-xs flex items-center gap-1.5"
+                  >
+                    <Scale className="w-3.5 h-3.5 text-clario-navy" />
+                    <span>Draft Redline</span>
+                  </Button>
                   <span className="text-clario-text-secondary font-medium">Status:</span>
                   <Select
                     aria-label={`Review status for ${f.title}`} value={f.status}
@@ -342,6 +354,22 @@ export const FindingsPage: React.FC = () => {
           ))
         )}
       </div>
+
+      {negotiateFindingItem && (
+        <ClauseNegotiatorModal
+          isOpen={!!negotiateFindingItem}
+          onClose={() => setNegotiateFindingItem(null)}
+          findingId={negotiateFindingItem.id}
+          topic={negotiateFindingItem.title}
+          statementA={negotiateFindingItem.doc_a_quote}
+          statementB={negotiateFindingItem.doc_b_quote}
+          docATitle={negotiateFindingItem.doc_a_title}
+          docBTitle={negotiateFindingItem.doc_b_title}
+          pageA={negotiateFindingItem.doc_a_page}
+          pageB={negotiateFindingItem.doc_b_page}
+          onSaved={fetchFindings}
+        />
+      )}
     </div>
   );
 };

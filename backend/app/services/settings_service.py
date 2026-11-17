@@ -5,7 +5,20 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.entities import AppConfiguration
 
-SETTINGS_FIELDS = ("llm_provider", "ollama_base_url", "ollama_model", "bm25_k1", "bm25_b", "rrf_k", "default_top_k")
+SETTINGS_FIELDS = (
+    "llm_provider",
+    "ollama_base_url",
+    "ollama_model",
+    "local_ai_base_url",
+    "local_ai_model",
+    "local_ai_provider",
+    "local_ai_api_key",
+    "thinking_mode",
+    "bm25_k1",
+    "bm25_b",
+    "rrf_k",
+    "default_top_k"
+)
 settings_lock = RLock()
 
 

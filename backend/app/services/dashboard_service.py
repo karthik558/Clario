@@ -29,12 +29,12 @@ class DashboardService:
         recent_docs_db = db.query(Document).order_by(Document.created_at.desc()).limit(6).all()
         recent_docs = []
         for d in recent_docs_db:
-            dto = DocumentResponse.from_orm(d)
+            dto = DocumentResponse.model_validate(d)
             dto.tags = json.loads(d.tags_json) if d.tags_json else []
             recent_docs.append(dto)
 
         recent_findings_db = db.query(Finding).order_by(Finding.created_at.desc()).limit(5).all()
-        recent_findings = [FindingResponse.from_orm(f) for f in recent_findings_db]
+        recent_findings = [FindingResponse.model_validate(f) for f in recent_findings_db]
 
         # Synthesize actual recent activity stream from recent events in DB
         activities: List[Dict[str, Any]] = []

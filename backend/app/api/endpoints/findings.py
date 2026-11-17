@@ -18,26 +18,26 @@ def list_findings(
     db: Session = Depends(get_db)
 ):
     findings = FindingService.list_findings(db, category=category, status=status, severity=severity)
-    return [FindingResponse.from_orm(f) for f in findings]
+    return [FindingResponse.model_validate(f) for f in findings]
 
 @router.post("/findings", response_model=FindingResponse)
 def create_finding(data: FindingCreate, db: Session = Depends(get_db)):
     finding = FindingService.create_finding(data, db)
-    return FindingResponse.from_orm(finding)
+    return FindingResponse.model_validate(finding)
 
 @router.get("/findings/{finding_id}", response_model=FindingResponse)
 def get_finding(finding_id: str, db: Session = Depends(get_db)):
     finding = FindingService.get_finding(finding_id, db)
     if not finding:
         raise HTTPException(status_code=404, detail="Finding not found")
-    return FindingResponse.from_orm(finding)
+    return FindingResponse.model_validate(finding)
 
 @router.patch("/findings/{finding_id}", response_model=FindingResponse)
 def update_finding(finding_id: str, data: FindingUpdate, db: Session = Depends(get_db)):
     finding = FindingService.update_finding(finding_id, data, db)
     if not finding:
         raise HTTPException(status_code=404, detail="Finding not found")
-    return FindingResponse.from_orm(finding)
+    return FindingResponse.model_validate(finding)
 
 @router.delete("/findings/{finding_id}")
 def delete_finding(finding_id: str, db: Session = Depends(get_db)):

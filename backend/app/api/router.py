@@ -9,7 +9,9 @@ from app.api.endpoints import (
     findings,
     reports,
     jobs,
-    settings
+    settings,
+    graph,
+    negotiate
 )
 
 api_router = APIRouter()
@@ -24,3 +26,5 @@ api_router.include_router(findings.router, tags=["Findings"])
 api_router.include_router(reports.router, tags=["Reports"])
 api_router.include_router(jobs.router, tags=["Ingestion Jobs"])
 api_router.include_router(settings.router, tags=["Settings"])
+api_router.include_router(graph.router, tags=["Knowledge Graph"])
+api_router.include_router(negotiate.router, tags=["Clause Negotiator"])

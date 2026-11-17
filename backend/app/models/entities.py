@@ -1,11 +1,14 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, Float, Text, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.database.session import Base
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 class Workspace(Base):
     __tablename__ = "workspaces"
@@ -14,7 +17,7 @@ class Workspace(Base):
     name = Column(String(100), nullable=False)
     slug = Column(String(100), nullable=False, unique=True)
     description = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     documents = relationship("Document", back_populates="workspace", cascade="all, delete-orphan")
 
@@ -36,8 +39,8 @@ class Document(Base):
     error_message = Column(Text, nullable=True)
     tags_json = Column(Text, default="[]")          # JSON array of tags
     collection = Column(String(100), default="General")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     workspace = relationship("Workspace", back_populates="documents")
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan", order_by="DocumentChunk.chunk_index")
@@ -57,7 +60,7 @@ class DocumentChunk(Base):
     token_count = Column(Integer, default=0)
     embedding_json = Column(Text, nullable=True)   # Stored dense vector as JSON array of floats
     metadata_json = Column(Text, default="{}")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     document = relationship("Document", back_populates="chunks")
 
@@ -71,8 +74,8 @@ class IngestionJob(Base):
     progress_percent = Column(Integer, default=0)
     current_stage = Column(String(100), default="Initialized")
     message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     document = relationship("Document", back_populates="jobs")
 
@@ -87,7 +90,7 @@ class SearchQuery(Base):
     latency_ms = Column(Float, default=0.0)
     result_count = Column(Integer, default=0)
     results_json = Column(Text, default="[]")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 
 class Comparison(Base):
@@ -104,7 +107,7 @@ class Comparison(Base):
     changed_count = Column(Integer, default=0)
     diff_data_json = Column(Text, default="{}")
     contradiction_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 
 class Finding(Base):
@@ -125,8 +128,8 @@ class Finding(Base):
     doc_b_page = Column(Integer, nullable=True)
     doc_b_quote = Column(Text, nullable=True)
     reviewer_notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class Report(Base):
@@ -139,7 +142,7 @@ class Report(Base):
     content_json = Column(Text, default="{}")
     document_ids_json = Column(Text, default="[]")
     pdf_path = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 
 class AppConfiguration(Base):
@@ -147,7 +150,7 @@ class AppConfiguration(Base):
 
     id = Column(String(30), primary_key=True, default="workspace")
     settings_json = Column(Text, nullable=False, default="{}")
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class AnswerRecord(Base):
@@ -157,4 +160,4 @@ class AnswerRecord(Base):
     query = Column(Text, nullable=False)
     document_ids_json = Column(Text, nullable=False, default="[]")
     response_json = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)

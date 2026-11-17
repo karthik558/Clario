@@ -38,7 +38,7 @@ async def upload_document(
     # Refresh search index
     search_service.reload_index(db)
 
-    dto = DocumentResponse.from_orm(doc)
+    dto = DocumentResponse.model_validate(doc)
     dto.tags = json.loads(doc.tags_json) if doc.tags_json else []
     return dto
 
@@ -52,7 +52,7 @@ def list_documents(
     docs = DocumentService.list_documents(db=db, search=search, status=status, collection=collection)
     result = []
     for d in docs:
-        dto = DocumentResponse.from_orm(d)
+        dto = DocumentResponse.model_validate(d)
         dto.tags = json.loads(d.tags_json) if d.tags_json else []
         result.append(dto)
     return result
@@ -63,9 +63,9 @@ def get_document(doc_id: str, db: Session = Depends(get_db)):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    dto = DocumentDetailResponse.from_orm(doc)
+    dto = DocumentDetailResponse.model_validate(doc)
     dto.tags = json.loads(doc.tags_json) if doc.tags_json else []
-    dto.chunks = [ChunkResponse.from_orm(c) for c in doc.chunks]
+    dto.chunks = [ChunkResponse.model_validate(c) for c in doc.chunks]
     return dto
 
 @router.get("/documents/{doc_id}/file")

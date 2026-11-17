@@ -151,3 +151,42 @@ def test_reports_generation():
     dl_res = client.get(f"/api/reports/{report_id}/download")
     assert dl_res.status_code == 200
     assert dl_res.headers["content-type"] == "application/pdf"
+
+
+def test_negotiate_clause():
+    response = client.post("/api/negotiate", json={
+        "topic": "Data Retention & Archival",
+        "statement_a": "Customer data is retained for 30 days following termination.",
+        "statement_b": "Customer data is retained for 7 years to satisfy regulatory compliance requirements.",
+        "doc_a_title": "Terms of Service 2023",
+        "doc_b_title": "Enterprise Agreement 2024",
+        "stance": "balanced"
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert "proposed_clause" in data
+    assert "rationale" in data
+    assert "risk_level" in data
+    assert len(data["proposed_clause"]) > 20
+    assert data["stance"] == "balanced"
+
+
+def test_knowledge_graph():
+    response = client.get("/api/graph")
+    assert response.status_code == 200
+    data = response.json()
+    assert "nodes" in data
+    assert "edges" in data
+    assert "stats" in data
+    assert data["stats"]["total_nodes"] >= 0
+
+
+def test_ask_stream():
+    response = client.post("/api/ask/stream", json={
+        "query": "What is the policy?",
+        "llm_provider": "extractive"
+    })
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers.get("content-type", "")
+    content = response.text
+    assert "event: token" in content or "event: citations" in content

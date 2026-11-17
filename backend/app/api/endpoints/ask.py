@@ -1,5 +1,6 @@
 import json
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from app.models.entities import AnswerRecord
 from sqlalchemy.orm import Session
 from app.database.session import get_db
@@ -15,6 +16,17 @@ def ask_clario(request: AskRequest, db: Session = Depends(get_db)):
     db.add(record)
     db.commit()
     return response
+
+@router.post("/ask/stream")
+def ask_clario_stream(request: AskRequest, db: Session = Depends(get_db)):
+    """
+    Realtime Server-Sent Events (SSE) streaming endpoint:
+    Streams thinking tokens, cited answer tokens, and citations in real time.
+    """
+    return StreamingResponse(
+        AskService.stream_answer_question(request, db),
+        media_type="text/event-stream"
+    )
 
 
 @router.get("/ask/history")

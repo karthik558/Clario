@@ -1,0 +1,637 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  Network,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Filter,
+  FileText,
+  AlertTriangle,
+  Layers,
+  BookOpen,
+  ArrowRight,
+  ExternalLink,
+  Search,
+  Sparkles
+} from 'lucide-react';
+import { api } from '../services/api';
+import { GraphDataResponse, GraphNode, GraphEdge } from '../types';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
+
+interface LayoutNode extends GraphNode {
+  x: number;
+  y: number;
+  vx?: number;
+  vy?: number;
+}
+
+export const KnowledgeGraphPage: React.FC = () => {
+  const [data, setData] = useState<GraphDataResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [visibleTypes, setVisibleTypes] = useState<Record<string, boolean>>({
+    document: true,
+    topic: true,
+    finding: true,
+    chunk: true,
+  });
+
+  // Selected Node & Inspection
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewerDocId, setViewerDocId] = useState<string | null>(null);
+
+  // Pan & Zoom
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const fetchGraph = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.getKnowledgeGraph();
+      setData(res);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load knowledge graph');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGraph();
+  }, []);
+
+  // Filter nodes & edges
+  const filteredNodes = useMemo(() => {
+    if (!data) return [];
+    return data.nodes.filter((node) => {
+      if (!visibleTypes[node.type]) return false;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        return (
+          node.label.toLowerCase().includes(query) ||
+          node.type.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    });
+  }, [data, visibleTypes, searchQuery]);
+
+  const nodeMap = useMemo(() => {
+    const map = new Map<string, GraphNode>();
+    filteredNodes.forEach((n) => map.set(n.id, n));
+    return map;
+  }, [filteredNodes]);
+
+  const filteredEdges = useMemo(() => {
+    if (!data) return [];
+    return data.edges.filter(
+      (edge) => nodeMap.has(edge.source) && nodeMap.has(edge.target)
+    );
+  }, [data, nodeMap]);
+
+  // Compute positions using deterministic layout
+  const layoutNodes = useMemo<LayoutNode[]>(() => {
+    if (!filteredNodes.length) return [];
+    const width = 900;
+    const height = 600;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const docs = filteredNodes.filter((n) => n.type === 'document');
+    const topics = filteredNodes.filter((n) => n.type === 'topic');
+    const findings = filteredNodes.filter((n) => n.type === 'finding');
+    const chunks = filteredNodes.filter((n) => n.type === 'chunk');
+
+    const result: LayoutNode[] = [];
+
+    // Documents placed around center
+    docs.forEach((doc, idx) => {
+      const angle = (idx / Math.max(docs.length, 1)) * 2 * Math.PI - Math.PI / 2;
+      const radius = docs.length === 1 ? 0 : 120;
+      result.push({
+        ...doc,
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      });
+    });
+
+    // Topics in mid orbit
+    topics.forEach((topic, idx) => {
+      const angle = (idx / Math.max(topics.length, 1)) * 2 * Math.PI;
+      const radius = 240;
+      result.push({
+        ...topic,
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      });
+    });
+
+    // Findings in outer lower/upper arcs
+    findings.forEach((finding, idx) => {
+      const angle = (idx / Math.max(findings.length, 1)) * 2 * Math.PI + Math.PI / 4;
+      const radius = 330;
+      result.push({
+        ...finding,
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      });
+    });
+
+    // Chunks clustered near outer edges
+    chunks.forEach((chunk, idx) => {
+      const angle = (idx / Math.max(chunks.length, 1)) * 2 * Math.PI - Math.PI / 4;
+      const radius = 380;
+      result.push({
+        ...chunk,
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      });
+    });
+
+    return result;
+  }, [filteredNodes]);
+
+  const layoutNodeMap = useMemo(() => {
+    const map = new Map<string, LayoutNode>();
+    layoutNodes.forEach((n) => map.set(n.id, n));
+    return map;
+  }, [layoutNodes]);
+
+  // Connected nodes & edges for highlighting
+  const connectedNodeIds = useMemo(() => {
+    if (!selectedNodeId) return new Set<string>();
+    const set = new Set<string>([selectedNodeId]);
+    filteredEdges.forEach((e) => {
+      if (e.source === selectedNodeId) set.add(e.target);
+      if (e.target === selectedNodeId) set.add(e.source);
+    });
+    return set;
+  }, [selectedNodeId, filteredEdges]);
+
+  const selectedNode = useMemo(
+    () => (selectedNodeId ? nodeMap.get(selectedNodeId) || null : null),
+    [selectedNodeId, nodeMap]
+  );
+
+  const selectedNodeEdges = useMemo(() => {
+    if (!selectedNodeId) return [];
+    return filteredEdges.filter(
+      (e) => e.source === selectedNodeId || e.target === selectedNodeId
+    );
+  }, [selectedNodeId, filteredEdges]);
+
+  // Pan handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPan({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleZoom = (delta: number) => {
+    setZoom((prev) => Math.min(Math.max(0.4, prev + delta), 2.5));
+  };
+
+  const handleResetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setSelectedNodeId(null);
+  };
+
+  const toggleType = (type: string) => {
+    setVisibleTypes((prev) => ({ ...prev, [type]: !prev[type] }));
+  };
+
+  const getNodeColor = (type: string) => {
+    switch (type) {
+      case 'document':
+        return '#14263D'; // Midnight Navy
+      case 'topic':
+        return '#477E88'; // Muted Teal
+      case 'finding':
+        return '#BE185D'; // Rose
+      case 'chunk':
+        return '#64748B'; // Slate
+      default:
+        return '#94A3B8';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <div>
+          <h2 className="text-xl font-bold text-clario-navy tracking-tight flex items-center gap-2">
+            <Network className="w-5 h-5 text-clario-navy" />
+            <span>Interactive Knowledge & Citation Graph</span>
+          </h2>
+          <p className="text-xs text-clario-text-secondary mt-0.5">
+            2D semantic topology mapping documents, governing provisions, cross-clause contradictions, and evidence citations
+          </p>
+        </div>
+
+        {/* Corpus Stats Pills */}
+        {data?.stats && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="navy">Docs: {data.stats.total_documents}</Badge>
+            <Badge variant="teal">Topics: {data.stats.total_topics}</Badge>
+            <Badge variant="red">Findings: {data.stats.total_findings}</Badge>
+            <Badge variant="gray">Total Nodes: {data.stats.total_nodes}</Badge>
+          </div>
+        )}
+      </div>
+
+      {/* Control Toolbar */}
+      <Card className="p-3.5 bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Node Filter Toggles */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mr-1 flex items-center gap-1">
+              <Filter className="w-3.5 h-3.5" />
+              Filter:
+            </span>
+
+            <button
+              type="button"
+              onClick={() => toggleType('document')}
+              className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
+                visibleTypes.document
+                  ? 'bg-navy-900 text-white border-navy-900'
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-slate-300" />
+              Documents
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleType('topic')}
+              className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
+                visibleTypes.topic
+                  ? 'bg-teal-700 text-white border-teal-700'
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-teal-300" />
+              Topics
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleType('finding')}
+              className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
+                visibleTypes.finding
+                  ? 'bg-rose-700 text-white border-rose-700'
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-rose-300" />
+              Contradictions
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleType('chunk')}
+              className={`text-xs px-2.5 py-1 rounded-md border flex items-center gap-1.5 transition-colors ${
+                visibleTypes.chunk
+                  ? 'bg-slate-700 text-white border-slate-700'
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-slate-300" />
+              Citations / Chunks
+            </button>
+          </div>
+
+          {/* Search in Graph & Canvas Controls */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Find node or topic..."
+                className="text-xs pl-8 pr-2.5 py-1 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-clario-navy w-44"
+              />
+            </div>
+
+            <div className="flex items-center border border-slate-300 rounded-md bg-white">
+              <button
+                type="button"
+                onClick={() => handleZoom(0.15)}
+                className="p-1.5 text-slate-600 hover:text-slate-900 border-r border-slate-200 hover:bg-slate-50"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleZoom(-0.15)}
+                className="p-1.5 text-slate-600 hover:text-slate-900 border-r border-slate-200 hover:bg-slate-50"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleResetView}
+                className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                title="Reset View"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Main Canvas + Inspector Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        {/* SVG Network Visualizer */}
+        <div className="lg:col-span-3 border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm relative h-[620px] select-none">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2">
+              <div className="w-6 h-6 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin" />
+              <p className="text-xs">Constructing semantic relationship graph...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-full text-red-600 p-6">
+              <AlertTriangle className="w-8 h-8 mb-2" />
+              <p className="text-xs">{error}</p>
+            </div>
+          ) : (
+            <svg
+              ref={svgRef}
+              className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+                {/* Edge Lines */}
+                {filteredEdges.map((edge) => {
+                  const source = layoutNodeMap.get(edge.source);
+                  const target = layoutNodeMap.get(edge.target);
+                  if (!source || !target) return null;
+
+                  const isHighlighted =
+                    selectedNodeId &&
+                    (edge.source === selectedNodeId || edge.target === selectedNodeId);
+                  const isDimmed = selectedNodeId && !isHighlighted;
+
+                  return (
+                    <line
+                      key={edge.id}
+                      x1={source.x}
+                      y1={source.y}
+                      x2={target.x}
+                      y2={target.y}
+                      stroke={edge.color || '#CBD5E1'}
+                      strokeWidth={isHighlighted ? 2.5 : edge.weight || 1.2}
+                      strokeDasharray={edge.dashed ? '4,4' : undefined}
+                      opacity={isDimmed ? 0.15 : isHighlighted ? 1 : 0.6}
+                      className="transition-all duration-150"
+                    />
+                  );
+                })}
+
+                {/* Node Circles & Labels */}
+                {layoutNodes.map((node) => {
+                  const isSelected = node.id === selectedNodeId;
+                  const isConnected = connectedNodeIds.has(node.id);
+                  const isDimmed = selectedNodeId && !isSelected && !isConnected;
+                  const isHovered = node.id === hoveredNodeId;
+
+                  const nodeRadius = node.size ? Math.max(node.size * 0.8, 12) : 16;
+                  const fillColor = getNodeColor(node.type);
+
+                  return (
+                    <g
+                      key={node.id}
+                      transform={`translate(${node.x}, ${node.y})`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedNodeId(node.id === selectedNodeId ? null : node.id);
+                      }}
+                      onMouseEnter={() => setHoveredNodeId(node.id)}
+                      onMouseLeave={() => setHoveredNodeId(null)}
+                      className="cursor-pointer transition-transform duration-100"
+                      opacity={isDimmed ? 0.2 : 1}
+                    >
+                      {/* Selection Ring */}
+                      {(isSelected || isHovered) && (
+                        <circle
+                          r={nodeRadius + 5}
+                          fill="none"
+                          stroke={fillColor}
+                          strokeWidth={2}
+                          strokeDasharray={isSelected ? undefined : '2,2'}
+                          opacity={0.8}
+                        />
+                      )}
+
+                      {/* Node Circle */}
+                      <circle
+                        r={nodeRadius}
+                        fill={fillColor}
+                        stroke="#FFFFFF"
+                        strokeWidth={2}
+                        className="shadow-sm"
+                      />
+
+                      {/* Node Center Icon/Indicator */}
+                      <circle r={2.5} fill="#FFFFFF" />
+
+                      {/* Node Label Text */}
+                      <text
+                        y={nodeRadius + 14}
+                        textAnchor="middle"
+                        fontSize={node.type === 'document' ? '12px' : '10px'}
+                        fontWeight={node.type === 'document' || isSelected ? 'bold' : 'normal'}
+                        fill="#1E293B"
+                        className="pointer-events-none select-none bg-white"
+                        style={{
+                          textShadow: '0 1px 2px rgba(255,255,255,0.9), 0 -1px 2px rgba(255,255,255,0.9)',
+                        }}
+                      >
+                        {node.label.length > 22 ? `${node.label.slice(0, 20)}…` : node.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </g>
+            </svg>
+          )}
+
+          {/* Quick Graph Legend Overlay */}
+          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur border border-slate-200 rounded-md px-3 py-2 text-[10px] space-y-1 shadow-sm">
+            <div className="font-semibold text-slate-700">Topology Legend</div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#14263D] inline-block" />
+                <span>Document</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#477E88] inline-block" />
+                <span>Topic</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#BE185D] inline-block" />
+                <span>Contradiction</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#64748B] inline-block" />
+                <span>Chunk</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Selected Node Inspector Side Panel */}
+        <div className="lg:col-span-1 space-y-4">
+          <Card className="p-4 bg-white">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <span className="text-xs font-semibold text-clario-navy">Node Inspector</span>
+              {selectedNode && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedNodeId(null)}
+                  className="text-[11px] text-slate-400 hover:text-slate-600"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {selectedNode ? (
+              <div className="pt-3 space-y-3.5">
+                <div>
+                  <Badge
+                    variant={
+                      selectedNode.type === 'document'
+                        ? 'navy'
+                        : selectedNode.type === 'topic'
+                        ? 'teal'
+                        : selectedNode.type === 'finding'
+                        ? 'red'
+                        : 'gray'
+                    }
+                  >
+                    {selectedNode.type.toUpperCase()}
+                  </Badge>
+                  <h4 className="text-sm font-bold text-clario-navy mt-1.5 leading-snug">
+                    {selectedNode.label}
+                  </h4>
+                </div>
+
+                {/* Node Specific Metadata */}
+                {selectedNode.metadata && (
+                  <div className="bg-slate-50 border border-slate-100 rounded-md p-2.5 space-y-1.5 text-xs text-slate-600">
+                    {Object.entries(selectedNode.metadata).map(([key, val]) => (
+                      <div key={key} className="flex flex-col">
+                        <span className="text-[10px] uppercase font-semibold text-slate-400">
+                          {key.replace('_', ' ')}
+                        </span>
+                        <span className="text-[11px] text-slate-800 break-words">
+                          {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Action for Documents */}
+                {selectedNode.type === 'document' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewerDocId(selectedNode.id)}
+                    className="w-full text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Open in Document Viewer</span>
+                  </Button>
+                )}
+
+                {/* Connected Edges */}
+                <div>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">
+                    Direct Connections ({selectedNodeEdges.length})
+                  </span>
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                    {selectedNodeEdges.map((edge) => {
+                      const otherId = edge.source === selectedNode.id ? edge.target : edge.source;
+                      const otherNode = nodeMap.get(otherId);
+                      if (!otherNode) return null;
+
+                      return (
+                        <button
+                          key={edge.id}
+                          type="button"
+                          onClick={() => setSelectedNodeId(otherId)}
+                          className="w-full text-left p-2 rounded-md border border-slate-100 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-100/50 transition-colors flex items-center justify-between text-xs"
+                        >
+                          <div className="truncate mr-2">
+                            <span className="text-[10px] uppercase text-slate-400 block">
+                              {edge.type}
+                            </span>
+                            <span className="font-medium text-slate-800 truncate block">
+                              {otherNode.label}
+                            </span>
+                          </div>
+                          <ArrowRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="pt-8 pb-8 text-center text-slate-400 space-y-2">
+                <Network className="w-8 h-8 mx-auto text-slate-300" />
+                <p className="text-xs">
+                  Click any node in the graph to inspect its properties, evidence citations, and relationships.
+                </p>
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
+
+      {/* Document Viewer Modal */}
+      {viewerDocId && (
+        <DocumentViewerModal
+          documentId={viewerDocId}
+          onClose={() => setViewerDocId(null)}
+        />
+      )}
+    </div>
+  );
+};

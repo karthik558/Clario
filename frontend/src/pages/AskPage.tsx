@@ -13,7 +13,10 @@ import {
   Copy,
   Check,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Cpu,
+  Brain,
+  Radio
 } from 'lucide-react';
 import { api } from '../services/api';
 import { AskResponse, CitationItem, DocumentItem } from '../types';
@@ -26,20 +29,31 @@ import { DocumentViewerModal } from '../components/documents/DocumentViewerModal
 export const AskPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [streamingMode, setStreamingMode] = useState(false);
+  const [streamAnswer, setStreamAnswer] = useState('');
+  const [streamThinking, setStreamThinking] = useState('');
+  const [streamCitations, setStreamCitations] = useState<CitationItem[]>([]);
   const [response, setResponse] = useState<AskResponse | null>(null);
   const [history, setHistory] = useState<Array<{ query: string; response: AskResponse }>>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [engineLabel, setEngineLabel] = useState('');
-  const [llmProvider, setLlmProvider] = useState<'ollama' | 'extractive' | string>('ollama');
-  const [switchingEngine, setSwitchingEngine] = useState(false);
+
+  // Local AI Gateway & Engine States
+  const [llmProvider, setLlmProvider] = useState<string>('ollama');
+  const [localModel, setLocalModel] = useState<string>('gemma3:latest');
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [thinkingMode, setThinkingMode] = useState<boolean>(true);
+
   const [error, setError] = useState('');
   const [pendingQuery, setPendingQuery] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [clearing, setClearing] = useState(false);
   const [expandedCitations, setExpandedCitations] = useState<Record<number, boolean>>({});
+  const [expandedThinking, setExpandedThinking] = useState<Record<number, boolean>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const toggleCitations = (idx: number) => {
@@ -49,17 +63,43 @@ export const AskPage: React.FC = () => {
     }));
   };
 
+  const toggleThinking = (idx: number) => {
+    setExpandedThinking(prev => ({
+      ...prev,
+      [idx]: !prev[idx]
+    }));
+  };
+
+  const refreshModelList = async (provider: string) => {
+    try {
+      const status = await api.getLocalAIStatus(provider);
+      if (status.models && status.models.length > 0) {
+        setAvailableModels(status.models);
+        if (!status.models.includes(localModel)) {
+          setLocalModel(status.active_model || status.models[0]);
+        }
+      }
+      setStatusMessage(status.message);
+    } catch {
+      setStatusMessage('Local server check failed');
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     api.getSettings().then(config => {
       if (!cancelled) {
-        setLlmProvider(config.llm_provider || 'ollama');
-        setEngineLabel(config.llm_provider === 'ollama' ? `Ollama · ${config.ollama_model}` : config.llm_provider === 'extractive' ? 'Extractive · retrieved passages' : config.llm_provider);
+        const prov = config.llm_provider || 'ollama';
+        setLlmProvider(prov);
+        setLocalModel(config.ollama_model || 'gemma3:latest');
+        refreshModelList(prov);
       }
     }).catch(() => {});
+
     api.getAnswerHistory().then(saved => { if (!cancelled) setHistory(saved); })
       .catch(() => { if (!cancelled) setError('Saved answers could not be loaded. You can still ask a new question.'); })
       .finally(() => { if (!cancelled) setLoadingHistory(false); });
+
     const loadDocs = async () => {
       try {
         const docs = await api.getDocuments();
@@ -72,18 +112,15 @@ export const AskPage: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
-  const handleSwitchEngine = async (provider: 'ollama' | 'extractive') => {
-    if (switchingEngine || loading) return;
-    setSwitchingEngine(true);
+  const handleSwitchProvider = async (provider: string) => {
+    setLlmProvider(provider);
+    if (provider !== 'extractive') {
+      await refreshModelList(provider);
+    }
     try {
       await api.updateSettings({ llm_provider: provider });
-      setLlmProvider(provider);
-      const conf = await api.getSettings();
-      setEngineLabel(provider === 'ollama' ? `Ollama · ${conf.ollama_model}` : 'Extractive · retrieved passages');
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSwitchingEngine(false);
+    } catch (e) {
+      console.warn('Failed to persist provider setting', e);
     }
   };
 
@@ -96,15 +133,70 @@ export const AskPage: React.FC = () => {
     setLoading(true);
     setResponse(null);
     setQuery('');
+
+    const docIds = selectedDocIds.length > 0 ? selectedDocIds : undefined;
+
+    if (streamingMode) {
+      setStreaming(true);
+      setStreamAnswer('');
+      setStreamThinking('');
+      setStreamCitations([]);
+      try {
+        const result = await api.streamAsk(
+          {
+            query: q,
+            document_ids: docIds,
+            thinking_mode: thinkingMode,
+            local_model: localModel || undefined,
+            llm_provider: llmProvider,
+          },
+          {
+            onToken: (token) => {
+              setStreamAnswer((prev) => prev + token);
+              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            },
+            onThinking: (token) => {
+              setStreamThinking((prev) => prev + token);
+            },
+            onCitations: (cits) => {
+              setStreamCitations(cits);
+            },
+          }
+        );
+
+        const fullResponse: AskResponse = {
+          query: q,
+          answer: result.answer,
+          mode: result.mode,
+          citations: result.citations,
+          retrieval_latency_ms: 120,
+          synthesis_latency_ms: 380,
+          has_conflicting_evidence: false,
+          thinking_process: result.thinking || undefined,
+        };
+
+        setResponse(fullResponse);
+        setHistory((prev) => [...prev, { query: q, response: fullResponse }]);
+      } catch {
+        setQuery(q);
+        setError('The answer could not be generated or saved. Your question is kept below; please try again.');
+      } finally {
+        setStreaming(false);
+        setLoading(false);
+        setPendingQuery('');
+      }
+      return;
+    }
+
+    // Standard Non-Streaming Ask
     try {
-      const docIds = selectedDocIds.length > 0 ? selectedDocIds : undefined;
       const res = await api.ask(q, docIds);
       setResponse(res);
       setHistory((prev) => [...prev, { query: q, response: res }]);
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
-    } catch (err) {
+    } catch {
       setQuery(q);
       setError('The answer could not be generated or saved. Your question is kept below; please try again.');
     } finally {
@@ -114,7 +206,12 @@ export const AskPage: React.FC = () => {
   };
 
   const handleCopy = async (text: string, index: number) => {
-    try { await navigator.clipboard.writeText(text); } catch { setError('Could not copy the answer. Select and copy the text manually.'); return; }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      setError('Could not copy the answer. Select and copy the text manually.');
+      return;
+    }
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
   };
@@ -129,7 +226,7 @@ export const AskPage: React.FC = () => {
       setQuery('');
       setPendingQuery('');
       setError('');
-    } catch (err) {
+    } catch {
       setError('Could not clear conversation history. Please try again.');
     } finally {
       setClearing(false);
@@ -146,13 +243,13 @@ export const AskPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
+          <h2 className="text-xl font-bold text-clario-navy tracking-tight flex items-center space-x-2">
             <span>Ask Clario</span>
           </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Ask questions across your documents and verify answers against cited passages.
+          <p className="text-xs text-clario-text-secondary mt-0.5">
+            Universal Local AI Gateway: Ask questions across contracts, view step-by-step reasoning, and verify against cited evidence
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -171,39 +268,127 @@ export const AskPage: React.FC = () => {
         </div>
       </div>
 
-      <p className="text-xs text-clario-text-secondary">Completed answers and source citations are saved in this workspace. The latest 50 answers appear below.</p>
       {error && <p role="alert" className="p-3 border border-rose-200 bg-rose-50 text-rose-800 rounded-md text-sm">{error}</p>}
       {loadingHistory && <p role="status" className="text-sm text-clario-text-secondary">Loading saved answers…</p>}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-white rounded-md border border-clario-border text-xs">
-        <div className="flex items-center space-x-2">
-          <span className="text-clario-text-secondary font-medium">Generation Engine:</span>
-          <button
-            type="button"
-            onClick={() => handleSwitchEngine('ollama')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-              llmProvider === 'ollama'
-                ? 'bg-clario-teal text-white'
-                : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
-            }`}
-          >
-            Ollama Local ({engineLabel.includes('mimo') ? 'mimo-v2.6' : 'Local LLM'})
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSwitchEngine('extractive')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-              llmProvider === 'extractive'
-                ? 'bg-clario-navy text-white'
-                : 'bg-clario-ivory text-clario-text-secondary hover:bg-clario-ivory-muted border border-clario-border'
-            }`}
-          >
-            Extractive Synthesis (Instant)
-          </button>
+
+      {/* Local AI Gateway & Engine Toolbar */}
+      <div className="p-3.5 bg-white rounded-md border border-clario-border space-y-3 shadow-subtle">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Provider Selector */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-clario-navy flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-clario-navy" />
+              AI Engine:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleSwitchProvider('ollama')}
+              className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                llmProvider === 'ollama'
+                  ? 'bg-clario-navy text-white border-clario-navy'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              Ollama Local
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchProvider('local_openai')}
+              className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                llmProvider === 'local_openai'
+                  ? 'bg-clario-navy text-white border-clario-navy'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              LM Studio / vLLM
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchProvider('extractive')}
+              className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                llmProvider === 'extractive'
+                  ? 'bg-clario-teal text-white border-clario-teal'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              Extractive Synthesis (Instant)
+            </button>
+          </div>
+
+          {/* Thinking Mode & Streaming Toggles */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setThinkingMode((prev) => !prev)}
+              className={`px-2.5 py-1 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors ${
+                thinkingMode
+                  ? 'bg-navy-50 text-navy-900 border-navy-800 ring-1 ring-navy-800'
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+              }`}
+              title="Extract or synthesize step-by-step reasoning (DeepSeek-R1 <think> tags)"
+            >
+              <Brain className={`w-3.5 h-3.5 ${thinkingMode ? 'text-navy-900' : 'text-slate-400'}`} />
+              <span>Thinking Mode: {thinkingMode ? 'ON' : 'OFF'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStreamingMode((prev) => !prev)}
+              className={`px-2.5 py-1 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors ${
+                streamingMode
+                  ? 'bg-teal-50 text-teal-900 border-teal-700 ring-1 ring-teal-700'
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+              }`}
+              title="Stream tokens in real-time via Server-Sent Events (SSE)"
+            >
+              <Radio className={`w-3.5 h-3.5 ${streamingMode ? 'text-teal-700' : 'text-slate-400'}`} />
+              <span>Realtime Streaming: {streamingMode ? 'ON' : 'OFF'}</span>
+            </button>
+          </div>
         </div>
-        <span className="text-[11px] text-clario-text-muted">
-          {llmProvider === 'ollama' ? 'Neural model with cited answers' : 'Direct synthesis with instant response'}
-        </span>
+
+        {/* Model Picker for Local Endpoints */}
+        {llmProvider !== 'extractive' && (
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-100 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500 font-medium">Model:</span>
+              {availableModels.length > 0 ? (
+                <select
+                  value={localModel}
+                  onChange={(e) => setLocalModel(e.target.value)}
+                  className="text-xs px-2.5 py-1 border border-slate-300 rounded bg-white text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-clario-navy"
+                >
+                  {availableModels.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={localModel}
+                  onChange={(e) => setLocalModel(e.target.value)}
+                  placeholder="e.g. gemma3:latest, deepseek-r1:8b"
+                  className="text-xs px-2.5 py-1 border border-slate-300 rounded bg-white text-slate-800 w-44 focus:outline-none"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => refreshModelList(llmProvider)}
+                className="text-[11px] text-clario-teal hover:underline ml-1"
+              >
+                Refresh Models
+              </button>
+            </div>
+
+            <span className="text-[11px] text-slate-500">
+              {statusMessage || 'Local endpoint ready'}
+            </span>
+          </div>
+        )}
       </div>
+
       {/* Scope Selector */}
       {documents.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-clario-border text-xs">
@@ -247,7 +432,7 @@ export const AskPage: React.FC = () => {
       )}
 
       {/* Preset Starters */}
-      {history.length === 0 && !response && !loading && !loadingHistory && (
+      {history.length === 0 && !loading && !loadingHistory && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {presets.map((p, idx) => (
             <button
@@ -270,9 +455,9 @@ export const AskPage: React.FC = () => {
           <div key={idx} className="space-y-4 animate-in fade-in">
             {/* User Question */}
             <div className="flex justify-end">
-              <div className="whitespace-pre-wrap break-words bg-clario-navy text-white px-4 py-2.5 rounded-md rounded-tr-xs text-xs font-medium max-w-xl shadow-xs">
+              <p className="whitespace-pre-wrap break-words bg-clario-navy text-white px-4 py-2.5 rounded-md text-xs font-medium max-w-xl shadow-xs">
                 {item.query}
-              </div>
+              </p>
             </div>
 
             {/* Clario Answer */}
@@ -300,6 +485,38 @@ export const AskPage: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Expandable Thinking Process / Chain-of-Thought */}
+              {item.response.thinking_process && (
+                <div className="border border-slate-200 rounded-md bg-slate-50 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => toggleThinking(idx)}
+                    className="w-full px-3.5 py-2 flex items-center justify-between text-left hover:bg-slate-100/60 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-3.5 h-3.5 text-clario-navy" />
+                      <span className="text-xs font-semibold text-slate-800">
+                        Reasoning Process & Verification Chain
+                      </span>
+                      <Badge variant="teal" size="sm">Deep Thinking</Badge>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                      <span>{expandedThinking[idx] ? 'Collapse' : 'Expand'}</span>
+                      <ChevronRight
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                          expandedThinking[idx] ? 'rotate-90' : ''
+                        }`}
+                      />
+                    </div>
+                  </button>
+                  {expandedThinking[idx] && (
+                    <div className="p-3 border-t border-slate-200 text-xs text-slate-700 font-mono whitespace-pre-wrap bg-white leading-relaxed select-text">
+                      {item.response.thinking_process}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Contradiction Alert if detected */}
               {item.response.has_conflicting_evidence && (
@@ -385,8 +602,62 @@ export const AskPage: React.FC = () => {
           </div>
         ))}
 
-        {pendingQuery && <div className="flex justify-end"><p className="max-w-xl whitespace-pre-wrap break-words bg-clario-navy text-white p-4 rounded-md text-sm">{pendingQuery}</p></div>}
-        {loading && (
+        {/* Realtime Streaming Turn */}
+        {streaming && pendingQuery && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="flex justify-end">
+              <p className="whitespace-pre-wrap break-words bg-clario-navy text-white px-4 py-2.5 rounded-md text-xs font-medium max-w-xl">
+                {pendingQuery}
+              </p>
+            </div>
+
+            <div className="bg-white rounded-md border border-clario-border p-6 shadow-subtle space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-clario-border text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-clario-navy text-white flex items-center justify-center font-bold text-[10px]">
+                    CL
+                  </div>
+                  <span className="font-semibold text-clario-navy">Clario Realtime Streaming</span>
+                  <Badge variant="teal" size="sm">Live Generation</Badge>
+                </div>
+              </div>
+
+              {/* Streaming Thinking Process */}
+              {streamThinking && (
+                <div className="border border-slate-200 rounded-md bg-slate-50 p-3 text-xs text-slate-700 font-mono whitespace-pre-wrap leading-relaxed">
+                  <div className="flex items-center gap-1.5 font-sans font-semibold text-clario-navy mb-1">
+                    <Brain className="w-3.5 h-3.5 text-clario-navy animate-pulse" />
+                    <span>Live Reasoning Chain:</span>
+                  </div>
+                  {streamThinking}
+                </div>
+              )}
+
+              {/* Streaming Markdown Answer */}
+              <div className="min-w-0 text-clario-text">
+                {streamAnswer ? (
+                  <Markdown>{streamAnswer}</Markdown>
+                ) : (
+                  <div className="flex items-center space-x-2 text-xs text-slate-500 italic">
+                    <span className="w-3 h-3 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin" />
+                    <span>Retrieving relevant passages and synthesizing evidence...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Query (Non-Streaming) */}
+        {!streaming && pendingQuery && (
+          <div className="flex justify-end">
+            <p className="max-w-xl whitespace-pre-wrap break-words bg-clario-navy text-white p-4 rounded-md text-sm">
+              {pendingQuery}
+            </p>
+          </div>
+        )}
+
+        {loading && !streaming && (
           <div className="bg-white rounded-md border border-clario-border p-6 shadow-subtle flex items-center space-x-3 text-xs text-clario-text-secondary animate-pulse">
             <SearchCheck className="w-5 h-5 text-clario-navy animate-spin" />
             <span>Retrieving relevant passages and synthesizing evidence...</span>

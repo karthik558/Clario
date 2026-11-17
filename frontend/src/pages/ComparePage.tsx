@@ -9,13 +9,15 @@ import {
   Layers,
   SearchCheck,
   Info,
-  ChevronDown
+  ChevronDown,
+  Scale
 } from 'lucide-react';
 import { api } from '../services/api';
 import { ComparisonResponse, DocumentItem, ContradictionCandidate } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { ClauseNegotiatorModal } from '../components/negotiate/ClauseNegotiatorModal';
 
 export const ComparePage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -26,6 +28,7 @@ export const ComparePage: React.FC = () => {
   const [promotedIndices, setPromotedIndices] = useState<number[]>([]);
   const [promoting, setPromoting] = useState(false);
   const [error, setError] = useState('');
+  const [negotiateCandidate, setNegotiateCandidate] = useState<ContradictionCandidate | null>(null);
 
   const changeDocument = (side: 'a' | 'b', value: string) => {
     (side === 'a' ? setDocAId : setDocBId)(value);
@@ -273,24 +276,35 @@ export const ComparePage: React.FC = () => {
                         <span className="font-semibold text-xs text-clario-navy">{cand.topic}</span>
                         <Badge variant="gold" size="sm">Confidence: {cand.confidence}</Badge>
                       </div>
-                      <Button
-                        variant={promotedIndices.includes(idx) ? 'outline' : 'secondary'}
-                        size="sm"
-                        disabled={promoting || promotedIndices.includes(idx)}
-                        onClick={() => handlePromoteFinding(cand, idx)}
-                      >
-                        {promotedIndices.includes(idx) ? (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-clario-navy mr-1" />
-                            <span>Promoted to Findings</span>
-                          </>
-                        ) : (
-                          <>
-                            <BookmarkPlus className="w-3.5 h-3.5 mr-1" />
-                            <span>Promote to Finding</span>
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setNegotiateCandidate(cand)}
+                          className="text-xs"
+                        >
+                          <Scale className="w-3.5 h-3.5 mr-1" />
+                          <span>Draft Redline</span>
+                        </Button>
+                        <Button
+                          variant={promotedIndices.includes(idx) ? 'outline' : 'secondary'}
+                          size="sm"
+                          disabled={promoting || promotedIndices.includes(idx)}
+                          onClick={() => handlePromoteFinding(cand, idx)}
+                        >
+                          {promotedIndices.includes(idx) ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-clario-navy mr-1" />
+                              <span>Promoted to Findings</span>
+                            </>
+                          ) : (
+                            <>
+                              <BookmarkPlus className="w-3.5 h-3.5 mr-1" />
+                              <span>Promote to Finding</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
 
                     <p className="text-xs text-clario-text leading-relaxed">
@@ -420,6 +434,20 @@ export const ComparePage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {negotiateCandidate && (
+        <ClauseNegotiatorModal
+          isOpen={!!negotiateCandidate}
+          onClose={() => setNegotiateCandidate(null)}
+          topic={negotiateCandidate.topic}
+          statementA={negotiateCandidate.statement_a}
+          statementB={negotiateCandidate.statement_b}
+          docATitle={comparison?.doc_a.title}
+          docBTitle={comparison?.doc_b.title}
+          pageA={negotiateCandidate.page_a}
+          pageB={negotiateCandidate.page_b}
+        />
       )}
     </div>
   );

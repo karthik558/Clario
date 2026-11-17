@@ -96,6 +96,7 @@ export interface AskResponse {
   synthesis_latency_ms: number;
   has_conflicting_evidence: boolean;
   conflict_notes?: string;
+  thinking_process?: string;
 }
 
 export interface DiffBlock {
@@ -137,7 +138,7 @@ export interface FindingItem {
   category: 'possible_contradiction' | 'agreement' | 'missing_coverage' | 'outdated_statement' | 'changed_obligation' | 'needs_human_review';
   title: string;
   description: string;
-  severity: 'low' | 'medium' | 'high';
+  severity: 'low' | 'medium' | 'high' | 'critical';
   status: 'open' | 'under_review' | 'confirmed' | 'dismissed' | 'resolved';
   doc_a_id?: string;
   doc_a_title?: string;
@@ -187,6 +188,10 @@ export interface SystemSettings {
   llm_provider: string;
   ollama_base_url?: string;
   ollama_model?: string;
+  local_ai_base_url?: string;
+  local_ai_model?: string;
+  local_ai_provider?: string;
+  thinking_mode?: boolean;
   gemini_api_key?: string;
   openai_api_key?: string;
   gemini_api_key_configured: boolean;
@@ -209,7 +214,73 @@ export interface OllamaStatus {
   message: string;
 }
 
+export interface LocalAIStatus {
+  running: boolean;
+  provider: string;
+  url: string;
+  models: string[];
+  active_model: string;
+  message: string;
+}
+
 export interface DBTableInfo {
   name: string;
   row_count: number;
+}
+
+export interface NegotiateRequest {
+  finding_id?: string;
+  topic?: string;
+  statement_a?: string;
+  statement_b?: string;
+  doc_a_title?: string;
+  doc_b_title?: string;
+  page_a?: number;
+  page_b?: number;
+  stance: 'balanced' | 'customer_protective' | 'vendor_favorable' | 'strict_compliance';
+  custom_instructions?: string;
+}
+
+export interface NegotiateResponse {
+  topic: string;
+  stance: string;
+  original_a: { doc_title: string; page: number; quote: string };
+  original_b: { doc_title: string; page: number; quote: string };
+  proposed_clause: string;
+  rationale: string;
+  risk_level: string;
+  key_concessions: string[];
+  mode: string;
+}
+
+export interface GraphNode {
+  id: string;
+  label: string;
+  type: 'document' | 'topic' | 'finding' | 'chunk';
+  size: number;
+  color: string;
+  metadata?: Record<string, any>;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  type: 'contains' | 'governs' | 'contradicts' | 'cites';
+  color: string;
+  dashed?: boolean;
+  weight: number;
+}
+
+export interface GraphDataResponse {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  stats: {
+    total_documents: number;
+    total_findings: number;
+    total_topics: number;
+    total_nodes: number;
+    total_edges: number;
+  };
 }

@@ -3,6 +3,7 @@ import {
   DocumentDetail,
   DashboardStats,
   AskResponse,
+  CitationItem,
   ComparisonResponse,
   FindingItem,
   ReportItem,
@@ -10,7 +11,11 @@ import {
   BenchmarkSummary,
   SystemSettings,
   OllamaStatus,
-  DBTableInfo
+  LocalAIStatus,
+  DBTableInfo,
+  NegotiateRequest,
+  NegotiateResponse,
+  GraphDataResponse
 } from '../types';
 
 const API_BASE = '/api';
@@ -120,14 +125,91 @@ export const api = {
     if (!res.ok) throw new Error('Failed to clear answer history');
     return res.json();
   },
-  ask: async (query: string, document_ids?: string[], top_k?: number): Promise<AskResponse> => {
+  ask: async (
+    query: string,
+    document_ids?: string[],
+    top_k?: number,
+    thinking_mode?: boolean,
+    local_model?: string,
+    llm_provider?: string
+  ): Promise<AskResponse> => {
     const res = await fetch(`${API_BASE}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, document_ids, top_k }),
+      body: JSON.stringify({ query, document_ids, top_k, thinking_mode, local_model, llm_provider }),
     });
     if (!res.ok) throw new Error('Ask Clario request failed');
     return res.json();
+  },
+
+  streamAsk: async (
+    request: {
+      query: string;
+      document_ids?: string[];
+      top_k?: number;
+      thinking_mode?: boolean;
+      local_model?: string;
+      llm_provider?: string;
+    },
+    callbacks: {
+      onToken: (token: string) => void;
+      onThinking?: (text: string) => void;
+      onCitations?: (citations: CitationItem[]) => void;
+    }
+  ): Promise<{ answer: string; mode: string; citations: CitationItem[]; thinking?: string }> => {
+    const res = await fetch(`${API_BASE}/ask/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+
+    if (!res.ok) throw new Error('Streaming failed');
+    if (!res.body) throw new Error('Readable stream not supported');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let answer = '';
+    let thinking = '';
+    let citations: CitationItem[] = [];
+    let mode = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const blocks = buffer.split('\n\n');
+      buffer = blocks.pop() || '';
+
+      for (const block of blocks) {
+        if (!block.trim()) continue;
+        const eventMatch = block.match(/event:\s*(\w+)/);
+        const dataMatch = block.match(/data:\s*(.+)/s);
+        const event = eventMatch ? eventMatch[1] : 'token';
+        const rawData = dataMatch ? dataMatch[1] : '';
+
+        try {
+          const parsed = JSON.parse(rawData);
+          if (event === 'citations') {
+            citations = parsed;
+            callbacks.onCitations?.(parsed);
+          } else if (event === 'thinking') {
+            thinking += parsed.text;
+            callbacks.onThinking?.(parsed.text);
+          } else if (event === 'token') {
+            answer += parsed.text;
+            callbacks.onToken(parsed.text);
+          } else if (event === 'done') {
+            mode = parsed.mode;
+            if (parsed.answer) answer = parsed.answer;
+          }
+        } catch {
+          // non-JSON chunk
+        }
+      }
+    }
+
+    return { answer, mode, citations, thinking };
   },
 
   // Compare
@@ -257,6 +339,53 @@ export const api = {
   reindexAll: async () => {
     const res = await fetch(`${API_BASE}/settings/reindex`, { method: 'POST' });
     if (!res.ok) throw new Error('Reindex failed');
+    return res.json();
+  },
+
+  // Local AI Gateway & Status
+  getLocalAIStatus: async (provider?: string): Promise<LocalAIStatus> => {
+    const params = new URLSearchParams();
+    if (provider) params.append('provider', provider);
+    const res = await fetch(`${API_BASE}/settings/local-ai/status?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to check Local AI status');
+    return res.json();
+  },
+
+  // Clause Negotiator
+  negotiateClause: async (request: NegotiateRequest): Promise<NegotiateResponse> => {
+    const res = await fetch(`${API_BASE}/negotiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Clause negotiation failed');
+    }
+    return res.json();
+  },
+
+  negotiateFinding: async (findingId: string, stance: string, customInstructions?: string): Promise<NegotiateResponse> => {
+    const res = await fetch(`${API_BASE}/findings/${findingId}/negotiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stance, custom_instructions: customInstructions }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Finding clause negotiation failed');
+    }
+    return res.json();
+  },
+
+  // Knowledge & Citation Graph
+  getKnowledgeGraph: async (documentIds?: string[]): Promise<GraphDataResponse> => {
+    const params = new URLSearchParams();
+    if (documentIds && documentIds.length > 0) {
+      params.append('document_ids', documentIds.join(','));
+    }
+    const res = await fetch(`${API_BASE}/graph?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to load knowledge graph');
     return res.json();
   }
 };

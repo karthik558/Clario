@@ -113,17 +113,17 @@ class CompareService:
             added_count=added_count,
             removed_count=removed_count,
             changed_count=changed_count,
-            diff_data_json=json.dumps([b.dict() for b in diff_blocks[:50]]),
+            diff_data_json=json.dumps([b.model_dump() for b in diff_blocks[:50]]),
             contradiction_count=len(contradictions)
         )
         db.add(comparison)
         db.commit()
 
         # Build responses
-        doc_a_dto = DocumentResponse.from_orm(doc_a)
+        doc_a_dto = DocumentResponse.model_validate(doc_a)
         doc_a_dto.tags = json.loads(doc_a.tags_json) if doc_a.tags_json else []
 
-        doc_b_dto = DocumentResponse.from_orm(doc_b)
+        doc_b_dto = DocumentResponse.model_validate(doc_b)
         doc_b_dto.tags = json.loads(doc_b.tags_json) if doc_b.tags_json else []
 
         return ComparisonResponse(

@@ -1,7 +1,7 @@
 import os
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
@@ -69,7 +69,7 @@ class ReportService:
         content = {
             "title": data.title,
             "report_type": data.report_type,
-            "date": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
             "documents_analyzed": [{"id": d.id, "title": d.title, "pages": d.page_count, "format": d.file_type} for d in docs],
             "findings_summary": [{"id": f.id, "category": f.category, "title": f.title, "severity": f.severity, "status": f.status,
                 "evidence_a": f"{f.doc_a_title} (Page {f.doc_a_page}): {f.doc_a_quote}" if f.doc_a_quote else "",
@@ -185,7 +185,7 @@ class ReportService:
         # Header Bar
         elements.append(Paragraph("CLARIO &bull; DOCUMENT INTELLIGENCE WORKBENCH", tag_style))
         elements.append(Paragraph(escape(title), title_style))
-        elements.append(Paragraph(f"Category: {report_type.replace('_', ' ').upper()} &nbsp;|&nbsp; Generated on {datetime.utcnow().strftime('%B %d, %Y')}", subtitle_style))
+        elements.append(Paragraph(f"Category: {report_type.replace('_', ' ').upper()} &nbsp;|&nbsp; Generated on {datetime.now(timezone.utc).strftime('%B %d, %Y')}", subtitle_style))
         elements.append(HRFlowable(width="100%", thickness=1.5, color=c_teal, spaceAfter=15))
 
         # Executive Summary

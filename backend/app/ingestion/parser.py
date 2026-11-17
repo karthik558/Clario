@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from typing import List, Dict, Any
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 import docx
 
 class PageText:

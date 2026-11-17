@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Files, MessageSquareQuote, GitCompare, FlaskConical, AlertTriangle, FileText, Settings, PanelLeftClose, PanelLeftOpen, Layers, X } from 'lucide-react';
+import { LayoutDashboard, Files, MessageSquareQuote, GitCompare, Network, FlaskConical, AlertTriangle, FileText, Settings, PanelLeftClose, PanelLeftOpen, Layers, X } from 'lucide-react';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -39,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Documents', path: '/documents', icon: Files },
     { name: 'Ask Clario', path: '/ask', icon: MessageSquareQuote },
     { name: 'Compare versions', path: '/compare', icon: GitCompare },
+    { name: 'Knowledge Graph', path: '/graph', icon: Network },
     { name: 'Findings', path: '/findings', icon: AlertTriangle },
     { name: 'Reports', path: '/reports', icon: FileText },
     { name: 'Search Lab', path: '/search-lab', icon: FlaskConical },

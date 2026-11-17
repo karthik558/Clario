@@ -14,9 +14,14 @@ from app.services.search_service import search_service
 router = APIRouter()
 
 class SettingsUpdateRequest(BaseModel):
-    llm_provider: Optional[Literal["extractive", "ollama", "gemini", "openai"]] = None
+    llm_provider: Optional[Literal["extractive", "ollama", "lm_studio", "vllm", "openai_compatible", "gemini", "openai"]] = None
     ollama_base_url: Optional[str] = None
     ollama_model: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    local_ai_base_url: Optional[str] = None
+    local_ai_model: Optional[str] = None
+    local_ai_provider: Optional[str] = None
+    local_ai_api_key: Optional[str] = None
+    thinking_mode: Optional[bool] = None
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     bm25_k1: Optional[float] = Field(default=None, gt=0, le=10, allow_inf_nan=False)
@@ -24,9 +29,9 @@ class SettingsUpdateRequest(BaseModel):
     rrf_k: Optional[int] = Field(default=None, ge=1, le=1000)
     default_top_k: Optional[int] = Field(default=None, ge=1, le=50)
 
-    @field_validator("ollama_base_url")
+    @field_validator("ollama_base_url", "local_ai_base_url")
     @classmethod
-    def valid_ollama_url(cls, value):
+    def valid_server_url(cls, value):
         if value is None:
             return value
         parsed = urlsplit(value.strip())
@@ -34,7 +39,7 @@ class SettingsUpdateRequest(BaseModel):
             raise ValueError("Enter an HTTP(S) server URL without credentials, query, or fragment")
         return value.strip().rstrip("/")
 
-    @field_validator("ollama_model")
+    @field_validator("ollama_model", "local_ai_model")
     @classmethod
     def nonempty_model(cls, value):
         if value is not None and not value.strip():
@@ -49,6 +54,10 @@ def get_system_settings():
         "llm_provider": settings.LLM_PROVIDER,
         "ollama_base_url": settings.OLLAMA_BASE_URL,
         "ollama_model": settings.OLLAMA_MODEL,
+        "local_ai_base_url": settings.LOCAL_AI_BASE_URL,
+        "local_ai_model": settings.LOCAL_AI_MODEL,
+        "local_ai_provider": settings.LOCAL_AI_PROVIDER,
+        "thinking_mode": settings.THINKING_MODE,
         "gemini_api_key_configured": bool(settings.GEMINI_API_KEY),
         "openai_api_key_configured": bool(settings.OPENAI_API_KEY),
         "bm25_k1": settings.BM25_K1,
@@ -64,7 +73,6 @@ def get_system_settings():
 @router.post("/settings")
 def update_system_settings(data: SettingsUpdateRequest, db: Session = Depends(get_db)):
     save_settings(db, data.model_dump(exclude_none=True))
-    # Existing credential updates stay in memory; never include secrets in the database explorer.
     if data.gemini_api_key is not None:
         settings.GEMINI_API_KEY = data.gemini_api_key
     if data.openai_api_key is not None:
@@ -77,6 +85,10 @@ def update_system_settings(data: SettingsUpdateRequest, db: Session = Depends(ge
             "llm_provider": settings.LLM_PROVIDER,
             "ollama_base_url": settings.OLLAMA_BASE_URL,
             "ollama_model": settings.OLLAMA_MODEL,
+            "local_ai_base_url": settings.LOCAL_AI_BASE_URL,
+            "local_ai_model": settings.LOCAL_AI_MODEL,
+            "local_ai_provider": settings.LOCAL_AI_PROVIDER,
+            "thinking_mode": settings.THINKING_MODE,
             "gemini_api_key_configured": bool(settings.GEMINI_API_KEY),
             "openai_api_key_configured": bool(settings.OPENAI_API_KEY),
             "bm25_k1": settings.BM25_K1,
@@ -86,34 +98,71 @@ def update_system_settings(data: SettingsUpdateRequest, db: Session = Depends(ge
         }
     }
 
+@router.get("/settings/local-ai/status")
 @router.get("/settings/ollama/status")
-def check_ollama_status():
+def check_local_ai_status(provider: Optional[str] = None, base_url: Optional[str] = None):
     """
-    Checks if Ollama is running locally and queries installed models.
+    Universally auto-discovers and connects to ANY local AI engine:
+    Ollama, LM Studio, vLLM, llama.cpp, LocalAI, Jan, or OpenAI-compatible endpoint.
     """
-    url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/tags"
+    prov = (provider or settings.LLM_PROVIDER or "ollama").lower()
+    url = (base_url or (settings.LOCAL_AI_BASE_URL if prov != "ollama" else settings.OLLAMA_BASE_URL)).rstrip("/")
+
+    models: List[str] = []
+    active = settings.LOCAL_AI_MODEL if prov != "ollama" else settings.OLLAMA_MODEL
+
     try:
-        with httpx.Client(timeout=3.0) as client:
-            resp = client.get(url)
-            if resp.status_code == 200:
-                data = resp.json()
-                models = [m.get("name") for m in data.get("models", [])]
-                return {
-                    "running": True,
-                    "url": settings.OLLAMA_BASE_URL,
-                    "models": models,
-                    "active_model": settings.OLLAMA_MODEL,
-                    "message": f"Connected to Ollama. {len(models)} model(s) available."
-                }
+        with httpx.Client(timeout=4.0) as client:
+            if prov == "ollama":
+                resp = client.get(f"{url}/api/tags")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    models = [m.get("name") for m in data.get("models", []) if m.get("name")]
+                    return {
+                        "running": True,
+                        "provider": "ollama",
+                        "url": url,
+                        "models": models,
+                        "active_model": active or (models[0] if models else ""),
+                        "message": f"Connected to Ollama. {len(models)} model(s) available."
+                    }
+            else:
+                # OpenAI-compatible local endpoints: LM Studio, vLLM, llama.cpp, LocalAI
+                headers = {}
+                if settings.LOCAL_AI_API_KEY:
+                    headers["Authorization"] = f"Bearer {settings.LOCAL_AI_API_KEY}"
+
+                endpoints_to_try = [f"{url}/v1/models", f"{url}/models"] if not url.endswith("/v1") else [f"{url}/models"]
+                for endpoint in endpoints_to_try:
+                    try:
+                        resp = client.get(endpoint, headers=headers)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            raw_models = data.get("data", []) if isinstance(data, dict) else []
+                            models = [m.get("id") for m in raw_models if isinstance(m, dict) and m.get("id")]
+                            return {
+                                "running": True,
+                                "provider": prov,
+                                "url": url,
+                                "models": models,
+                                "active_model": active or (models[0] if models else ""),
+                                "message": f"Connected to {prov.replace('_', ' ').title()}. {len(models)} model(s) discovered."
+                            }
+                    except httpx.HTTPError:
+                        continue
     except (httpx.HTTPError, ValueError, TypeError):
         pass
+
     return {
         "running": False,
-        "url": settings.OLLAMA_BASE_URL,
+        "provider": prov,
+        "url": url,
         "models": [],
-        "active_model": settings.OLLAMA_MODEL,
-        "message": f"Could not reach Ollama at {settings.OLLAMA_BASE_URL}. Start Ollama and check the saved server address."
+        "active_model": active,
+        "message": f"Could not reach {prov.replace('_', ' ').title()} at {url}. Ensure server is running and port is accessible."
     }
+
+check_ollama_status = check_local_ai_status
 
 @router.get("/settings/database/tables")
 def get_database_tables():
