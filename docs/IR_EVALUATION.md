@@ -48,8 +48,8 @@ The built-in evaluation suite evaluates 5 fundamental cross-domain queries again
 
 | Query ID | Query Text | Relevant Ground Truth |
 |---|---|---|
-| `q1` | `data retention termination deletion days` | CloudScale Data Retention Policy (2023 & 2024) |
-| `q2` | `limitation of liability cap monetary damages` | NexusAI Commercial Service Agreement (2023 & 2024) |
+| `q1` | `data retention termination deletion days` | OpenAI Policy 2023 & 2024 Report |
+| `q2` | `limitation of liability cap monetary damages` | OpenAI Policy 2023 & 2024 Report |
 | `q3` | `differential privacy epsilon synthetic EHR healthcare` | Synthetic Patient Data & EHR Privacy Risk Papers |
 | `q4` | `employee personal data processing GDPR obligations` | Enterprise Compliance & Privacy Policies |
 | `q5` | `conflicting notice period breach indemnification` | Service Agreements & Commercial Terms |

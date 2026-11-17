@@ -63,12 +63,8 @@ def seed_sample_documents():
 
     sample_dir = settings.DATA_DIR.parent.parent / "sample_documents"
     sample_files = [
-        ("CloudScale Data Retention Policy 2023 (v1.0)", "CloudScale_Data_Retention_Policy_2023_v1.0.md", "Policy", ["compliance", "retention", "v1"]),
-        ("CloudScale Data Retention Policy 2024 (v2.0)", "CloudScale_Data_Retention_Policy_2024_v2.0.md", "Policy", ["compliance", "retention", "v2", "updated"]),
-        ("NexusAI Commercial Service Agreement 2023", "NexusAI_Commercial_Service_Agreement_2023.md", "Contracts", ["legal", "contract", "liability", "2023"]),
-        ("NexusAI Commercial Service Agreement 2024 (Revised)", "NexusAI_Commercial_Service_Agreement_2024_Revised.md", "Contracts", ["legal", "contract", "liability", "2024"]),
-        ("Synthetic Patient Data Under Differential Privacy", "Research_Paper_Synthetic_Data_Healthcare_AI.md", "Research", ["differential-privacy", "healthcare", "ai"]),
-        ("Evaluation of EHR Privacy Risks in Synthetic Models", "Research_Paper_Evaluation_of_EHR_Privacy_Risks.md", "Research", ["differential-privacy", "vulnerabilities", "shadow-model"]),
+        ("OpenAI Policy 2023", "OpenAI_Usage_and_Privacy_Policy_2023.md", "Corporate Policies", ["OpenAI", "Policy", "2023", "Privacy"]),
+        ("OpenAI Policy 2023 2024 Report", "OpenAI_Policy_2023_2024_Report.md", "Regulatory Reports", ["OpenAI", "Report", "2024", "Audit", "Comparison"]),
     ]
 
     for title, fname, coll, tags in sample_files:
@@ -79,19 +75,12 @@ def seed_sample_documents():
         with open(src, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Generate corresponding PDF for half of the documents to show multi-format support!
-        is_pdf = "Retention" in fname or "NexusAI_Commercial_Service_Agreement_2023" in fname
-        ext = "pdf" if is_pdf else "md"
+        ext = "md"
         doc_id = str(uuid.uuid4())
-        dest_filename = f"{doc_id}_{fname.rsplit('.', 1)[0]}.{ext}"
+        dest_filename = f"{doc_id}_{fname}"
         dest_path = str(settings.DOCUMENTS_DIR / dest_filename)
-
-        if is_pdf:
-            create_sample_pdf(title, content, dest_path)
-            file_size = os.path.getsize(dest_path)
-        else:
-            shutil.copyfile(str(src), dest_path)
-            file_size = os.path.getsize(dest_path)
+        shutil.copyfile(str(src), dest_path)
+        file_size = os.path.getsize(dest_path)
 
         import json
         doc = Document(

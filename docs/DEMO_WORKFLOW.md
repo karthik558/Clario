@@ -60,14 +60,14 @@ Open your browser at **`http://localhost:5173`**.
 ## Step 4: Document Comparison Workbench (`/compare`)
 
 1. **Select Document Pair:**
-   - Set Document A to: `CloudScale Data Retention Policy 2023 (v1.0)`
-   - Set Document B to: `CloudScale Data Retention Policy 2024 (v2.0)`
+   - Set Document A to: `OpenAI Policy 2023`
+   - Set Document B to: `OpenAI Policy 2023 2024 Report`
    - Click **"Compare"**.
 2. **Review Metrics Ribbon:**
-   - Observe real similarity ratio (~82%), added segments (+4), removed segments (-4), and modified passages.
+   - Observe real similarity ratio, modified sections count, and topic coverage.
 3. **Review Contradiction Candidates:**
-   - Notice the flagged candidate: *"Data Retention & Deletion Timeline"*.
-   - Read the side-by-side evidence quotes comparing 30 days vs 60 days.
+   - Notice the flagged candidates: *"Data Retention & Deletion Timeline"* (30 days vs 60 days) and *"Liability & Financial Ceilings"* ($100 vs $250,000).
+   - Read the side-by-side evidence quotes comparing the clauses.
    - Click **"Promote to Finding"** to save it as a reviewable audit item.
 4. **Inspect Split-Screen Diff:**
    - Scroll through Document A (left) and Document B (right).
