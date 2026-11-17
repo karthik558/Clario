@@ -4,7 +4,7 @@ import {
   Search,
   Clock,
   Layers,
-  Sparkles,
+  SearchCheck,
   BarChart3,
   Award,
   CheckCircle2,
@@ -61,7 +61,6 @@ export const SearchLabPage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
             <span>Search Lab & IR Benchmark</span>
-            <Badge variant="teal" size="sm">Academic Evaluation</Badge>
           </h2>
           <p className="text-xs text-clario-text-secondary">
             Comparative Information Retrieval analysis across Lexical BM25, Dense Vector, and Hybrid RRF fusion
@@ -71,7 +70,7 @@ export const SearchLabPage: React.FC = () => {
         {/* View Switcher Tabs */}
         <div className="flex bg-white rounded-xl p-1 border border-clario-border text-xs">
           <button
-            onClick={() => setActiveTab('methods')}
+            aria-pressed={activeTab === 'methods'} onClick={() => setActiveTab('methods')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
               activeTab === 'methods'
                 ? 'bg-clario-navy text-white shadow-xs'
@@ -115,7 +114,7 @@ export const SearchLabPage: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <span className="text-xs text-clario-text-secondary whitespace-nowrap">Top-K:</span>
                   <select
-                    value={topK}
+                    aria-label="Number of search results" value={topK}
                     onChange={(e) => setTopK(Number(e.target.value))}
                     className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-2"
                   >
@@ -247,7 +246,7 @@ export const SearchLabPage: React.FC = () => {
                 <div className="bg-white rounded-xl border-2 border-clario-teal p-4 shadow-card flex flex-col">
                   <div className="flex items-center justify-between pb-3 border-b border-clario-teal/30 mb-3">
                     <div className="flex items-center space-x-2">
-                      <Sparkles className="w-4 h-4 text-clario-gold" />
+                      <SearchCheck className="w-4 h-4 text-clario-gold" />
                       <h3 className="font-semibold text-xs text-clario-navy">C. Hybrid Reciprocal Fusion</h3>
                     </div>
                     <Badge variant="gold" size="sm">RRF (k=60)</Badge>
@@ -363,7 +362,7 @@ export const SearchLabPage: React.FC = () => {
 
                         <tr className="bg-clario-sage-light/20 font-semibold border-t-2 border-clario-teal">
                           <td className="p-3 text-clario-navy flex items-center space-x-1.5">
-                            <Sparkles className="w-3.5 h-3.5 text-clario-gold" />
+                            <SearchCheck className="w-3.5 h-3.5 text-clario-gold" />
                             <span>Hybrid RRF (Combined)</span>
                           </td>
                           <td className="p-3 font-mono font-bold text-clario-teal">

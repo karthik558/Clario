@@ -4,7 +4,7 @@ import {
   Download,
   Plus,
   Calendar,
-  Sparkles,
+  SearchCheck,
   Layers,
   ShieldCheck,
   Eye,
@@ -84,7 +84,6 @@ export const ReportsPage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
             <span>Intelligence Reports & Dossiers</span>
-            <Badge variant="navy" size="sm">PDF Export Ready</Badge>
           </h2>
           <p className="text-xs text-clario-text-secondary">
             Generate publication-quality executive summaries, comparative audits, and methodology reports
@@ -194,11 +193,10 @@ export const ReportsPage: React.FC = () => {
       >
         <form onSubmit={handleGenerate} className="space-y-4 text-xs">
           <div>
-            <label className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
+            <label htmlFor="title" className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
               Report Title
             </label>
-            <input
-              type="text"
+            <input id="title" type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -207,11 +205,10 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
+            <label htmlFor="reportType" className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
               Report Template Type
             </label>
-            <select
-              value={reportType}
+            <select id="reportType" value={reportType}
               onChange={(e) => setReportType(e.target.value)}
               className="w-full text-xs px-3 py-2 rounded-lg border border-clario-border bg-white focus:outline-none focus:border-clario-teal"
             >
@@ -252,11 +249,10 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
+            <label htmlFor="customNotes" className="block text-[11px] font-semibold text-clario-navy uppercase mb-1">
               Custom Auditor Notes / Context
             </label>
-            <textarea
-              value={customNotes}
+            <textarea id="customNotes" value={customNotes}
               onChange={(e) => setCustomNotes(e.target.value)}
               rows={2}
               placeholder="e.g. Conducted ahead of 2024 compliance audit review."

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Send,
-  Sparkles,
+  SearchCheck,
   Bookmark,
   Layers,
   Clock,
@@ -85,10 +85,9 @@ export const AskPage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
             <span>Ask Clario</span>
-            <Badge variant="teal" size="sm">Evidence-Based RAG</Badge>
           </h2>
           <p className="text-xs text-clario-text-secondary">
-            Cross-document research assistant with transparent citations and zero-hallucination verification
+            Ask questions across your documents and verify answers against cited passages.
           </p>
         </div>
       </div>
@@ -98,6 +97,7 @@ export const AskPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-xl border border-clario-border text-xs">
           <span className="text-clario-text-secondary font-medium">Search Scope:</span>
           <button
+            aria-pressed={selectedDocIds.length === 0}
             onClick={() => setSelectedDocIds([])}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
               selectedDocIds.length === 0
@@ -112,6 +112,7 @@ export const AskPage: React.FC = () => {
             return (
               <button
                 key={d.id}
+                aria-pressed={isSelected}
                 onClick={() => {
                   if (isSelected) {
                     setSelectedDocIds(selectedDocIds.filter((id) => id !== d.id));
@@ -142,7 +143,7 @@ export const AskPage: React.FC = () => {
               onClick={() => handleAsk(p)}
               className="p-3.5 rounded-xl border border-clario-border bg-white hover:border-clario-teal/50 hover:bg-clario-ivory transition-all text-left group flex items-start space-x-3 shadow-subtle"
             >
-              <Sparkles className="w-4 h-4 text-clario-gold shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+              <SearchCheck className="w-4 h-4 text-clario-gold shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-medium text-clario-text group-hover:text-clario-teal transition-colors">
                 "{p}"
               </span>
@@ -258,7 +259,7 @@ export const AskPage: React.FC = () => {
 
         {loading && (
           <div className="bg-white rounded-2xl border border-clario-border p-6 shadow-subtle flex items-center space-x-3 text-xs text-clario-text-secondary animate-pulse">
-            <Sparkles className="w-5 h-5 text-clario-teal animate-spin" />
+            <SearchCheck className="w-5 h-5 text-clario-teal animate-spin" />
             <span>Retrieving relevant passages and synthesizing evidence...</span>
           </div>
         )}
@@ -280,7 +281,7 @@ export const AskPage: React.FC = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ask anything about policies, contracts, findings, or research..."
-            className="flex-1 text-xs px-3.5 py-2.5 rounded-lg border border-clario-border bg-clario-ivory focus:outline-none focus:border-clario-teal text-clario-text"
+            aria-label="Question about your documents" className="min-w-0 flex-1 text-xs px-3.5 py-2.5 rounded-lg border border-clario-border bg-clario-ivory focus:outline-none focus:border-clario-teal text-clario-text"
           />
           <Button
             type="submit"

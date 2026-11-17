@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   ChevronRight,
   Clock,
-  Sparkles,
+  SearchCheck,
   Check,
   X,
   FileText
@@ -110,7 +110,6 @@ export const FindingsPage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
             <span>Reviewable Findings & Contradictions</span>
-            <Badge variant="gold" size="sm">Audit Dashboard</Badge>
           </h2>
           <p className="text-xs text-clario-text-secondary">
             Human-in-the-loop review workflow for flagged inconsistencies, altered obligations, and policy changes
@@ -137,7 +136,7 @@ export const FindingsPage: React.FC = () => {
           </div>
 
           <select
-            value={statusFilter}
+            aria-label="Finding status filter" value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
           >
@@ -150,7 +149,7 @@ export const FindingsPage: React.FC = () => {
           </select>
 
           <select
-            value={categoryFilter}
+            aria-label="Finding category" value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
           >
@@ -164,7 +163,7 @@ export const FindingsPage: React.FC = () => {
           </select>
 
           <select
-            value={severityFilter}
+            aria-label="Finding severity" value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
             className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
           >
@@ -216,7 +215,7 @@ export const FindingsPage: React.FC = () => {
                 <div className="flex items-center space-x-2 text-xs">
                   <span className="text-clario-text-secondary font-medium">Status:</span>
                   <select
-                    value={f.status}
+                    aria-label={`Review status for ${f.title}`} value={f.status}
                     onChange={(e) => handleStatusChange(f.id, e.target.value)}
                     className="text-xs bg-clario-ivory font-semibold text-clario-navy border border-clario-border rounded-lg px-2.5 py-1 focus:outline-none cursor-pointer"
                   >

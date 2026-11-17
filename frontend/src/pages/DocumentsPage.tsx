@@ -24,6 +24,7 @@ import { DocumentViewerModal } from '../components/documents/DocumentViewerModal
 export const DocumentsPage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [collectionFilter, setCollectionFilter] = useState('');
@@ -32,11 +33,12 @@ export const DocumentsPage: React.FC = () => {
 
   const fetchDocuments = async () => {
     setLoading(true);
+    setError('');
     try {
-      const data = await api.getDocuments(search, statusFilter, collectionFilter);
+      const data = await api.getDocuments();
       setDocuments(data);
     } catch (err) {
-      console.error(err);
+      setError('Could not load documents. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -44,7 +46,7 @@ export const DocumentsPage: React.FC = () => {
 
   useEffect(() => {
     fetchDocuments();
-  }, [search, statusFilter, collectionFilter]);
+  }, []);
 
   const handleDelete = async (docId: string, title: string) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
@@ -52,7 +54,7 @@ export const DocumentsPage: React.FC = () => {
         await api.deleteDocument(docId);
         fetchDocuments();
       } catch (err) {
-        console.error(err);
+        setError('Could not delete the document. Please retry.');
       }
     }
   };
@@ -60,8 +62,14 @@ export const DocumentsPage: React.FC = () => {
   // Derive unique collections
   const collections = Array.from(new Set(documents.map((d) => d.collection).filter(Boolean)));
 
+  const filteredDocuments = documents.filter(doc =>
+    (!search || `${doc.title} ${doc.filename}`.toLowerCase().includes(search.toLowerCase())) &&
+    (!statusFilter || doc.status === statusFilter) &&
+    (!collectionFilter || doc.collection === collectionFilter));
+
   return (
     <div className="space-y-6">
+      {error && <div role="alert" className="p-4 rounded-lg bg-rose-50 text-rose-800 text-sm">{error} <button onClick={fetchDocuments} className="underline">Retry</button></div>}
       {/* Top Action Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -111,11 +119,12 @@ export const DocumentsPage: React.FC = () => {
           </div>
 
           {/* Filter Dropdowns */}
-          <div className="flex items-center space-x-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <div className="flex items-center space-x-1.5 text-xs text-clario-text-secondary">
               <Filter className="w-3.5 h-3.5" />
               <span>Status:</span>
               <select
+                aria-label="Document status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
@@ -131,6 +140,7 @@ export const DocumentsPage: React.FC = () => {
               <div className="flex items-center space-x-1.5 text-xs text-clario-text-secondary">
                 <span>Collection:</span>
                 <select
+                  aria-label="Document collection"
                   value={collectionFilter}
                   onChange={(e) => setCollectionFilter(e.target.value)}
                   className="text-xs bg-white border border-clario-border rounded-lg px-2.5 py-1.5 focus:outline-none"
@@ -152,7 +162,7 @@ export const DocumentsPage: React.FC = () => {
           <div className="col-span-full text-center py-12 text-xs text-clario-text-secondary">
             Loading corpus documents...
           </div>
-        ) : documents.length === 0 ? (
+        ) : filteredDocuments.length === 0 ? (
           <div className="col-span-full text-center py-12 bg-white rounded-2xl border border-clario-border p-8">
             <FileText className="w-8 h-8 text-clario-text-muted mx-auto mb-2" />
             <h4 className="text-sm font-semibold text-clario-text mb-1">No documents found</h4>
@@ -164,7 +174,7 @@ export const DocumentsPage: React.FC = () => {
             </Button>
           </div>
         ) : (
-          documents.map((doc) => (
+          filteredDocuments.map((doc) => (
             <Card
               key={doc.id}
               hoverEffect

@@ -6,7 +6,7 @@ import {
   CheckCircle2,
   BookmarkPlus,
   Layers,
-  Sparkles,
+  SearchCheck,
   Info,
   ChevronDown
 } from 'lucide-react';
@@ -91,8 +91,7 @@ export const ComparePage: React.FC = () => {
       {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-          <span>Document Comparison Workbench</span>
-          <Badge variant="navy" size="sm">Side-by-Side Diff Engine</Badge>
+          <span>Compare document versions</span>
         </h2>
         <p className="text-xs text-clario-text-secondary">
           Compare version revisions, identify added/removed clauses, and detect semantic contradiction candidates
@@ -104,11 +103,10 @@ export const ComparePage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
           {/* Doc A Selector */}
           <div className="md:col-span-2">
-            <label className="block text-[11px] font-semibold text-clario-navy uppercase tracking-wider mb-1.5">
+            <label htmlFor="docAId" className="block text-[11px] font-semibold text-clario-navy uppercase tracking-wider mb-1.5">
               Document A (Base / Prior Version)
             </label>
-            <select
-              value={docAId}
+            <select id="docAId" value={docAId}
               onChange={(e) => setDocAId(e.target.value)}
               className="w-full text-xs bg-white border border-clario-border rounded-lg px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium"
             >
@@ -138,11 +136,10 @@ export const ComparePage: React.FC = () => {
 
           {/* Doc B Selector */}
           <div className="md:col-span-2">
-            <label className="block text-[11px] font-semibold text-clario-navy uppercase tracking-wider mb-1.5">
+            <label htmlFor="docBId" className="block text-[11px] font-semibold text-clario-navy uppercase tracking-wider mb-1.5">
               Document B (Target / Revised Version)
             </label>
-            <select
-              value={docBId}
+            <select id="docBId" value={docBId}
               onChange={(e) => setDocBId(e.target.value)}
               className="w-full text-xs bg-white border border-clario-border rounded-lg px-3 py-2.5 focus:outline-none focus:border-clario-teal font-medium"
             >
@@ -207,7 +204,7 @@ export const ComparePage: React.FC = () => {
           {/* Executive Comparative Summary */}
           <Card className="p-4 bg-clario-ivory-card border-clario-border">
             <div className="flex items-start space-x-3">
-              <Sparkles className="w-5 h-5 text-clario-gold shrink-0 mt-0.5" />
+              <SearchCheck className="w-5 h-5 text-clario-gold shrink-0 mt-0.5" />
               <div>
                 <h4 className="font-semibold text-xs text-clario-navy uppercase tracking-wider mb-1">
                   Automated Comparative Synthesis

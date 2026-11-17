@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Settings,
   Cpu,
@@ -6,7 +6,7 @@ import {
   Database,
   RefreshCw,
   CheckCircle2,
-  Sparkles,
+  SearchCheck,
   ShieldCheck,
   Bot,
   ExternalLink,
@@ -28,6 +28,9 @@ export const SettingsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [reindexing, setReindexing] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const [error, setError] = useState('');
+  const tableRequest = useRef(0);
 
   // Ollama State
   const [llmProvider, setLlmProvider] = useState('extractive');
@@ -67,7 +70,7 @@ export const SettingsPage: React.FC = () => {
       // Fetch DB tables
       fetchDatabaseTables();
     } catch (err) {
-      console.error(err);
+      setError('The operation failed. Check the connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -78,9 +81,7 @@ export const SettingsPage: React.FC = () => {
     try {
       const status = await api.getOllamaStatus();
       setOllamaStatus(status);
-      if (status.models.length > 0 && !status.models.includes(ollamaModel)) {
-        setOllamaModel(status.models[0]);
-      }
+
     } catch (err) {
       setOllamaStatus({
         running: false,
@@ -102,20 +103,23 @@ export const SettingsPage: React.FC = () => {
         inspectTable(selectedTable || res.tables[0].name);
       }
     } catch (err) {
-      console.error(err);
+      setError('The operation failed. Check the connection and try again.');
     }
   };
 
   const inspectTable = async (tableName: string) => {
     setSelectedTable(tableName);
+    const request = ++tableRequest.current;
     setLoadingTable(true);
+    setTableData(null);
+    setError('');
     try {
       const data = await api.inspectDatabaseTable(tableName, 20);
-      setTableData(data);
+      if (request === tableRequest.current) setTableData(data);
     } catch (err) {
-      console.error(err);
+      setError('The operation failed. Check the connection and try again.');
     } finally {
-      setLoadingTable(false);
+      if (request === tableRequest.current) setLoadingTable(false);
     }
   };
 
@@ -126,6 +130,7 @@ export const SettingsPage: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setError('');
     setSuccessMsg(null);
     try {
       await api.updateSettings({
@@ -140,7 +145,7 @@ export const SettingsPage: React.FC = () => {
       setSuccessMsg('Configuration updated. AI assistant will now utilize selected engine.');
       fetchSettings();
     } catch (err) {
-      console.error(err);
+      setError('The operation failed. Check the connection and try again.');
     } finally {
       setSaving(false);
     }
@@ -148,12 +153,13 @@ export const SettingsPage: React.FC = () => {
 
   const handleReindex = async () => {
     setReindexing(true);
+    setError('');
     setSuccessMsg(null);
     try {
       const res = await api.reindexAll();
       setSuccessMsg(res.message || 'Search indices successfully reloaded.');
     } catch (err) {
-      console.error(err);
+      setError('The operation failed. Check the connection and try again.');
     } finally {
       setReindexing(false);
     }
@@ -161,11 +167,11 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-8 max-w-5xl">
+      {error && <p role="alert" className="p-4 rounded-lg bg-rose-50 text-rose-800 text-sm">{error}</p>}
       {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-[#14263D] tracking-tight flex items-center space-x-2">
-          <span>System Settings & Local Ollama Integration</span>
-          <Badge variant="navy" size="sm">Admin</Badge>
+          <span>Workspace settings</span>
         </h2>
         <p className="text-xs text-[#748293] mt-0.5">
           Connect local Ollama models, inspect the SQLite database, and configure retrieval parameters
@@ -203,7 +209,7 @@ export const SettingsPage: React.FC = () => {
               loading={checkingOllama}
             >
               <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-              Test Connection
+              Check saved connection
             </Button>
             <Badge
               variant={ollamaStatus?.running ? 'sage' : 'red'}
@@ -233,7 +239,7 @@ export const SettingsPage: React.FC = () => {
           </div>
           <p className="text-[11px] leading-relaxed ml-6">
             {ollamaStatus?.running
-              ? `Connected at ${ollamaUrl}. Detected ${ollamaStatus.models.length} model(s): [${ollamaStatus.models.join(', ') || 'None pulled yet'}].`
+              ? `Connected at ${ollamaStatus.url}. Detected ${ollamaStatus.models.length} model(s): [${ollamaStatus.models.join(', ') || 'None pulled yet'}].`
               : `To start Ollama, open your Mac terminal and run: 'ollama serve' or open the Ollama application.`}
           </p>
         </div>
@@ -241,11 +247,10 @@ export const SettingsPage: React.FC = () => {
         {/* Mode Selector & Model Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 text-xs">
           <div>
-            <label className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1.5">
+            <label htmlFor="llmProvider" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1.5">
               Generation Engine
             </label>
-            <select
-              value={llmProvider}
+            <select id="llmProvider" value={llmProvider}
               onChange={(e) => setLlmProvider(e.target.value)}
               className="w-full text-xs bg-white border border-[#E4E8E6] rounded-xl px-3 py-2.5 font-semibold text-[#14263D] focus:outline-none focus:border-[#477E88]"
             >
@@ -257,11 +262,10 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1.5">
+            <label htmlFor="ollamaUrl" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1.5">
               Ollama Daemon URL
             </label>
-            <input
-              type="text"
+            <input id="ollamaUrl" type="text"
               value={ollamaUrl}
               onChange={(e) => setOllamaUrl(e.target.value)}
               placeholder="http://localhost:11434"
@@ -270,28 +274,11 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1.5">
+            <label htmlFor="ollamaModel" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1.5">
               Model Name / Custom Model
             </label>
-            {ollamaStatus?.models && ollamaStatus.models.length > 0 ? (
-              <select
-                value={ollamaModel}
-                onChange={(e) => setOllamaModel(e.target.value)}
-                className="w-full text-xs bg-white border border-[#E4E8E6] rounded-xl px-3 py-2.5 font-mono text-[#14263D] focus:outline-none focus:border-[#477E88]"
-              >
-                {ollamaStatus.models.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
-                value={ollamaModel}
-                onChange={(e) => setOllamaModel(e.target.value)}
-                placeholder="llama3.2, mistral, or custom-model"
-                className="w-full text-xs font-mono bg-white border border-[#E4E8E6] rounded-xl px-3 py-2.5 text-[#14263D] focus:outline-none focus:border-[#477E88]"
-              />
-            )}
+            <input id="ollamaModel" aria-label="Model name or custom model" list="ollama-models" value={ollamaModel} onChange={e => setOllamaModel(e.target.value)} placeholder="llama3.2 or your custom model" className="w-full text-sm font-mono bg-white border border-clario-border rounded-lg px-3 py-2.5" />
+            <datalist id="ollama-models">{ollamaStatus?.models.map(model => <option key={model} value={model} />)}</datalist>
           </div>
         </div>
 
@@ -317,7 +304,7 @@ export const SettingsPage: React.FC = () => {
 
         <div className="flex justify-end">
           <Button variant="primary" size="md" onClick={handleSave} loading={saving}>
-            Save Ollama Configuration
+            Save configuration
           </Button>
         </div>
       </Card>
@@ -347,6 +334,7 @@ export const SettingsPage: React.FC = () => {
           {dbTables.map((t) => (
             <button
               key={t.name}
+              aria-pressed={selectedTable === t.name}
               onClick={() => inspectTable(t.name)}
               className={`px-3 py-1.5 rounded-xl font-semibold transition-all flex items-center space-x-2 ${
                 selectedTable === t.name
@@ -365,6 +353,7 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* Data Table Preview */}
+        {loadingTable && <p role="status" className="text-sm text-clario-text-secondary">Loading table…</p>}
         {tableData && (
           <div className="border border-[#E4E8E6] rounded-xl overflow-hidden text-xs">
             <div className="p-3 bg-[#F8F7F3] border-b border-[#E4E8E6] flex items-center justify-between">
@@ -407,11 +396,10 @@ export const SettingsPage: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
-            <label className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
+            <label htmlFor="bm25K1" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
               BM25 k1 Parameter (Term Saturation)
             </label>
-            <input
-              type="number"
+            <input id="bm25K1" type="number"
               step="0.05"
               value={bm25K1}
               onChange={(e) => setBm25K1(parseFloat(e.target.value))}
@@ -420,11 +408,10 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
+            <label htmlFor="bm25B" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
               BM25 b Parameter (Length Normalization)
             </label>
-            <input
-              type="number"
+            <input id="bm25B" type="number"
               step="0.05"
               value={bm25B}
               onChange={(e) => setBm25B(parseFloat(e.target.value))}
@@ -433,11 +420,10 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
+            <label htmlFor="rrfK" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
               RRF Constant (k)
             </label>
-            <input
-              type="number"
+            <input id="rrfK" type="number"
               value={rrfK}
               onChange={(e) => setRrfK(parseInt(e.target.value))}
               className="w-full text-xs font-mono px-3 py-2 rounded-xl border border-[#E4E8E6] bg-white focus:outline-none"
@@ -445,11 +431,10 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
+            <label htmlFor="defaultTopK" className="block text-[11px] font-bold text-[#14263D] uppercase tracking-wider mb-1">
               Default Top-K Retrieved Chunks
             </label>
-            <input
-              type="number"
+            <input id="defaultTopK" type="number"
               value={defaultTopK}
               onChange={(e) => setDefaultTopK(parseInt(e.target.value))}
               className="w-full text-xs font-mono px-3 py-2 rounded-xl border border-[#E4E8E6] bg-white focus:outline-none"

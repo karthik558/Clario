@@ -5,7 +5,7 @@ import {
   FileCheck2,
   Layers,
   Clock,
-  Sparkles,
+  SearchCheck,
   AlertTriangle,
   ArrowUpRight,
   Upload,
@@ -30,14 +30,17 @@ export const OverviewPage: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
 
   const fetchDashboardData = async () => {
+    setLoading(true);
+    setError('');
     try {
       const data = await api.getDashboard();
       setStats(data);
     } catch (err) {
-      console.error('Failed to load dashboard metrics:', err);
+      setError('Could not load workspace metrics. Check the API connection and retry.');
     } finally {
       setLoading(false);
     }
@@ -54,71 +57,27 @@ export const OverviewPage: React.FC = () => {
         await api.deleteDocument(docId);
         fetchDashboardData();
       } catch (err) {
-        console.error('Failed to delete document:', err);
+        setError('Could not delete the document. Please try again.');
       }
     }
   };
 
   return (
     <div className="space-y-7">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-[#14263D] via-[#1A314E] to-[#122237] rounded-3xl p-8 text-white shadow-elevated relative overflow-hidden border border-white/10">
-        <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[#D4AE72] text-xs font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Document Intelligence Workspace</span>
-          </div>
-
-          <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2.5">
-            Clario
-          </h2>
-          <p className="text-sm font-medium text-[#A9D5C3] mb-2 tracking-wide">
-            Every document. A clearer answer.
-          </p>
-          <p className="text-xs text-slate-300 leading-relaxed mb-6 max-w-xl">
-            Analyze complex contracts, policies, and academic research papers. Ask questions with clickable citations,
-            run side-by-side comparative diffs, detect contradictions, and benchmark information retrieval.
-          </p>
-
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={() => navigate('/ask')}
-              className="bg-[#477E88] hover:bg-[#5895A0] shadow-md font-semibold"
-            >
-              <MessageSquareQuote className="w-4 h-4 mr-2" />
-              Ask Clario Assistant
-            </Button>
-            <Button
-              variant="outline"
-              size="md"
-              onClick={() => navigate('/compare')}
-              className="bg-white/10 text-white border-white/20 hover:bg-white/20 font-semibold"
-            >
-              <GitCompare className="w-4 h-4 mr-2" />
-              Compare Versions
-            </Button>
-            <Button
-              variant="outline"
-              size="md"
-              onClick={() => navigate('/search-lab')}
-              className="bg-white/10 text-white border-white/20 hover:bg-white/20 font-semibold"
-            >
-              <FlaskConical className="w-4 h-4 mr-2" />
-              Search Lab Benchmark
-            </Button>
-          </div>
+      <section className="border-b border-clario-border pb-7">
+        <p className="text-xs font-semibold tracking-widest uppercase text-clario-teal mb-3">Document review workspace</p>
+        <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-clario-navy">Understand your documents.<br />Support every decision.</h2>
+        <p className="text-sm text-clario-text-secondary leading-relaxed max-w-2xl mt-4">Bring contracts, policies, and research into one place. Find cited answers, compare versions, and turn evidence into reviewable findings.</p>
+        <div className="flex flex-wrap gap-3 mt-6">
+          <Button onClick={() => navigate('/documents')}><Upload className="w-4 h-4" />Manage documents</Button>
+          <Button variant="outline" onClick={() => navigate('/ask')}><MessageSquareQuote className="w-4 h-4" />Ask a question</Button>
+          <Button variant="outline" onClick={() => navigate('/compare')}><GitCompare className="w-4 h-4" />Compare versions</Button>
         </div>
-
-        {/* Decorative background logo */}
-        <div className="absolute -right-6 -bottom-10 opacity-[0.07] pointer-events-none">
-          <Layers className="w-72 h-72 text-[#A9D5C3]" />
-        </div>
-      </div>
+      </section>
+      {error && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error} <button className="underline ml-2" onClick={fetchDashboardData}>Retry</button></div>}
 
       {/* Metric Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-2xl">
           <div className="flex items-center justify-between text-[#748293] mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Total Documents</span>
@@ -126,7 +85,7 @@ export const OverviewPage: React.FC = () => {
               <Files className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-[#14263D]">{stats?.total_documents ?? 0}</span>
+          <span className="text-2xl font-extrabold text-[#14263D]">{loading ? '…' : stats?.total_documents ?? '—'}</span>
           <span className="text-[10px] text-[#748293] font-medium mt-1">Uploaded & stored</span>
         </Card>
 
@@ -137,8 +96,8 @@ export const OverviewPage: React.FC = () => {
               <FileCheck2 className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-emerald-700">{stats?.indexed_documents ?? 0}</span>
-          <span className="text-[10px] text-emerald-600 font-semibold mt-1">100% corpus ready</span>
+          <span className="text-2xl font-extrabold text-emerald-700">{loading ? '…' : stats?.indexed_documents ?? '—'}</span>
+          <span className="text-[10px] text-emerald-600 font-semibold mt-1">Available for review</span>
         </Card>
 
         <Card className="p-4 flex flex-col justify-between hover:border-[#477E88]/40 transition-all shadow-subtle rounded-2xl">
@@ -148,7 +107,7 @@ export const OverviewPage: React.FC = () => {
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-[#14263D]">{stats?.total_searchable_passages ?? 0}</span>
+          <span className="text-2xl font-extrabold text-[#14263D]">{loading ? '…' : stats?.total_searchable_passages ?? '—'}</span>
           <span className="text-[10px] text-[#748293] font-medium mt-1">Dense vector chunks</span>
         </Card>
 
@@ -156,10 +115,10 @@ export const OverviewPage: React.FC = () => {
           <div className="flex items-center justify-between text-[#748293] mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Analyses Run</span>
             <div className="p-1.5 rounded-lg bg-[#D4AE72]/15 text-[#D4AE72]">
-              <Sparkles className="w-3.5 h-3.5 text-[#A9844B]" />
+              <SearchCheck className="w-3.5 h-3.5 text-[#A9844B]" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-[#14263D]">{stats?.recent_analyses_count ?? 0}</span>
+          <span className="text-2xl font-extrabold text-[#14263D]">{loading ? '…' : stats?.recent_analyses_count ?? '—'}</span>
           <span className="text-[10px] text-[#748293] font-medium mt-1">Searches & diffs</span>
         </Card>
 
@@ -170,7 +129,7 @@ export const OverviewPage: React.FC = () => {
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-amber-700">{stats?.potential_conflicts_count ?? 0}</span>
+          <span className="text-2xl font-extrabold text-amber-700">{loading ? '…' : stats?.potential_conflicts_count ?? '—'}</span>
           <span className="text-[10px] text-amber-700 font-semibold mt-1">Candidate differences</span>
         </Card>
 
@@ -182,7 +141,7 @@ export const OverviewPage: React.FC = () => {
             </div>
           </div>
           <span className="text-2xl font-extrabold text-[#14263D] font-mono">
-            {stats?.average_latency_ms ? `${stats.average_latency_ms}ms` : '12ms'}
+            {stats?.average_latency_ms != null ? `${stats.average_latency_ms}ms` : '—'}
           </span>
           <span className="text-[10px] text-[#748293] font-medium mt-1">Hybrid retrieval</span>
         </Card>
@@ -194,8 +153,8 @@ export const OverviewPage: React.FC = () => {
           <Card className="h-full rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="font-bold text-sm text-[#14263D] tracking-tight">Ingest Documents</h3>
-                <p className="text-xs text-[#748293] mt-0.5">Drag & drop to parse text, extract pages, chunk, and embed</p>
+                <h3 className="font-bold text-sm text-[#14263D] tracking-tight">Upload documents</h3>
+                <p className="text-xs text-[#748293] mt-0.5">Add a document to start asking questions and comparing evidence.</p>
               </div>
             </div>
             <FileUploadZone onUploadSuccess={fetchDashboardData} compact />
@@ -205,8 +164,8 @@ export const OverviewPage: React.FC = () => {
         <div>
           <Card className="h-full flex flex-col justify-between rounded-2xl p-6">
             <div>
-              <h3 className="font-bold text-sm text-[#14263D] tracking-tight mb-1">Quick Tools</h3>
-              <p className="text-xs text-[#748293] mb-4">Jump directly into specialized intelligence workbenches</p>
+              <h3 className="font-bold text-sm text-[#14263D] tracking-tight mb-1">Continue your review</h3>
+              <p className="text-xs text-[#748293] mb-4">Choose the next step for your documents.</p>
 
               <div className="space-y-3">
                 <button
@@ -259,13 +218,6 @@ export const OverviewPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#E4E8E6] mt-4 text-[11px] text-[#748293] flex items-center justify-between">
-              <span>SQLite + NumPy Dense Store</span>
-              <span className="text-emerald-600 font-semibold font-mono flex items-center space-x-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Healthy</span>
-              </span>
-            </div>
           </Card>
         </div>
       </div>
@@ -274,8 +226,8 @@ export const OverviewPage: React.FC = () => {
       <Card className="rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-bold text-sm text-[#14263D] tracking-tight">Active Corpus Documents</h3>
-            <p className="text-xs text-[#748293] mt-0.5">Documents indexed into vector storage for query and comparison</p>
+            <h3 className="font-bold text-sm text-[#14263D] tracking-tight">Recent documents</h3>
+            <p className="text-xs text-[#748293] mt-0.5">Open a document to inspect its text and source passages.</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/documents')}>
             View All Documents
@@ -295,6 +247,7 @@ export const OverviewPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E4E8E6]/60">
+              {!loading && !error && !stats?.recent_documents?.length && <tr><td colSpan={6} className="p-8 text-center text-clario-text-secondary">No documents yet. Upload a file to begin your review.</td></tr>}
               {stats?.recent_documents?.map((doc: DocumentItem) => (
                 <tr
                   key={doc.id}

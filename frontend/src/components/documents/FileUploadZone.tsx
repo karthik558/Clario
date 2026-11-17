@@ -39,12 +39,13 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
   const handleFileSelected = (file: File) => {
     setError(null);
     setSuccessMsg(null);
-    const validExts = ['pdf', 'docx', 'doc', 'txt', 'md'];
+    const validExts = ['pdf', 'docx', 'txt', 'md'];
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     if (!validExts.includes(ext)) {
       setError(`Unsupported format ".${ext}". Please upload PDF, DOCX, TXT, or MD documents.`);
       return;
     }
+    if (file.size > 50 * 1024 * 1024) { setError('Files must be 50 MB or smaller.'); return; }
     if (file.size === 0) {
       setError('The selected file is empty (0 bytes).');
       return;
@@ -78,10 +79,12 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
     <div className="w-full">
       {!selectedFile ? (
         <div
+          role="button" tabIndex={0} aria-label="Choose a document to upload"
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={e => { if (e.target !== fileInputRef.current) fileInputRef.current?.click(); }}
           className={`border-2 border-dashed rounded-2xl transition-all cursor-pointer text-center ${
             compact ? 'p-6' : 'p-8'
           } ${
@@ -94,7 +97,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
             type="file"
             ref={fileInputRef}
             className="hidden"
-            accept=".pdf,.docx,.doc,.txt,.md"
+            accept=".pdf,.docx,.txt,.md"
             onChange={(e) => {
               if (e.target.files && e.target.files[0]) {
                 handleFileSelected(e.target.files[0]);
@@ -110,11 +113,6 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
           <p className="text-xs text-clario-text-secondary">
             Supported formats: PDF, DOCX, TXT, Markdown (Max 50MB per file)
           </p>
-          <div className="mt-3 flex items-center justify-center space-x-2 text-[11px] text-clario-text-muted">
-            <span className="px-2 py-0.5 rounded bg-clario-ivory border border-clario-border">PDF Extraction</span>
-            <span className="px-2 py-0.5 rounded bg-clario-ivory border border-clario-border">Vector Chunking</span>
-            <span className="px-2 py-0.5 rounded bg-clario-ivory border border-clario-border">Automatic Provenance</span>
-          </div>
         </div>
       ) : (
         <div className="border border-clario-teal/40 rounded-2xl p-5 bg-clario-ivory-card shadow-subtle animate-in fade-in">
@@ -131,6 +129,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
               </div>
             </div>
             <button
+              aria-label="Remove selected file" disabled={uploading}
               onClick={() => setSelectedFile(null)}
               className="p-1 rounded-md text-clario-text-secondary hover:text-clario-text hover:bg-white"
             >
