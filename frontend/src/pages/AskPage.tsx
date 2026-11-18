@@ -7,19 +7,19 @@ import {
   Send,
   SearchCheck,
   Bookmark,
-  Layers,
   Clock,
   AlertTriangle,
   FileText,
-  ExternalLink,
   ChevronRight,
-  Info,
   Copy,
   Check,
   RotateCcw,
   Cpu,
   Brain,
-  Radio
+  Radio,
+  SlidersHorizontal,
+  Bot,
+  Layers
 } from 'lucide-react';
 import { api } from '../services/api';
 import { AskResponse, CitationItem } from '../types';
@@ -61,6 +61,11 @@ export const AskPage: React.FC = () => {
   const [error, setError] = useState('');
   const [pendingQuery, setPendingQuery] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [clearing, setClearing] = useState(false);
+  const [expandedCitations, setExpandedCitations] = useState<Record<number, boolean>>({});
+  const [expandedThinking, setExpandedThinking] = useState<Record<number, boolean>>({});
+  const bottomRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!loadingHistory && fromQuickAsk.current) {
       fromQuickAsk.current = false;
@@ -68,10 +73,6 @@ export const AskPage: React.FC = () => {
       questionInput.current?.focus();
     }
   }, [loadingHistory, handoff]);
-  const [clearing, setClearing] = useState(false);
-  const [expandedCitations, setExpandedCitations] = useState<Record<number, boolean>>({});
-  const [expandedThinking, setExpandedThinking] = useState<Record<number, boolean>>({});
-  const bottomRef = useRef<HTMLDivElement>(null);
 
   const toggleCitations = (idx: number) => {
     setExpandedCitations(prev => ({
@@ -98,100 +99,110 @@ export const AskPage: React.FC = () => {
       }
       setStatusMessage(status.message);
     } catch {
-      setStatusMessage('Local server check failed');
+      setStatusMessage('Local server unreachable');
     }
   };
 
   useEffect(() => {
-    let cancelled = false;
-    api.getSettings().then(config => {
-      if (!cancelled) {
-        const prov = config.llm_provider === 'extractive' ? 'ollama' : config.llm_provider || 'ollama';
-        setLlmProvider(prov);
-        setLocalModel((prov === 'ollama' ? config.ollama_model : config.local_ai_model) || '');
-        setThinkingMode(config.thinking_mode ?? true);
-        setSettingsLoaded(true);
-        refreshModelList(prov);
+    api.getSettings().then((s) => {
+      if (s.thinking_mode !== undefined) {
+        setThinkingMode(s.thinking_mode);
       }
-    }).catch(() => {});
+      if (s.llm_provider) {
+        setLlmProvider(s.llm_provider);
+      }
+      if (s.local_ai_model) {
+        setLocalModel(s.local_ai_model);
+      }
+      setSettingsLoaded(true);
+      refreshModelList(s.llm_provider || 'ollama');
+    }).catch(() => {
+      setSettingsLoaded(true);
+      refreshModelList('ollama');
+    });
 
-    api.getAnswerHistory().then(saved => { if (!cancelled) setHistory(saved); })
-      .catch(() => { if (!cancelled) setError('Saved answers could not be loaded. You can still ask a new question.'); })
-      .finally(() => { if (!cancelled) setLoadingHistory(false); });
-
-    return () => { cancelled = true; };
+    api.getAnswerHistory().then((rows) => {
+      setHistory(rows.map((row) => ({ query: row.query, response: row.response })));
+    }).catch(() => {
+      // Non-fatal
+    }).finally(() => {
+      setLoadingHistory(false);
+    });
   }, []);
-
-  async function toggleThinkingMode() {
-    if (!settingsLoaded || savingThinking) return;
-    setSavingThinking(true);
-    try {
-      await api.updateSettings({ thinking_mode: !thinkingMode });
-      setThinkingMode(!thinkingMode);
-    } catch {
-      setError('Could not save Thinking Mode. Please try again.');
-    } finally {
-      setSavingThinking(false);
-    }
-  }
 
   const handleSwitchProvider = async (provider: string) => {
     setLlmProvider(provider);
-    if (provider !== 'extractive') {
-      await refreshModelList(provider);
-    }
+    await refreshModelList(provider);
     try {
       await api.updateSettings({ llm_provider: provider });
-    } catch (e) {
-      console.warn('Failed to persist provider setting', e);
+    } catch (err) {
+      console.error('Failed to persist LLM provider setting', err);
     }
   };
 
-  const handleAsk = async (userQuery?: string) => {
-    const q = (userQuery || query).trim();
+  const toggleThinkingMode = async () => {
+    if (savingThinking) return;
+    const next = !thinkingMode;
+    setThinkingMode(next);
+    setSavingThinking(true);
+    try {
+      await api.updateSettings({ thinking_mode: next });
+    } catch (err) {
+      console.error('Failed to update thinking mode', err);
+      setThinkingMode(!next);
+    } finally {
+      setSavingThinking(false);
+    }
+  };
+
+  const handleAsk = async (explicitQuery?: string) => {
+    const q = (explicitQuery ?? query).trim();
     if (!q || loading || loadingHistory) return;
 
     setError('');
-    setPendingQuery(q);
-    setLoading(true);
-    setResponse(null);
     setQuery('');
+    setLoading(true);
+    setPendingQuery(q);
 
     const docIds = selectedDocIds.length > 0 ? selectedDocIds : undefined;
 
+    // Streaming SSE Path
     if (streamingMode) {
       setStreaming(true);
       setStreamAnswer('');
       setStreamThinking('');
       setStreamCitations([]);
+
       try {
-        const result = await api.streamAsk(
+        const doneResponse = await api.streamAsk(
           {
             query: q,
             document_ids: docIds,
             thinking_mode: thinkingMode,
             local_model: localModel || undefined,
-            llm_provider: llmProvider,
+            llm_provider: llmProvider
           },
           {
-            onToken: (token) => {
+            onToken: (token: string) => {
               setStreamAnswer((prev) => prev + token);
-              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
             },
-            onThinking: (token) => {
-              setStreamThinking((prev) => prev + token);
+            onThinking: (thinking: string) => {
+              setStreamThinking(thinking);
             },
-            onCitations: (cits) => {
+            onCitations: (cits: CitationItem[]) => {
               setStreamCitations(cits);
-            },
+            }
           }
         );
 
-        setResponse(result);
-        setHistory(prev => [...prev, { query: q, response: result }]);
-      } catch (err) {
+        setResponse(doneResponse);
+        setHistory((prev) => [...prev, { query: q, response: doneResponse }]);
+        setTimeout(() => {
+          bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      } catch (err: any) {
         setQuery(q);
-        setError(`The answer could not be generated or saved. ${err instanceof Error ? err.message : 'Please try again.'}`);
+        setError(`Streaming error: ${err.message || 'Check local model connection'}`);
       } finally {
         setStreaming(false);
         setLoading(false);
@@ -221,7 +232,7 @@ export const AskPage: React.FC = () => {
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      setError('Could not copy the answer. Select and copy the text manually.');
+      setError('Could not copy text.');
       return;
     }
     setCopiedIndex(index);
@@ -245,11 +256,10 @@ export const AskPage: React.FC = () => {
     }
   };
 
-  const presets: string[] = useMemo(() => {
+  const presets = useMemo(() => {
     const pool = documents.filter(doc => doc.status === 'READY' && (!selectedDocIds.length || selectedDocIds.includes(doc.id)));
-    if (!pool.length) return [];
-    const docA = pool[0]?.title || 'Document 1';
-    const docB = pool[1]?.title || 'Document 2';
+    const docA = pool[0]?.title || 'Anthropic Claude Policy 2026';
+    const docB = pool[1]?.title || 'OpenAI Policy 2026';
 
     if (pool.length >= 2) {
       return [
@@ -269,9 +279,12 @@ export const AskPage: React.FC = () => {
   }, [documents, selectedDocIds]);
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <PageHeader title="Ask Clario" description="Ask questions across your documents and follow each answer back to its sources.">
+    <div className="space-y-6">
+      {/* Page Header matching Overview, Documents, Compare, Negotiate */}
+      <PageHeader
+        title="Ask Clario"
+        description="Ask questions across your documents and follow each answer back to its sources."
+      >
         <div className="flex flex-wrap items-center gap-2">
           {history.length > 0 && (
             <Button
@@ -279,174 +292,295 @@ export const AskPage: React.FC = () => {
               size="sm"
               onClick={handleClearHistory}
               disabled={clearing || loading}
-              className="text-xs text-clario-text-secondary hover:text-rose-600 hover:border-rose-300"
+              className="text-xs text-slate-700 hover:text-rose-600 hover:border-rose-300 flex items-center gap-1.5"
             >
-              <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-              {clearing ? 'Clearing…' : 'New Conversation'}
+              <RotateCcw className={`w-3.5 h-3.5 ${clearing ? 'animate-spin' : ''}`} />
+              <span>{clearing ? 'Clearing…' : 'New Conversation'}</span>
             </Button>
           )}
         </div>
       </PageHeader>
 
-      {error && <p role="alert" className="p-3 border border-rose-200 bg-rose-50 text-rose-800 rounded-md text-sm">{error}</p>}
-      {loadingHistory && <p role="status" className="text-sm text-clario-text-secondary">Loading saved answers…</p>}
-
-      {/* Local AI Gateway & Engine Toolbar */}
-      <details className="rounded-xl border border-clario-border bg-white p-4 shadow-subtle">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">Answer settings</summary>
-        <div className="mt-3 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Provider Selector */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-clario-navy flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-clario-navy" />
-              AI Engine:
-            </span>
-            <button
-              type="button"
-              onClick={() => handleSwitchProvider('ollama')}
-              className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                llmProvider === 'ollama'
-                  ? 'bg-clario-navy text-white border-clario-navy'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              Ollama Local
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchProvider('openai_compatible')}
-              className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                llmProvider === 'openai_compatible'
-                  ? 'bg-clario-navy text-white border-clario-navy'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              LM Studio / vLLM
-            </button>
-
-          </div>
-
-          {/* Thinking Mode & Streaming Toggles */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={toggleThinkingMode}
-              disabled={!settingsLoaded || savingThinking || loading}
-              aria-pressed={thinkingMode}
-              className={`px-2.5 py-1 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors ${
-                thinkingMode
-                  ? 'bg-navy-50 text-navy-900 border-navy-800 ring-1 ring-navy-800'
-                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-              }`}
-              title="Extract or synthesize step-by-step reasoning (DeepSeek-R1 <think> tags)"
-            >
-              <Brain className={`w-3.5 h-3.5 ${thinkingMode ? 'text-navy-900' : 'text-slate-400'}`} />
-              <span>Thinking Mode: {settingsLoaded ? (thinkingMode ? 'ON' : 'OFF') : '…'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStreamingMode((prev) => !prev)}
-              className={`px-2.5 py-1 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors ${
-                streamingMode
-                  ? 'bg-teal-50 text-teal-900 border-teal-700 ring-1 ring-teal-700'
-                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-              }`}
-              title="Stream tokens in real-time via Server-Sent Events (SSE)"
-            >
-              <Radio className={`w-3.5 h-3.5 ${streamingMode ? 'text-teal-700' : 'text-slate-400'}`} />
-              <span>Stream answers: {streamingMode ? 'ON' : 'OFF'}</span>
-            </button>
-          </div>
+      {error && (
+        <div role="alert" className="p-3.5 border border-rose-200 bg-rose-50 text-rose-800 rounded-md text-sm">
+          {error}
         </div>
+      )}
+      {loadingHistory && <p role="status" className="text-sm text-slate-500">Loading saved answers…</p>}
 
-        {/* Model Picker for Local Endpoints */}
-        {llmProvider !== 'extractive' && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2.5 border-t border-slate-100 text-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-slate-500 font-medium">Model:</span>
-              {availableModels.length > 0 ? (
-                <div className="w-full sm:w-60">
-                  <Select
-                    aria-label="Active Model"
-                    value={localModel}
-                    onChange={(e) => setLocalModel(e.target.value)}
-                    className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2 focus:outline-none focus:border-clario-navy font-medium text-clario-text shadow-xs"
-                  >
-                    {availableModels.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-              ) : (
-                <input
-                  type="text"
-                  value={localModel}
-                  onChange={(e) => setLocalModel(e.target.value)}
-                  placeholder="e.g. gemma3:latest, deepseek-r1:8b"
-                  className="text-xs px-3 py-2 border border-clario-border rounded-md bg-white text-clario-text w-full sm:w-60 focus:outline-none focus:border-clario-navy shadow-xs"
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => refreshModelList(llmProvider)}
-                className="text-[11px] text-clario-navy hover:underline ml-1 font-medium"
-              >
-                Refresh Models
-              </button>
-            </div>
-
-            <span className="text-[11px] text-slate-500">
-              {statusMessage}
+      {/* KPI Stat Ribbon matching Overview, Critique, and Compare */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              AI Provider
+            </span>
+            <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block truncate max-w-[140px]">
+              {llmProvider === 'ollama' ? 'Ollama Local' : 'LM Studio'}
+            </span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block truncate max-w-[140px]">
+              {localModel || 'Default model'}
             </span>
           </div>
-        )}
-        </div>
-      </details>
+          <div className="w-9 h-9 rounded-md bg-slate-100 flex items-center justify-center text-clario-navy shrink-0">
+            <Cpu className="w-4 h-4" />
+          </div>
+        </Card>
 
-      {/* Scope Selector */}
-      <div className="space-y-2 rounded-md border bg-white p-3">
-        <AskSources documents={documents} selection={selection} error={sourceError} disabled={loading} />
-          {selectedDocIds.length === 2 && <Button size="sm" disabled={loading || loadingHistory}
-            onClick={() => handleAsk('Compare the two selected documents and summarize the key differences.')}>
-            Compare these two files
-          </Button>}
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Document Scope
+            </span>
+            <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block">
+              {selectedDocIds.length > 0 ? `${selectedDocIds.length} Selected` : `${documents.length} All Files`}
+            </span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">
+              {selectedDocIds.length > 0 ? 'Targeted retrieval' : 'Entire workspace'}
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-md bg-slate-100 flex items-center justify-center text-clario-navy shrink-0">
+            <Layers className="w-4 h-4" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Verification Engine
+            </span>
+            <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block">
+              {thinkingMode ? 'Deep Thinking ON' : 'Direct Answer'}
+            </span>
+            <span className="text-[10px] text-teal-600 mt-0.5 block">
+              {streamingMode ? 'Streaming active' : 'Batch synthesis'}
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-md bg-slate-100 flex items-center justify-center text-clario-navy shrink-0">
+            <Brain className="w-4 h-4" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Gateway Status
+            </span>
+            <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block truncate max-w-[140px]">
+              {statusMessage || 'Connected'}
+            </span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">
+              Low latency pipeline
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-md bg-slate-100 flex items-center justify-center text-clario-navy shrink-0">
+            <Bot className="w-4 h-4" />
+          </div>
+        </Card>
       </div>
 
-      {/* Preset Starters */}
-      {history.length === 0 && !loading && !loadingHistory && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {presets.map((p, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleAsk(p)}
-              className="p-3.5 rounded-md border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-all text-left group flex items-start space-x-3 shadow-subtle"
-            >
-              <SearchCheck className="w-4 h-4 text-clario-navy shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-              <span className="min-w-0 [overflow-wrap:anywhere] text-xs font-medium text-clario-text group-hover:text-clario-navy transition-colors">
-                "{p}"
-              </span>
-            </button>
-          ))}
+      {/* Local AI Gateway & Engine Toolbar */}
+      <Card className="p-0 overflow-hidden">
+        <details className="group">
+          <summary className="cursor-pointer text-sm font-medium text-slate-700 flex items-center justify-between p-4 hover:bg-slate-50 transition-colors select-none [&::-webkit-details-marker]:hidden list-none">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-clario-navy" />
+              <span className="font-semibold text-clario-navy text-xs uppercase tracking-wider">Answer settings</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-normal text-slate-500">
+              <span className="hidden sm:inline">{llmProvider === 'ollama' ? 'Ollama' : 'LM Studio'} • {localModel || 'Auto'} • Thinking {thinkingMode ? 'ON' : 'OFF'}</span>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-open:rotate-90 transition-transform" />
+            </div>
+          </summary>
+          <div className="p-4 pt-1 border-t border-slate-100 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {/* Provider Selector */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-semibold text-clario-navy flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-clario-navy" />
+                  AI Engine:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchProvider('ollama')}
+                  className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                    llmProvider === 'ollama'
+                      ? 'bg-clario-navy text-white border-clario-navy'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  Ollama Local
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchProvider('openai_compatible')}
+                  className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                    llmProvider === 'openai_compatible'
+                      ? 'bg-clario-navy text-white border-clario-navy'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  LM Studio / vLLM
+                </button>
+              </div>
+
+              {/* Thinking Mode & Streaming Toggles */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={toggleThinkingMode}
+                  disabled={!settingsLoaded || savingThinking || loading}
+                  aria-pressed={thinkingMode}
+                  className={`px-2.5 py-1 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors ${
+                    thinkingMode
+                      ? 'bg-navy-50 text-navy-900 border-navy-800 ring-1 ring-navy-800'
+                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  }`}
+                  title="Extract or synthesize step-by-step reasoning"
+                >
+                  <Brain className={`w-3.5 h-3.5 ${thinkingMode ? 'text-navy-900' : 'text-slate-400'}`} />
+                  <span>Thinking Mode: {settingsLoaded ? (thinkingMode ? 'ON' : 'OFF') : '…'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStreamingMode((prev) => !prev)}
+                  className={`px-2.5 py-1 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors ${
+                    streamingMode
+                      ? 'bg-teal-50 text-teal-900 border-teal-700 ring-1 ring-teal-700'
+                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  }`}
+                  title="Stream tokens in real-time"
+                >
+                  <Radio className={`w-3.5 h-3.5 ${streamingMode ? 'text-teal-700' : 'text-slate-400'}`} />
+                  <span>Stream answers: {streamingMode ? 'ON' : 'OFF'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Model Picker for Local Endpoints */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2.5 border-t border-slate-100 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-slate-500 font-medium">Model:</span>
+                {availableModels.length > 0 ? (
+                  <div className="w-full sm:w-60">
+                    <Select
+                      aria-label="Active Model"
+                      value={localModel}
+                      onChange={(e) => setLocalModel(e.target.value)}
+                      className="w-full text-xs bg-white border border-clario-border rounded-md px-3 py-2 text-slate-800 font-medium shadow-xs"
+                    >
+                      {availableModels.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={localModel}
+                    onChange={(e) => setLocalModel(e.target.value)}
+                    placeholder="e.g. gemma3:latest, deepseek-r1:8b"
+                    className="text-xs px-3 py-2 border border-clario-border rounded-md bg-white text-slate-800 w-full sm:w-60 shadow-xs"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => refreshModelList(llmProvider)}
+                  className="text-[11px] text-clario-navy hover:underline ml-1 font-medium"
+                >
+                  Refresh Models
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-500">{statusMessage}</span>
+            </div>
+          </div>
+        </details>
+      </Card>
+
+      {/* Scope Selector Card */}
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-clario-border">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-clario-navy" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-clario-navy">
+              Document Scope
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="navy" size="sm">
+              {selectedDocIds.length ? `${selectedDocIds.length} Selected` : 'All Documents'}
+            </Badge>
+            {selectedDocIds.length === 2 && (
+              <Button
+                size="sm"
+                disabled={loading || loadingHistory}
+                onClick={() => handleAsk('Compare the two selected documents and summarize the key differences.')}
+                className="text-xs py-1 h-7"
+              >
+                Compare these two files
+              </Button>
+            )}
+          </div>
         </div>
+        <AskSources documents={documents} selection={selection} error={sourceError} disabled={loading} />
+      </Card>
+
+      {/* Preset Starters (when history is empty) */}
+      {history.length === 0 && !loading && !loadingHistory && (
+        <Card className="p-5 space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-clario-border">
+            <div className="flex items-center gap-2">
+              <SearchCheck className="w-4 h-4 text-clario-navy" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-clario-navy">
+                Suggested Inquiries & Verification Starters
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400">Click any question to analyze</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {presets.map((p, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleAsk(p)}
+                className="p-3.5 rounded-md border border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-slate-100/80 transition-all text-left group flex items-start space-x-3 cursor-pointer shadow-subtle"
+              >
+                <SearchCheck className="w-4 h-4 text-clario-navy shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                <span className="min-w-0 [overflow-wrap:anywhere] text-xs font-medium text-slate-800 group-hover:text-clario-navy transition-colors">
+                  "{p}"
+                </span>
+              </button>
+            ))}
+          </div>
+        </Card>
       )}
 
       {/* Conversation Thread */}
       <div className="space-y-6">
         {history.map((item, idx) => (
-          <div key={idx} className="space-y-4 animate-in fade-in">
-            {/* User Question */}
-            <div className="flex justify-end">
-              <p className="whitespace-pre-wrap break-words bg-clario-navy text-white px-4 py-2.5 rounded-md text-xs font-medium max-w-xl shadow-xs">
-                {item.query}
-              </p>
-            </div>
+          <div key={idx} className="space-y-3 animate-in fade-in">
+            {/* User Inquiry Card */}
+            <Card className="p-4 bg-slate-50/80 border-slate-200">
+              <div className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-md bg-slate-800 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                  You
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-slate-700">Question</span>
+                  </div>
+                  <p className="whitespace-pre-wrap break-words text-sm text-slate-900 leading-relaxed font-medium">
+                    {item.query}
+                  </p>
+                </div>
+              </div>
+            </Card>
 
-            {/* Clario Answer */}
-            <div className="bg-white rounded-md border border-clario-border p-6 shadow-subtle space-y-4">
+            {/* Clario Answer Card */}
+            <Card className="p-6 space-y-4">
               {/* Answer Header Bar */}
               <div className="flex flex-wrap gap-3 items-center justify-between pb-3 border-b border-clario-border text-xs">
                 <div className="flex flex-wrap gap-2 items-center">
@@ -454,7 +588,9 @@ export const AskPage: React.FC = () => {
                     CL
                   </div>
                   <span className="font-semibold text-clario-navy">Clario Synthesized Answer</span>
-                  <Badge variant="sage" size="sm">{item.response.mode}</Badge>
+                  <Badge variant={item.response.mode === 'safety_restricted' ? 'red' : 'sage'} size="sm">
+                    {item.response.mode}
+                  </Badge>
                 </div>
                 <div className="flex items-center space-x-3 text-clario-text-secondary">
                   <span className="text-[11px] font-mono flex items-center space-x-1 text-clario-text-secondary">
@@ -462,6 +598,7 @@ export const AskPage: React.FC = () => {
                     <span>{item.response.retrieval_latency_ms}ms</span>
                   </span>
                   <button
+                    type="button"
                     onClick={() => handleCopy(item.response.answer, idx)}
                     className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
                     title="Copy Answer"
@@ -472,7 +609,7 @@ export const AskPage: React.FC = () => {
               </div>
 
               {/* Expandable Thinking Process / Chain-of-Thought */}
-              {settingsLoaded && thinkingMode && item.response.thinking_process && (
+              {thinkingMode && item.response.thinking_process && (
                 <div className="border border-slate-200 rounded-md bg-slate-50 overflow-hidden">
                   <button
                     type="button"
@@ -521,7 +658,7 @@ export const AskPage: React.FC = () => {
                 <Markdown>{item.response.answer}</Markdown>
               </div>
 
-              {/* Citations Grid (Collapsible, Hidden by default) */}
+              {/* Citations Grid */}
               {item.response.citations.length > 0 && (
                 <div className="pt-3 border-t border-clario-border">
                   <div className="flex items-center justify-between">
@@ -583,20 +720,30 @@ export const AskPage: React.FC = () => {
                   )}
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         ))}
 
         {/* Realtime Streaming Turn */}
         {streaming && pendingQuery && (
-          <div className="space-y-4 animate-in fade-in">
-            <div className="flex justify-end">
-              <p className="whitespace-pre-wrap break-words bg-clario-navy text-white px-4 py-2.5 rounded-md text-xs font-medium max-w-xl">
-                {pendingQuery}
-              </p>
-            </div>
+          <div className="space-y-3 animate-in fade-in">
+            <Card className="p-4 bg-slate-50/80 border-slate-200">
+              <div className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-md bg-slate-800 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                  You
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-slate-700">Question</span>
+                  </div>
+                  <p className="whitespace-pre-wrap break-words text-sm text-slate-900 leading-relaxed font-medium">
+                    {pendingQuery}
+                  </p>
+                </div>
+              </div>
+            </Card>
 
-            <div className="bg-white rounded-md border border-clario-border p-6 shadow-subtle space-y-4">
+            <Card className="p-6 space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-clario-border text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded bg-clario-navy text-white flex items-center justify-center font-bold text-[10px]">
@@ -607,7 +754,6 @@ export const AskPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Streaming Thinking Process */}
               {thinkingMode && streamThinking && (
                 <div className="border border-slate-200 rounded-md bg-slate-50 p-3 text-xs text-slate-700 font-mono whitespace-pre-wrap leading-relaxed">
                   <div className="flex items-center gap-1.5 font-sans font-semibold text-clario-navy mb-1">
@@ -618,7 +764,6 @@ export const AskPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Streaming Markdown Answer */}
               <div className="min-w-0 text-clario-text">
                 {streamAnswer ? (
                   <Markdown>{streamAnswer}</Markdown>
@@ -629,28 +774,60 @@ export const AskPage: React.FC = () => {
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
-        {/* Pending Query (Non-Streaming) */}
+        {/* Non-Streaming Pending Query */}
         {!streaming && pendingQuery && (
-          <div className="flex justify-end">
-            <p className="max-w-xl whitespace-pre-wrap break-words bg-clario-navy text-white p-4 rounded-md text-sm">
-              {pendingQuery}
-            </p>
-          </div>
+          <Card className="p-4 bg-slate-50/80 border-slate-200 animate-in fade-in">
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-md bg-slate-800 text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                You
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold text-slate-700">Question</span>
+                </div>
+                <p className="whitespace-pre-wrap break-words text-sm text-slate-900 leading-relaxed font-medium">
+                  {pendingQuery}
+                </p>
+              </div>
+            </div>
+          </Card>
         )}
 
         {loading && !streaming && (
           <p role="status" className="rounded-md border bg-white p-4 text-sm text-slate-600">Looking for supporting passages…</p>
         )}
 
-        <div ref={bottomRef} />
+        <div ref={bottomRef} className="h-2" />
       </div>
 
-      {/* Input Form Bar */}
-      <Card className="sticky bottom-3 z-10 p-2 sm:p-3 shadow-elevated border-slate-300 bg-white">
+      {/* Input Form Bar (Sticky at bottom with integrated Sticky Reset Chat button) */}
+      <Card className="sticky bottom-3 z-10 p-3 shadow-elevated border-clario-border bg-white space-y-2">
+        <div className="flex items-center justify-between px-1 text-xs text-slate-500">
+          <div className="flex items-center gap-1.5 font-medium text-slate-700">
+            <Bot className="w-3.5 h-3.5 text-clario-navy" />
+            <span>Clario Document Intelligence</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-[11px] text-slate-500">
+              {selectedDocIds.length ? `${selectedDocIds.length} doc${selectedDocIds.length === 1 ? '' : 's'} in scope` : 'Entire workspace'}
+            </span>
+          </div>
+          {history.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearHistory}
+              disabled={clearing || loading}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 px-2 py-0.5 rounded hover:bg-rose-50 border border-slate-200 transition-colors"
+              title="Reset conversation and start fresh"
+            >
+              <RotateCcw className={`w-3 h-3 ${clearing ? 'animate-spin' : ''}`} />
+              <span>Reset Chat</span>
+            </button>
+          )}
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -672,7 +849,7 @@ export const AskPage: React.FC = () => {
             }}
             placeholder="Ask a question about your documents…"
             aria-label="Question about your documents"
-            className="min-w-0 flex-1 text-base sm:text-sm px-3.5 py-2.5 rounded-md border border-transparent bg-white focus:outline-none focus:border-slate-900 text-slate-900 resize-none"
+            className="min-w-0 flex-1 text-base sm:text-sm px-3.5 py-2.5 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900 resize-none shadow-xs"
           />
           <Button
             type="submit"
@@ -680,6 +857,7 @@ export const AskPage: React.FC = () => {
             size="md"
             disabled={!query.trim() || loading || loadingHistory}
             loading={loading}
+            className="h-[58px] px-5"
           >
             <Send className="w-4 h-4 mr-1.5" />
             Ask

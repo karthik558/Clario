@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   collapsed,
   onToggle,
   mobileOpen = false,
-  onCloseMobile = () => {}
+  onCloseMobile = () => { }
 }) => {
   const sidebarRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -123,10 +123,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 aria-label={name}
                 title={name}
                 className={({ isActive }) =>
-                  `sidebar-link flex items-center gap-3 min-h-9 px-3 py-2 rounded-md text-[13px] leading-5 transition-colors ${
-                    isActive
-                      ? 'bg-white/10 text-white font-medium'
-                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                  `sidebar-link flex items-center gap-3 min-h-9 px-3 py-2 rounded-md text-[13px] leading-5 transition-colors ${isActive
+                    ? 'bg-white/10 text-white font-medium'
+                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
                   }`
                 }
               >
@@ -137,8 +136,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </nav>
         <div className="shrink-0 border-t border-white/10 px-3 py-3 text-xs text-slate-300">
-          <a className="flex min-h-8 items-center px-3 rounded-md hover:text-white" href="https://karthiklal.in" target="_blank" rel="noopener noreferrer" aria-label="© 2026 Clario">
-            ©<span className="sidebar-label ml-1">2026 Clario</span>
+          <a
+            className="flex min-h-8 items-center px-3 rounded-md hover:text-white transition-colors group"
+            href="https://karthiklal.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="© 2026 Clario • All rights reserved."
+            title="© 2026 Clario • All rights reserved."
+          >
+            <span>©</span>
+            <span className="sidebar-label ml-1">2026 Clario • All rights reserved.</span>
           </a>
         </div>
       </aside>

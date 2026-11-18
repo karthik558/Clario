@@ -96,3 +96,56 @@ def test_briefs_endpoints():
         assert "financial_exposure" in brief
         assert "legal_risks" in brief
         assert "action_items" in brief
+
+def test_calendar_export_endpoint():
+    res = client.get("/api/obligations/export-calendar")
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("text/calendar")
+    assert "BEGIN:VCALENDAR" in res.text
+    assert "END:VCALENDAR" in res.text
+
+def test_redline_docx_export_endpoint():
+    res = client.post(
+        "/api/negotiate/export-docx",
+        json={
+            "topic": "Data Retention",
+            "stance": "customer_protective",
+            "doc_a_title": "Doc A",
+            "doc_b_title": "Doc B",
+            "statement_a": "Zero data retention",
+            "statement_b": "30 days retention"
+        }
+    )
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    assert len(res.content) > 1000
+
+def test_risk_scorecard_endpoints():
+    res1 = client.get("/api/risk/scorecard")
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert "composite_score" in data1
+    assert "documents" in data1
+
+def test_conversational_and_meta_basic_questions():
+    basic_queries = [
+        "whats your name",
+        "who are you",
+        "which files are you refering ?",
+        "which files are you referring to",
+        "what documents are uploaded",
+        "list my files",
+        "what can I ask?",
+        "how does this work?",
+        "what are these documents about?",
+        "hello"
+    ]
+    for q in basic_queries:
+        res = client.post("/api/ask", json={"query": q})
+        assert res.status_code == 200
+        data = res.json()
+        assert any(data["mode"].startswith(m) for m in ("assistant_identity", "document_inventory", "corpus_overview", "help_and_instructions", "greeting", "ollama_local", "extractive_synthesis"))
+        assert len(data["answer"]) > 20
+        # Ensure it NEVER returns the rigid document_scope refusal
+        assert "I can only answer questions about your uploaded documents" not in data["answer"]
+        assert "I could not find supporting passages in the selected documents" not in data["answer"]

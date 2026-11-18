@@ -41,13 +41,226 @@ class AskService:
         return any(re.search(pat, q) for pat in patterns)
 
     @staticmethod
-    def _greeting(request: AskRequest) -> Optional[AskResponse]:
-        words = " ".join(re.findall(r"[\w']+", request.query.lower()))
-        if not re.fullmatch(r"(?:(?:hi|hey|hello|bro|clario) )*(?:hi|hey|hello|how are you(?: doing)?)(?: (?:bro|clario|today))?", words):
-            return None
-        return AskResponse(query=request.query, answer="Hey! I'm doing well. What would you like to know about your documents?",
-                           mode="greeting", citations=[], retrieval_latency_ms=0, synthesis_latency_ms=0,
-                           has_conflicting_evidence=False)
+    def _handle_conversational_and_meta(request: AskRequest, db: Session) -> Optional[AskResponse]:
+        query_raw = request.query.strip().lower().replace("’", "'")
+        words = " ".join(re.findall(r"[\w']+", query_raw))
+
+        # 0. Safety Gate: Strict 18+ / adult / NSFW block
+        nsfw_patterns = [
+            r'\b(?:porn|pornography|xxx|nsfw|erotic|erotica|hentai|sexually\s+explicit|adult\s+content)\b',
+            r'\b(?:nude|nudes|naked|masturbat|fetish|incest)\b'
+        ]
+        if any(re.search(pat, query_raw) for pat in nsfw_patterns):
+            return AskResponse(
+                query=request.query,
+                answer="I cannot assist with sexually explicit or 18+ adult content. As **Clario**, I specialize in enterprise contract intelligence, legal policy analysis, and business documents. How can I assist you with your professional documents?",
+                mode="safety_restricted",
+                citations=[],
+                retrieval_latency_ms=0,
+                synthesis_latency_ms=0,
+                has_conflicting_evidence=False
+            )
+
+        # 1. Document Inventory / Referencing queries (e.g. "which files are you referring to", "what documents are uploaded", "list files")
+        inventory_patterns = [
+            r"\b(?:which|what)\s+(?:files?|documents?|policies|contracts?)\s+(?:are\s+you\s+(?:referring|refering|referencing|using|looking\s+at)|do\s+you\s+(?:have|reference|use)|can\s+you\s+see)\b",
+            r"\b(?:what\s+files?\s+(?:are\s+there|are\s+uploaded|do\s+we\s+have|are\s+in\s+the\s+workspace))\b",
+            r"\b(?:which\s+(?:files?|documents?|policies)\s+(?:are\s+there|are\s+uploaded|are\s+in\s+my\s+workspace))\b",
+            r"\b(?:what\s+(?:documents?|files?)\s+are\s+available)\b",
+            r"\b(?:list|show(?:\s+me)?)\s+(?:all\s+)?(?:the\s+|my\s+)?(?:files?|documents?|contracts?|policies)\b",
+            r"\b(?:tell\s+me\s+the\s+(?:names?\s+of\s+the\s+)?(?:uploaded\s+)?(?:files?|documents?))\b",
+            r"\b(?:what\s+is\s+currently\s+uploaded|what\s+is\s+in\s+my\s+workspace)\b",
+            r"\b(?:files?|documents?)\s+inventory\b",
+            r"\b(?:which|what)\s+(?:files?|documents?)\s+(?:are\s+you\s+)?(?:refer(?:r?ing|ence)|using)\b",
+            r"^which\s+(?:files?|documents?)(?:\s+(?:are\s+you\s+)?(?:refer(?:r?ing|ence)|using))?\s*\??$",
+            r"^(?:which|what)\s+files?\??$"
+        ]
+        is_inventory = any(re.search(pat, query_raw) for pat in inventory_patterns) or query_raw in [
+            "which files", "which documents", "what files", "what documents", "list files", "show files", "files", "documents"
+        ]
+
+        if is_inventory:
+            ready_query = db.query(Document).filter(Document.status == "READY")
+            if request.document_ids:
+                ready_query = ready_query.filter(Document.id.in_(request.document_ids))
+            docs = ready_query.order_by(Document.created_at.desc()).all()
+
+            if not docs:
+                ans = (
+                    "There are currently no indexed documents selected or uploaded in this workspace.\n\n"
+                    "Please navigate to the **Document Library** (`/documents`) to upload PDF, Word (.docx), "
+                    "Markdown, or Excel spreadsheets to begin analysis."
+                )
+                citations = []
+            else:
+                lines = [
+                    f"I am actively referencing the following **{len(docs)}** document(s) in your workspace:\n"
+                ]
+                citations = []
+                for idx, doc in enumerate(docs, start=1):
+                    ext = doc.file_type.upper() if doc.file_type else "DOC"
+                    pages_info = f"{doc.page_count} pages" if doc.page_count and doc.page_count > 1 else "1 page"
+                    lines.append(f"{idx}. **{doc.title}** ({pages_info}, {ext})")
+                    lines.append(f"   • *Status*: Indexed & Searchable")
+                    lines.append(f"   • *Searchable Passages*: {doc.chunk_count} dense vector chunks")
+                    if doc.word_count:
+                        lines.append(f"   • *Word Count*: ~{doc.word_count:,} words")
+                    lines.append("")
+
+                    # First chunk as reference citation
+                    first_chunk = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).order_by(DocumentChunk.chunk_index).first()
+                    snippet = first_chunk.content[:240] + ("..." if len(first_chunk.content) > 240 else "") if first_chunk else f"Document: {doc.title}"
+                    citations.append(
+                        CitationItem(
+                            citation_id=idx,
+                            chunk_id=first_chunk.id if first_chunk else f"doc-{doc.id}",
+                            document_id=doc.id,
+                            document_title=doc.title,
+                            page_number=first_chunk.page_number if (first_chunk and first_chunk.page_number) else 1,
+                            snippet=snippet,
+                            relevance_score=1.0
+                        )
+                    )
+
+                lines.append(
+                    "You can ask me to compare these documents, verify regulatory compliance (GDPR, HIPAA, EU AI Act, SOC 2), "
+                    "inspect key obligations (breach notification, termination notice, liability super-caps), or draft clause redlines."
+                )
+                ans = "\n".join(lines)
+
+            return AskResponse(
+                query=request.query,
+                answer=ans,
+                mode="document_inventory",
+                citations=citations,
+                retrieval_latency_ms=0,
+                synthesis_latency_ms=0,
+                has_conflicting_evidence=False
+            )
+
+        # 2. General Summary / "What are these documents about?"
+        doc_overview_patterns = [
+            r"\b(?:what\s+are\s+these\s+(?:documents?|files?)\s+about)\b",
+            r"\b(?:tell\s+me\s+about\s+these\s+(?:documents?|files?))\b",
+            r"\b(?:what\s+do\s+these\s+(?:documents?|files?|contracts?)\s+(?:cover|contain))\b",
+            r"\b(?:overview\s+of\s+(?:the\s+)?(?:uploaded\s+)?(?:documents?|files?))\b",
+            r"\b(?:what\s+are\s+we\s+looking\s+at)\b"
+        ]
+        if any(re.search(pat, query_raw) for pat in doc_overview_patterns):
+            ready_query = db.query(Document).filter(Document.status == "READY")
+            if request.document_ids:
+                ready_query = ready_query.filter(Document.id.in_(request.document_ids))
+            docs = ready_query.order_by(Document.created_at.desc()).all()
+
+            if docs:
+                lines = [f"### Corpus Overview ({len(docs)} Documents)\n"]
+                citations = []
+                for idx, doc in enumerate(docs, start=1):
+                    first_chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).order_by(DocumentChunk.chunk_index).limit(2).all()
+                    summary_snip = " ".join([c.content for c in first_chunks])[:300].strip()
+                    lines.append(f"**[{idx}] {doc.title}** ({doc.page_count} pages)")
+                    lines.append(f"> {summary_snip}...\n")
+                    if first_chunks:
+                        citations.append(
+                            CitationItem(
+                                citation_id=idx,
+                                chunk_id=first_chunks[0].id,
+                                document_id=doc.id,
+                                document_title=doc.title,
+                                page_number=first_chunks[0].page_number or 1,
+                                snippet=summary_snip[:200],
+                                relevance_score=1.0
+                            )
+                        )
+                lines.append("To explore specifics, ask about data retention policies, notice windows, liability super-caps, or regulatory compliance.")
+                return AskResponse(
+                    query=request.query,
+                    answer="\n".join(lines),
+                    mode="corpus_overview",
+                    citations=citations,
+                    retrieval_latency_ms=0,
+                    synthesis_latency_ms=0,
+                    has_conflicting_evidence=False
+                )
+
+        # 3. Identity & Name Queries
+        identity_patterns = [
+            r"\b(?:what\s+is\s+your\s+name|what's\s+your\s+name|whats\s+your\s+name|your\s+name)\b",
+            r"\b(?:who\s+(?:are|r)\s+you|who\s+you\s+are|what\s+are\s+you)\b",
+            r"\b(?:what\s+is\s+clario|tell\s+me\s+about\s+(?:yourself|clario))\b",
+            r"\b(?:who\s+made\s+you|who\s+created\s+you)\b"
+        ]
+        if any(re.search(pat, query_raw) for pat in identity_patterns):
+            ans = (
+                "I am **Clario**, your enterprise legal document intelligence and contract analysis assistant.\n\n"
+                "I specialize in analyzing complex enterprise agreements, policies, and spreadsheets:\n"
+                "- **Evidence-Backed Q&A**: Ask targeted questions across your uploaded documents with precise page-level citations.\n"
+                "- **Side-by-Side Comparison**: Uncover subtle discrepancies, numerical variance, and changed covenants between versions.\n"
+                "- **Autonomous Clause Redlines**: Synthesize balanced, customer-protective, or vendor-favorable redlines and export tracked changes to Word (.docx).\n"
+                "- **Compliance & Obligations**: Audit policies against the EU AI Act, GDPR, HIPAA, and SOC 2, and sync extracted notice deadlines to your calendar (.ics).\n"
+                "- **Contract Risk Scorecards**: Benchmark contracts across 6 core risk pillars to evaluate customer protection.\n\n"
+                "Upload or select a document in your workspace, and ask me any question to get started!"
+            )
+            return AskResponse(
+                query=request.query,
+                answer=ans,
+                mode="assistant_identity",
+                citations=[],
+                retrieval_latency_ms=0,
+                synthesis_latency_ms=0,
+                has_conflicting_evidence=False
+            )
+
+        # 4. Help, How-to, & Example Questions
+        help_patterns = [
+            r"\b(?:what\s+(?:can|do)\s+you\s+do|how\s+can\s+you\s+help(?:\s+me)?)\b",
+            r"\b(?:how\s+(?:does\s+this\s+work|to\s+use|do\s+i\s+use\s+(?:this|clario)))\b",
+            r"\b(?:what\s+(?:should|can)\s+i\s+ask(?:\s+you)?|give\s+me\s+(?:some\s+)?examples?|example\s+questions?)\b",
+            r"^help(?:\s+me)?$"
+        ]
+        if any(re.search(pat, query_raw) for pat in help_patterns):
+            ans = (
+                "Here is how you can use Clario with your uploaded contracts and policies:\n\n"
+                "**Sample questions you can ask right now:**\n"
+                "1. *'What is the notice period required for termination or non-renewal?'*\n"
+                "2. *'Compare the data retention and model training policies between Claude and OpenAI.'*\n"
+                "3. *'What are the security incident notification SLAs and preliminary alert windows?'*\n"
+                "4. *'What is the liability super-cap for confidentiality and data protection breaches?'*\n"
+                "5. *'Does this agreement comply with the EU AI Act and GDPR?'*\n"
+                "6. *'What payment milestones, Net terms, or price increases on renewal are stated?'*\n\n"
+                "**Platform Capabilities:**\n"
+                "- **Ask Clario**: Ask direct questions with page-numbered bracketed citations [1], [2].\n"
+                "- **Compare Versions**: View side-by-side textual diffs, contradiction candidates, and risk benchmarks.\n"
+                "- **Clause Redline**: Generate harmonized compromises across 4 bargaining stances and download `.docx` files.\n"
+                "- **Obligations Timeline**: View deadlines and export them to your calendar (`.ics`)."
+            )
+            return AskResponse(
+                query=request.query,
+                answer=ans,
+                mode="help_and_instructions",
+                citations=[],
+                retrieval_latency_ms=0,
+                synthesis_latency_ms=0,
+                has_conflicting_evidence=False
+            )
+
+        # 5. Standard Conversational Greetings
+        greeting_patterns = [
+            r"^(?:(?:hi|hey|hello|good\s+(?:morning|afternoon|evening)|howdy|greetings|bro|clario)\s*)+(?:there|clario|bro|friend)?$",
+            r"^(?:(?:hi|hey|hello|bro|clario)\s+)*(?:how\s+are\s+you(?:\s+doing)?|how's\s+it\s+going)(?:\s+(?:today|clario|bro))?$"
+        ]
+        if any(re.match(pat, words) for pat in greeting_patterns):
+            return AskResponse(
+                query=request.query,
+                answer="Hello! I'm Clario, your document intelligence assistant. What would you like to explore across your uploaded documents today?",
+                mode="greeting",
+                citations=[],
+                retrieval_latency_ms=0,
+                synthesis_latency_ms=0,
+                has_conflicting_evidence=False
+            )
+
+        return None
 
     @staticmethod
     def _retrieve_evidence(request: AskRequest, db: Session):
@@ -56,7 +269,6 @@ class AskService:
         query = re.sub(r"\b(what|who|where|when|how|why|that|there|it)'?s\b", r"\1 is", query)
         refusal = "I can only answer questions about your uploaded documents. Ask about a passage, obligation, or difference between documents."
         unrelated = (
-            r"\b(?:who are you|your (?:name|age)|what can you do|what is clario)\b|"
             r"\b(?:write|generate|create|implement|give me|tell me|compose)\b[^.!?\n]{0,70}\b(?:code|script|function|program|website|app|joke|poem|story|recipe)\b|"
             r"\b(?:can|could|will) you (?:code|program)\b"
         )
@@ -80,7 +292,10 @@ class AskService:
                          provide comprehensive overview highlights highlight clauses clause points point contents content
                          pdf pdfs give overview agreements agreement uploaded attached attachments
                          describe briefly brief versions version identify potential there specific specified outlined
-                         contain contains discuss talking talk covers cover""".split())
+                         contain contains discuss talking talk covers cover
+                         which what where who when why how refer referring refering referenced reference referencing
+                         use using uses used look looking see seen list show available current currently active
+                         workspace library mention mentioned mean meaning about know knowing have has""".split())
         comparative = AskService._is_comparative_query(query)
         if comparative:
             # Strip comparison instructions while retaining topical qualifiers such as "retention".
@@ -121,8 +336,8 @@ class AskService:
 
     @staticmethod
     def answer_question(request: AskRequest, db: Session) -> AskResponse:
-        if greeting := AskService._greeting(request):
-            return greeting
+        if meta_resp := AskService._handle_conversational_and_meta(request, db):
+            return meta_resp
         results, ret_latency_ms, message = AskService._retrieve_evidence(request, db)
         t_retrieved = time.perf_counter()
         if not results:
@@ -359,6 +574,12 @@ Direct Cited Answer:"""
             AskService.save_answer(request, response, db)
             return f"event: done\ndata: {response.model_dump_json()}\n\n"
 
+        if meta_resp := AskService._handle_conversational_and_meta(request, db):
+            yield f"event: citations\ndata: {json.dumps([c.model_dump() for c in meta_resp.citations])}\n\n"
+            yield f"event: token\ndata: {json.dumps({'text': meta_resp.answer})}\n\n"
+            yield finish(meta_resp)
+            return
+
         provider = AskService._provider(request)
         if provider != "ollama":
             try:
@@ -371,12 +592,6 @@ Direct Cited Answer:"""
                 yield f"event: thinking\ndata: {json.dumps({'text': response.thinking_process})}\n\n"
             yield f"event: token\ndata: {json.dumps({'text': response.answer})}\n\n"
             yield finish(response)
-            return
-
-        if greeting := AskService._greeting(request):
-            yield "event: citations\ndata: []\n\n"
-            yield f"event: token\ndata: {json.dumps({'text': greeting.answer})}\n\n"
-            yield finish(greeting)
             return
 
         results, ret_latency_ms, msg = AskService._retrieve_evidence(request, db)

@@ -118,7 +118,7 @@ def test_multiline_query_keeps_summary_and_every_source():
         assert f'Source: [{i}] Page {i}' in answer
 
 
-@pytest.mark.parametrize("question", ["What's your name?", "Can you write code?", "Tell me a joke about contracts."])
+@pytest.mark.parametrize("question", ["Can you write a poem about contracts?", "Can you write code?", "Tell me a joke about contracts."])
 def test_document_scope_applies_before_model_calls(workspace, monkeypatch, question):
     client, factory = workspace
     def unexpected(*args, **kwargs):
