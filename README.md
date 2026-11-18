@@ -111,48 +111,7 @@ Clario runs in two generation modes:
 
 ---
 
-## 5. Repository Structure
-
-```
-Clario/
-├── backend/                      # FastAPI Python Application
-│   ├── app/
-│   │   ├── api/                  # REST API routes (documents, search, ask, compare, negotiate, etc.)
-│   │   ├── core/                 # Settings, logging, and security configuration
-│   │   ├── database/             # SQLAlchemy engine, session management, and seed script
-│   │   ├── ingestion/            # Multi-format parsers (PDF, DOCX, XLSX, Markdown)
-│   │   ├── models/               # Relational database models
-│   │   ├── schemas/              # Pydantic data schemas
-│   │   ├── search/               # BM25, vector, and hybrid search indexing
-│   │   └── services/             # Core business logic services
-│   ├── requirements.txt          # Python dependencies
-│   └── tests/                    # Backend test suite (43 tests)
-├── frontend/                     # React + TypeScript Workspace
-│   ├── src/
-│   │   ├── components/           # UI components, modals, and document viewers
-│   │   ├── pages/                # Workspace views (Overview, Compare, Negotiate, etc.)
-│   │   ├── services/api.ts       # Typed API client
-│   │   ├── types/index.ts        # TypeScript data interfaces
-│   │   └── test/                 # Frontend test suite (20 tests)
-│   ├── package.json              # Frontend dependencies and scripts
-│   └── vite.config.ts            # Vite configuration
-├── initialize/                   # Cross-platform environment initializers
-│   ├── setup.sh                  # Universal platform detector
-│   ├── init_mac.sh               # macOS setup
-│   ├── init_linux.sh             # Linux setup
-│   └── init_windows.bat          # Windows setup
-├── sample_documents/             # Baseline enterprise policies
-│   ├── Anthropic_Claude_Enterprise_Policy_2026.pdf
-│   └── OpenAI_Enterprise_Policy_2026.pdf
-├── start.sh                      # Launch script for macOS / Linux
-├── start.bat                     # Launch script for Windows
-├── LICENSE                       # MIT License
-└── README.md
-```
-
----
-
-## 6. Manual Setup & Testing
+## 5. Manual Setup & Testing
 
 ### Backend
 ```bash
@@ -187,6 +146,6 @@ npm run build
 
 ---
 
-## 7. License
+## 6. License
 
 Licensed under the MIT License. See [LICENSE](LICENSE) for details.
