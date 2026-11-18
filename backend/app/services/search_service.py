@@ -109,38 +109,32 @@ class SearchService:
             {
                 "id": "q1",
                 "query": "data retention zero data retention ZDR API storage 30 days",
-                "target_keywords": ["retention", "days", "zdr"],
-                "target_doc_titles": ["OpenAI Policy 2023", "OpenAI Policy 2023 2024 Report", "Policy"]
+                "target_keywords": ["retention", "days", "zdr"]
             },
             {
                 "id": "q2",
                 "query": "limitation of liability aggregate monetary ceiling $100 $250,000 USD damages cap",
-                "target_keywords": ["liability", "ceiling", "cap"],
-                "target_doc_titles": ["OpenAI Policy 2023", "OpenAI Policy 2023 2024 Report", "Policy"]
+                "target_keywords": ["liability", "ceiling", "cap"]
             },
             {
                 "id": "q3",
                 "query": "security incident breach notification timeline preliminary alert 72 hours 60 days",
-                "target_keywords": ["breach", "incident", "notification"],
-                "target_doc_titles": ["OpenAI Policy 2023", "OpenAI Policy 2023 2024 Report", "Report"]
+                "target_keywords": ["breach", "incident", "notification"]
             },
             {
                 "id": "q4",
                 "query": "intellectual property copyright shield infringement legal defense warranty",
-                "target_keywords": ["copyright", "shield", "indemnification"],
-                "target_doc_titles": ["OpenAI Policy 2023 2024 Report", "Report"]
+                "target_keywords": ["copyright", "shield", "indemnification"]
             },
             {
                 "id": "q5",
                 "query": "HIPAA business associate agreement BAA healthcare compliance",
-                "target_keywords": ["hipaa", "baa", "healthcare"],
-                "target_doc_titles": ["OpenAI Policy 2023 2024 Report", "Report"]
+                "target_keywords": ["hipaa", "baa", "healthcare"]
             },
             {
                 "id": "q6",
                 "query": "sovereign data residency EU data boundary GDPR processing mesh",
-                "target_keywords": ["residency", "boundary", "gdpr"],
-                "target_doc_titles": ["OpenAI Policy 2023 2024 Report", "Report"]
+                "target_keywords": ["residency", "boundary", "gdpr"]
             }
         ]
 

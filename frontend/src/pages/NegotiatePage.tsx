@@ -358,10 +358,7 @@ export const NegotiatePage: React.FC = () => {
                 <p className="text-xs text-slate-500 max-w-sm leading-relaxed mb-4">
                   Select a detected finding or paste contradictory clauses on the left, choose your preferred bargaining stance, and generate a harmonized clause.
                 </p>
-                <Button variant="outline" size="sm" onClick={handleGenerate}>
-                  <Scale className="w-3.5 h-3.5 mr-1.5" />
-                  Run Demo Synthesis
-                </Button>
+
               </div>
             )}
 

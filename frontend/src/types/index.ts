@@ -171,7 +171,7 @@ export interface DashboardStats {
   total_searchable_passages: number;
   recent_analyses_count: number;
   potential_conflicts_count: number;
-  average_latency_ms: number;
+  average_latency_ms: number | null;
   recent_documents: DocumentItem[];
   recent_findings: FindingItem[];
   recent_activities: Array<{

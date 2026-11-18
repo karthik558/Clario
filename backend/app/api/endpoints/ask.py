@@ -12,9 +12,7 @@ router = APIRouter()
 @router.post("/ask", response_model=AskResponse)
 def ask_clario(request: AskRequest, db: Session = Depends(get_db)):
     response = AskService.answer_question(request, db)
-    record = AnswerRecord(query=request.query, document_ids_json=json.dumps(request.document_ids or []), response_json=response.model_dump_json())
-    db.add(record)
-    db.commit()
+    AskService.save_answer(request, response, db)
     return response
 
 @router.post("/ask/stream")

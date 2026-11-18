@@ -10,6 +10,7 @@ def calculate_metrics(retrieved_doc_ids: List[str], ground_truth_ids: Set[str], 
     - MRR (Mean Reciprocal Rank)
     - nDCG@5 (Normalized Discounted Cumulative Gain)
     """
+    retrieved_doc_ids = list(dict.fromkeys(retrieved_doc_ids))
     if not ground_truth_ids:
         return IRMetricScore(
             precision_at_3=0.0,

@@ -26,21 +26,26 @@ export const BriefsPage: React.FC = () => {
   const [brief, setBrief] = useState<BriefResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('board_executive');
+  const [templates, setTemplates] = useState<Array<{ id: string; name: string; description: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const fetchInitialBrief = async () => {
     try {
       setLoading(true);
-      const [briefRes, docs] = await Promise.all([
-        api.generateBrief('board_executive').catch(() => null),
-        api.getDocuments().catch(() => [])
+      setError('');
+      const [briefRes, docs, availableTemplates] = await Promise.all([
+        api.generateBrief('board_executive'),
+        api.getDocuments(),
+        api.getBriefTemplates()
       ]);
       if (briefRes) setBrief(briefRes);
       setDocuments(docs);
+      setTemplates(availableTemplates);
     } catch (err) {
-      console.error('Failed to load brief', err);
+      setError('Could not load the workspace briefing.');
     } finally {
       setLoading(false);
     }
@@ -54,11 +59,12 @@ export const BriefsPage: React.FC = () => {
     const tId = templateId || selectedTemplate;
     try {
       setGenerating(true);
+      setError('');
       const res = await api.generateBrief(tId);
       setBrief(res);
       setSelectedTemplate(tId);
     } catch (err) {
-      console.error('Failed to generate brief', err);
+      setError('Could not generate the requested briefing.');
     } finally {
       setGenerating(false);
     }
@@ -71,27 +77,6 @@ export const BriefsPage: React.FC = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const templates = [
-    {
-      id: 'board_executive',
-      name: 'Board Risk & Exposure Brief',
-      icon: Building,
-      desc: 'High-level synthesis for audit committees and board review.'
-    },
-    {
-      id: 'ma_due_diligence',
-      name: 'M&A Due Diligence Memorandum',
-      icon: Briefcase,
-      desc: 'Change-of-control risks, IP ownership, and transaction exposure.'
-    },
-    {
-      id: 'procurement_closing',
-      name: 'Procurement Closing Memorandum',
-      icon: Layers,
-      desc: 'Commercial readiness, SLA penalties, and data protection riders.'
-    }
-  ];
 
   return (
     <div className="space-y-6">
@@ -130,11 +115,13 @@ export const BriefsPage: React.FC = () => {
         </div>
       </PageHeader>
 
+      {error && <p role="alert" className="rounded-md border bg-white p-4 text-sm">{error} <button className="underline" onClick={fetchInitialBrief}>Reload</button></p>}
+
       {/* Template Chooser Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {templates.map((tmpl) => {
           const isSelected = selectedTemplate === tmpl.id;
-          const Icon = tmpl.icon;
+          const Icon = ({board_executive: Building, ma_due_diligence: Briefcase}[tmpl.id] || Layers);
           return (
             <button
               key={tmpl.id}
@@ -156,14 +143,14 @@ export const BriefsPage: React.FC = () => {
                 )}
               </div>
               <h3 className="text-xs font-bold text-slate-900">{tmpl.name}</h3>
-              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{tmpl.desc}</p>
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{tmpl.description}</p>
             </button>
           );
         })}
       </div>
 
       {/* Generated Briefing Document */}
-      {!loading && documents.length === 0 ? (
+      {error ? null : !loading && documents.length === 0 ? (
         <Card className="p-10 text-center bg-white border border-slate-200">
           <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
           <h3 className="text-sm font-semibold text-slate-900 mb-1">No Documents in Workspace</h3>

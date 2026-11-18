@@ -22,8 +22,7 @@ class DocumentParser:
                 pages.append(PageText(page_number=i + 1, text=cleaned))
             doc.close()
         except Exception as e:
-            # Fallback reading
-            pages.append(PageText(page_number=1, text=f"Error extracting PDF: {str(e)}"))
+            raise ValueError("Could not read the PDF file.") from e
         return pages
 
     @staticmethod
@@ -49,7 +48,7 @@ class DocumentParser:
                     pages.append(PageText(page_number=current_page, text=page_slice))
                     current_page += 1
         except Exception as e:
-            pages.append(PageText(page_number=1, text=f"Error extracting DOCX: {str(e)}"))
+            raise ValueError("Could not read the DOCX file.") from e
         return pages
 
     @staticmethod
@@ -87,7 +86,7 @@ class DocumentParser:
                     pages.append(PageText(page_number=current_page, text=chunk_text))
                     current_page += 1
         except Exception as e:
-            pages.append(PageText(page_number=1, text=f"Error extracting text: {str(e)}"))
+            raise ValueError("Could not read the text file.") from e
         return pages
 
     @staticmethod
@@ -123,7 +122,7 @@ class DocumentParser:
                     page_num += 1
             wb.close()
         except Exception as e:
-            pages.append(PageText(page_number=1, text=f"Error extracting Excel spreadsheet: {str(e)}"))
+            raise ValueError("Could not read the Excel spreadsheet file.") from e
         if not pages:
             pages.append(PageText(page_number=1, text="Empty Excel spreadsheet."))
         return pages
@@ -155,7 +154,7 @@ class DocumentParser:
                 if rows_text:
                     pages.append(PageText(page_number=page_num, text="\n".join(rows_text)))
         except Exception as e:
-            pages.append(PageText(page_number=1, text=f"Error extracting CSV: {str(e)}"))
+            raise ValueError("Could not read the CSV file.") from e
         if not pages:
             pages.append(PageText(page_number=1, text="Empty CSV file."))
         return pages

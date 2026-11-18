@@ -1,12 +1,7 @@
-import os
-import shutil
+import json
 import uuid
 from pathlib import Path
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-
+from fastapi import UploadFile
 from app.core.config import settings
 from app.core.logging import logger
 from app.database.session import SessionLocal, engine, Base
@@ -15,41 +10,7 @@ from app.services.document_service import DocumentService
 from app.services.compare_service import CompareService
 from app.services.search_service import search_service
 
-def create_sample_pdf(title: str, text: str, output_path: str):
-    doc = SimpleDocTemplate(
-        output_path,
-        pagesize=letter,
-        rightMargin=50,
-        leftMargin=50,
-        topMargin=50,
-        bottomMargin=50
-    )
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'DocTitle',
-        parent=styles['Heading1'],
-        fontName='Helvetica-Bold',
-        fontSize=18,
-        textColor=colors.HexColor('#14263D'),
-        spaceAfter=12
-    )
-    body_style = ParagraphStyle(
-        'DocBody',
-        parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=10,
-        leading=14,
-        textColor=colors.HexColor('#233448'),
-        spaceAfter=10
-    )
-    elements = [Paragraph(title, title_style), Spacer(1, 10)]
-    for p in text.split("\n\n"):
-        if p.strip():
-            elements.append(Paragraph(p.strip().replace("\n", "<br/>"), body_style))
-    doc.build(elements)
-
 def seed_sample_documents():
-    import json
     from app.models.entities import AppConfiguration
 
     Base.metadata.create_all(bind=engine)
@@ -86,45 +47,10 @@ def seed_sample_documents():
         db.close()
         return
 
-    logger.info("Seeding synthetic sample documents into Clario database...")
-
-    sample_dir = settings.DATA_DIR.parent.parent / "sample_documents"
-    sample_files = [
-        ("OpenAI Policy 2023", "OpenAI_Usage_and_Privacy_Policy_2023.md", "Corporate Policies", ["OpenAI", "Policy", "2023", "Privacy"]),
-        ("OpenAI Policy 2023 2024 Report", "OpenAI_Policy_2023_2024_Report.md", "Regulatory Reports", ["OpenAI", "Report", "2024", "Audit", "Comparison"]),
-    ]
-
-    for title, fname, coll, tags in sample_files:
-        src = sample_dir / fname
-        if not src.exists():
-            continue
-
-        with open(src, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        ext = "md"
-        doc_id = str(uuid.uuid4())
-        dest_filename = f"{doc_id}_{fname}"
-        dest_path = str(settings.DOCUMENTS_DIR / dest_filename)
-        shutil.copyfile(str(src), dest_path)
-        file_size = os.path.getsize(dest_path)
-
-        import json
-        doc = Document(
-            id=doc_id,
-            title=title,
-            filename=f"{fname.rsplit('.', 1)[0]}.{ext}",
-            file_type=ext,
-            file_size=file_size,
-            storage_path=dest_path,
-            status="PROCESSING",
-            tags_json=json.dumps(tags),
-            collection=coll
-        )
-        db.add(doc)
-        db.commit()
-
-        DocumentService.process_file_content(doc_id, dest_path, ext, db)
+    sample_dir = Path(__file__).resolve().parents[3] / "sample_documents"
+    for src in sorted(sample_dir.glob("*.pdf")):
+        with src.open("rb") as stream:
+            DocumentService.upload_document(UploadFile(stream, filename=src.name), None, [], "General", db)
 
     # Reload search indexes
     search_service.reload_index(db)

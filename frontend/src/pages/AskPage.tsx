@@ -74,8 +74,8 @@ export const AskPage: React.FC = () => {
   const refreshModelList = async (provider: string) => {
     try {
       const status = await api.getLocalAIStatus(provider);
+      setAvailableModels(status.models || []);
       if (status.models && status.models.length > 0) {
-        setAvailableModels(status.models);
         if (!status.models.includes(localModel)) {
           setLocalModel(status.active_model || status.models[0]);
         }
@@ -92,7 +92,8 @@ export const AskPage: React.FC = () => {
       if (!cancelled) {
         const prov = config.llm_provider || 'ollama';
         setLlmProvider(prov);
-        setLocalModel(config.ollama_model || 'gemma3:latest');
+        setLocalModel((prov === 'ollama' ? config.ollama_model : config.local_ai_model) || '');
+        setThinkingMode(config.thinking_mode ?? true);
         refreshModelList(prov);
       }
     }).catch(() => {});
@@ -165,19 +166,8 @@ export const AskPage: React.FC = () => {
           }
         );
 
-        const fullResponse: AskResponse = {
-          query: q,
-          answer: result.answer,
-          mode: result.mode,
-          citations: result.citations,
-          retrieval_latency_ms: 120,
-          synthesis_latency_ms: 380,
-          has_conflicting_evidence: false,
-          thinking_process: result.thinking || undefined,
-        };
-
-        setResponse(fullResponse);
-        setHistory((prev) => [...prev, { query: q, response: fullResponse }]);
+        setResponse(result);
+        setHistory(prev => [...prev, { query: q, response: result }]);
       } catch {
         setQuery(q);
         setError('The answer could not be generated or saved. Your question is kept below; please try again.');
@@ -191,7 +181,7 @@ export const AskPage: React.FC = () => {
 
     // Standard Non-Streaming Ask
     try {
-      const res = await api.ask(q, docIds);
+      const res = await api.ask(q, docIds, undefined, thinkingMode, localModel || undefined, llmProvider);
       setResponse(res);
       setHistory((prev) => [...prev, { query: q, response: res }]);
       setTimeout(() => {
@@ -235,16 +225,8 @@ export const AskPage: React.FC = () => {
   };
 
   const presets: string[] = useMemo(() => {
-    if (!documents || documents.length === 0) {
-      return [
-        'How do I upload and index my documents in Clario?',
-        'What file formats does Clario support for clause extraction?',
-        'How does Clario compare multiple contracts side by side?',
-        'What local AI models can I connect for offline verification?'
-      ];
-    }
-    const readyDocs = documents.filter((d) => d.status === 'READY' || !d.status);
-    const pool = readyDocs.length > 0 ? readyDocs : documents;
+    const pool = documents.filter(doc => doc.status === 'READY' && (!selectedDocIds.length || selectedDocIds.includes(doc.id)));
+    if (!pool.length) return [];
     const docA = pool[0]?.title || 'Document 1';
     const docB = pool[1]?.title || 'Document 2';
 
@@ -263,7 +245,7 @@ export const AskPage: React.FC = () => {
         `Identify any potential risks, warranties, or unhedged indemnities in ${docA}.`
       ];
     }
-  }, [documents]);
+  }, [documents, selectedDocIds]);
 
   return (
     <div className="space-y-6">
@@ -680,41 +662,7 @@ export const AskPage: React.FC = () => {
         )}
 
         {loading && !streaming && (
-          <div className="bg-white rounded-md border border-clario-border p-5 shadow-subtle space-y-3.5 animate-in fade-in">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-slate-900 animate-ping" />
-                <span className="text-xs font-semibold text-clario-navy">
-                  Synthesizing Evidence & Verifying Sources
-                </span>
-              </div>
-              <span className="text-[11px] font-mono text-slate-400">Hybrid Pipeline Active</span>
-            </div>
-
-            {/* Progress Bar Line */}
-            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden relative">
-              <div
-                className="h-full bg-slate-900 rounded-full animate-pulse"
-                style={{ width: '75%' }}
-              />
-            </div>
-
-            {/* Staged Research Pipeline Milestones */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
-              <div className="flex items-center gap-2 p-2 rounded bg-slate-50 border border-slate-200 text-slate-700">
-                <Check className="w-3.5 h-3.5 text-slate-900 shrink-0" />
-                <span className="truncate">1. Lexical & Vector Recall</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-navy-50/60 border border-navy-100 text-clario-navy font-medium">
-                <span className="w-3 h-3 rounded-full border-2 border-clario-navy border-t-transparent animate-spin shrink-0" />
-                <span className="truncate">2. Citation Relevance Match</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-slate-50 border border-slate-100 text-slate-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
-                <span className="truncate">3. Neural Synthesis & Verification</span>
-              </div>
-            </div>
-          </div>
+          <p role="status" className="rounded-md border bg-white p-4 text-sm text-slate-600">Looking for supporting passages…</p>
         )}
 
         <div ref={bottomRef} />

@@ -116,3 +116,28 @@ def test_multiline_query_keeps_summary_and_every_source():
     assert 'Executive Synthesis' in answer
     for i in range(1, 6):
         assert f'Source: [{i}] Page {i}' in answer
+
+
+@pytest.mark.parametrize("question", ["What's your name?", "Can you write code?", "Tell me a joke about contracts."])
+def test_document_scope_applies_before_model_calls(workspace, monkeypatch, question):
+    client, factory = workspace
+    def unexpected(*args, **kwargs):
+        pytest.fail("Off-topic request reached retrieval")
+    monkeypatch.setattr(search_service, "search", unexpected)
+    for endpoint in ["/api/ask", "/api/ask/stream"]:
+        response = client.post(endpoint, json={"query": question, "llm_provider": "ollama"})
+        assert response.status_code == 200
+        assert "document_scope" in response.text
+    history = client.get("/api/ask/history").json()
+    assert len(history) == 2
+    assert all(row["response"]["citations"] == [] for row in history)
+
+
+def test_corrupt_upload_is_never_searchable(workspace, tmp_path, monkeypatch):
+    client, factory = workspace
+    monkeypatch.setattr(settings, "DOCUMENTS_DIR", tmp_path)
+    response = client.post("/api/documents/upload", files={"file": ("broken.pdf", b"invalid PDF")})
+    assert response.status_code == 422
+    with factory() as db:
+        assert db.query(Document).one().status == "ERROR"
+        assert db.query(DocumentChunk).count() == 0

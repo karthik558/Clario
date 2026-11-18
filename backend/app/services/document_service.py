@@ -41,6 +41,8 @@ class DocumentService:
             pages = DocumentParser.parse(file_path, file_type)
             page_count = len(pages)
             total_text = "\n\n".join([p.text for p in pages])
+            if not total_text.strip():
+                raise ValueError("No readable text found in this document.")
             word_count = len(total_text.split())
 
             doc.page_count = max(1, page_count)

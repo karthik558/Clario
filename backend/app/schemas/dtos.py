@@ -1,6 +1,6 @@
-from typing import Literal, List, Optional, Dict, Any
+from typing import Annotated, Literal, List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 # ---------------- Documents ----------------
 
@@ -49,10 +49,12 @@ class IngestionJobResponse(BaseModel):
 
 # ---------------- Search & Lab ----------------
 
+QueryText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
 class SearchRequest(BaseModel):
-    query: str
-    mode: str = "hybrid" # "bm25", "vector", "hybrid"
-    top_k: int = 5
+    query: QueryText
+    mode: Literal["bm25", "vector", "hybrid"] = "hybrid"
+    top_k: int = Field(default=5, ge=1, le=50)
     document_ids: Optional[List[str]] = None
     collection: Optional[str] = None
 
@@ -109,11 +111,11 @@ class BenchmarkSummaryResponse(BaseModel):
 # ---------------- Ask Clario / Q&A ----------------
 
 class AskRequest(BaseModel):
-    query: str
+    query: QueryText
     document_ids: Optional[List[str]] = None
     collection: Optional[str] = None
     top_k: Optional[int] = Field(default=None, ge=1, le=50)
-    thinking_mode: Optional[bool] = False
+    thinking_mode: Optional[bool] = None
     local_model: Optional[str] = None
     llm_provider: Optional[str] = None
 
@@ -250,7 +252,7 @@ class DashboardStatsResponse(BaseModel):
     total_searchable_passages: int
     recent_analyses_count: int
     potential_conflicts_count: int
-    average_latency_ms: float
+    average_latency_ms: Optional[float]
     recent_documents: List[DocumentResponse]
     recent_findings: List[FindingResponse]
     recent_activities: List[Dict[str, Any]]

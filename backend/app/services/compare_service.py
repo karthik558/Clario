@@ -26,14 +26,17 @@ class CompareService:
         chunks_a = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc_a_id).order_by(DocumentChunk.chunk_index).all()
         chunks_b = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc_b_id).order_by(DocumentChunk.chunk_index).all()
 
-        text_a_paragraphs = [c.content for c in chunks_a]
-        text_b_paragraphs = [c.content for c in chunks_b]
+        def lines_with_pages(chunks):
+            lines, pages = [], []
+            for chunk in chunks:
+                for line in chunk.content.splitlines():
+                    if line.strip():
+                        lines.append(line.strip())
+                        pages.append(chunk.page_number)
+            return lines, pages
 
-        full_text_a = "\n\n".join(text_a_paragraphs)
-        full_text_b = "\n\n".join(text_b_paragraphs)
-
-        lines_a = [line.strip() for line in full_text_a.splitlines() if line.strip()]
-        lines_b = [line.strip() for line in full_text_b.splitlines() if line.strip()]
+        lines_a, pages_a = lines_with_pages(chunks_a)
+        lines_b, pages_b = lines_with_pages(chunks_b)
 
         # Compute sequence diff
         matcher = difflib.SequenceMatcher(None, lines_a, lines_b)
@@ -49,9 +52,8 @@ class CompareService:
             sub_a = "\n".join(lines_a[i1:i2])
             sub_b = "\n".join(lines_b[j1:j2])
             
-            # Approximate page numbers
-            page_a = chunks_a[min(i1 // 4, len(chunks_a) - 1)].page_number if chunks_a else 1
-            page_b = chunks_b[min(j1 // 4, len(chunks_b) - 1)].page_number if chunks_b else 1
+            page_a = pages_a[i1] if i1 < i2 else None
+            page_b = pages_b[j1] if j1 < j2 else None
 
             if tag == "equal":
                 diff_blocks.append(DiffBlock(

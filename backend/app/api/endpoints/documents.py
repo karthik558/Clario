@@ -35,6 +35,8 @@ async def upload_document(
         collection=collection,
         db=db
     )
+    if doc.status == "ERROR":
+        raise HTTPException(status_code=422, detail=doc.error_message or "Could not extract document text.")
     # Refresh search index
     search_service.reload_index(db)
 

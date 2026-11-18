@@ -162,7 +162,7 @@ export const api = {
       onThinking?: (text: string) => void;
       onCitations?: (citations: CitationItem[]) => void;
     }
-  ): Promise<{ answer: string; mode: string; citations: CitationItem[]; thinking?: string }> => {
+  ): Promise<AskResponse> => {
     const res = await fetch(`${API_BASE}/ask/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -174,10 +174,7 @@ export const api = {
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-    let answer = '';
-    let thinking = '';
-    let citations: CitationItem[] = [];
-    let mode = '';
+    let completed: AskResponse | undefined;
     let buffer = '';
 
     while (true) {
@@ -197,17 +194,13 @@ export const api = {
         try {
           const parsed = JSON.parse(rawData);
           if (event === 'citations') {
-            citations = parsed;
             callbacks.onCitations?.(parsed);
           } else if (event === 'thinking') {
-            thinking += parsed.text;
             callbacks.onThinking?.(parsed.text);
           } else if (event === 'token') {
-            answer += parsed.text;
             callbacks.onToken(parsed.text);
           } else if (event === 'done') {
-            mode = parsed.mode;
-            if (parsed.answer) answer = parsed.answer;
+            completed = parsed;
           }
         } catch {
           // non-JSON chunk
@@ -215,7 +208,8 @@ export const api = {
       }
     }
 
-    return { answer, mode, citations, thinking };
+    if (!completed) throw new Error("Answer stream ended before completion");
+    return completed;
   },
 
   // Compare

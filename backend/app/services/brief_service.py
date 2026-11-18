@@ -167,124 +167,33 @@ class BriefService:
                 summary = f"Strategic intelligence brief covering {len(docs)} document(s) ({doc_context}) in active workspace."
                 key_decision = "Review document scope and adopt recommended procedural controls."
 
-        # Dynamically build Financial Exposure
+        # Keep evidence separate from the template's recommended next steps.
+        titles = {doc.id: doc.title or doc.filename for doc in docs}
         financial_exposure = []
-        if is_financial:
-            # Extract sample items from corpus
-            sample_items = []
-            for line in corpus_text.splitlines():
-                if any(k in line.lower() for k in ["printer", "scanner", "pos", "server", "switch", "furniture", "hardware", "terminal", "cctv"]):
-                    parts = [p.strip() for p in line.split("|") if p.strip() and p.strip() != "-"]
-                    if parts:
-                        item_name = parts[0] if not parts[0].isdigit() else (parts[1] if len(parts) > 1 else parts[0])
-                        if item_name not in sample_items and len(item_name) < 60:
-                            sample_items.append(item_name)
-                    if len(sample_items) >= 3:
-                        break
-
-            items_preview = ", ".join(sample_items) if sample_items else "departmental hardware and infrastructure assets"
-
-            financial_exposure.append({
-                "label": "Capital Expenditure (Capex) Scope",
-                "detail": f"Document itemizes capital allocations and asset requisitions including {items_preview} across fiscal cycles."
-            })
-            financial_exposure.append({
-                "label": "Priority & Requisition Staging",
-                "detail": "Line items categorized across Priority 1, 2, and 3 replacements to control immediate cash outflow."
-            })
-            financial_exposure.append({
-                "label": "Procurement Rate Card Benchmarking",
-                "detail": "Unit rates and budget multipliers require cross-referencing with master vendor discount agreements."
-            })
-        elif is_contract:
-            # Look for actual liability phrases in chunks
-            liability_match = None
-            for c in chunks:
-                m = re.search(r'([^\n.!?]*(?:liability|damage|cap|penalty)[^\n.!?]*[.\n])', c.content, re.IGNORECASE)
-                if m:
-                    liability_match = m.group(1).strip()
+        for label, pattern in [
+            ("Liability", r"\b(?:liability|damages)\b"),
+            ("Fees and payment", r"\b(?:fees|payments?|budget)\b"),
+            ("Renewal and notice", r"\b(?:renewal|renewals|non-renewal)\b"),
+        ]:
+            for chunk in chunks:
+                line = next((line.strip() for line in chunk.content.splitlines()
+                             if re.search(pattern, line, re.I)), None)
+                if line:
+                    financial_exposure.append({
+                        "label": label,
+                        "detail": f"{titles[chunk.document_id]}, p. {chunk.page_number}: {line[:260]}",
+                    })
                     break
-            if liability_match:
-                financial_exposure.append({
-                    "label": "Contractual Liability Ceiling",
-                    "detail": f"Excerpt: '{liability_match[:180]}'"
-                })
-            else:
-                financial_exposure.append({
-                    "label": "Liability Ceiling Assessment",
-                    "detail": "Standard commercial terms; no unilateral uncapped liability provisions identified."
-                })
-            financial_exposure.append({
-                "label": "Commercial Payment & Renewal Window",
-                "detail": "Review payment milestones and auto-renewal notice cancellation windows."
-            })
-            financial_exposure.append({
-                "label": "Service Credit Remediations",
-                "detail": "Remedies for operational downtime bounded by monthly service credits."
-            })
-        else:
-            financial_exposure.append({
-                "label": "Monetary Exposure Analysis",
-                "detail": "No explicit monetary liabilities, fee schedules, or financial exposure covenants detected in current document scope."
-            })
-            financial_exposure.append({
-                "label": "Operational Budget Impact",
-                "detail": "Expenditure impact is contingent on implementation and execution schedules."
-            })
 
-        # Dynamically build Legal & Governance Risks
-        legal_risks = []
-        if is_financial:
-            legal_risks.append({
-                "item": "Procurement & Expenditure Authorization",
-                "status": "Review Required",
-                "assessment": "Capital requisitions require formal financial controller sign-off and multi-vendor competitive quotation."
-            })
-            legal_risks.append({
-                "item": "Operational Continuity & Asset Lifecycle",
-                "status": "Action Required",
-                "assessment": "Proactive replacement of malfunctioning operational equipment is required to eliminate service interruptions."
-            })
-            legal_risks.append({
-                "item": "Contractual & Dispute Exposure",
-                "status": "Compliant",
-                "assessment": "No third-party liability traps, uncapped indemnities, or dispute escalation covenants detected."
-            })
-        elif critical_findings:
-            for f in critical_findings[:3]:
-                legal_risks.append({
-                    "item": f.title,
-                    "status": "Action Required" if f.severity in ["critical", "high"] else "Monitored",
-                    "assessment": f.description[:200]
-                })
-        else:
-            if is_contract:
-                legal_risks.append({
-                    "item": "Indemnification & Third-Party Claims",
-                    "status": "Monitored",
-                    "assessment": "Standard mutual indemnification covenants governing intellectual property and confidentiality."
-                })
-                legal_risks.append({
-                    "item": "Data Governance & Confidentiality",
-                    "status": "Compliant",
-                    "assessment": "Covenants enforce mutual confidentiality and bounded information disclosure."
-                })
-                legal_risks.append({
-                    "item": "Dispute Resolution & Jurisdiction",
-                    "status": "Balanced",
-                    "assessment": "Arbitration and governing law clauses aligned with standard commercial practice."
-                })
-            else:
-                legal_risks.append({
-                    "item": "Governance & Regulatory Verification",
-                    "status": "Compliant",
-                    "assessment": "Document adheres to standard enterprise operational and reporting formats."
-                })
+        legal_risks = [
+            {"item": f.title, "status": f.status.replace("_", " ").title(), "assessment": f.description}
+            for f in sorted(findings, key=lambda item: item not in critical_findings)[:3]
+        ]
 
         # Dynamically build Action Items
         if is_financial:
             action_items = [
-                f"Obtain competitive vendor quotes for identified Priority 1 equipment replacement line items in {doc_lead}.",
+                f"Obtain competitive vendor quotes for the expenditure line items in {doc_lead}.",
                 "Validate capital budget allocations against annual operating plans and finance committee ceilings.",
                 "Ensure final purchase orders reflect approved unit rates and standard delivery warranties."
             ]

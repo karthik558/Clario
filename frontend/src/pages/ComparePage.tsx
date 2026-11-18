@@ -63,12 +63,8 @@ export const ComparePage: React.FC = () => {
             bId = urlDocB;
           }
 
-          if (!aId || !bId || aId === bId) {
-            const ret1 = docs.find((d) => d.title.includes('2023') || d.title.includes('v1.0'));
-            const ret2 = docs.find((d) => d.title.includes('2024') || d.title.includes('v2.0'));
-            aId = ret1 ? ret1.id : docs[0].id;
-            bId = ret2 && ret2.id !== aId ? ret2.id : (docs[1]?.id || '');
-          }
+          if (!aId) aId = docs.find(doc => doc.id !== bId)!.id;
+          if (!bId || bId === aId) bId = docs.find(doc => doc.id !== aId)!.id;
 
           setDocAId(aId);
           setDocBId(bId);

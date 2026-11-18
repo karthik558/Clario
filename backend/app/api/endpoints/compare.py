@@ -8,6 +8,8 @@ router = APIRouter()
 
 @router.post("/compare", response_model=ComparisonResponse)
 def compare_documents(request: CompareRequest, db: Session = Depends(get_db)):
+    if request.doc_a_id == request.doc_b_id:
+        raise HTTPException(status_code=422, detail="Choose two different documents.")
     try:
         return CompareService.compare_documents(request.doc_a_id, request.doc_b_id, db)
     except ValueError as e:

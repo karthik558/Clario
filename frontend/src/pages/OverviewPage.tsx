@@ -24,7 +24,7 @@ import {
   Scale
 } from 'lucide-react';
 import { api } from '../services/api';
-import { DashboardStats, DocumentItem, FindingItem } from '../types';
+import { GraphDataResponse, DashboardStats, DocumentItem, FindingItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -33,6 +33,7 @@ import { DocumentViewerModal } from '../components/documents/DocumentViewerModal
 
 export const OverviewPage: React.FC = () => {
   const navigate = useNavigate();
+  const [graph, setGraph] = useState<GraphDataResponse | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [findings, setFindings] = useState<FindingItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -50,11 +51,12 @@ export const OverviewPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const [data, findingsData, docsData] = await Promise.all([
+      const [data, findingsData, docsData, graphData] = await Promise.all([
         api.getDashboard(),
         api.getFindings().catch(() => []),
-        api.getDocuments().catch(() => [])
+        api.getDocuments().catch(() => []), api.getKnowledgeGraph().catch(() => null)
       ]);
+      setGraph(graphData);
       setStats(data);
       setFindings(findingsData);
       setDocuments(docsData);
@@ -502,7 +504,7 @@ export const OverviewPage: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between text-[11px]">
-            <span className="text-slate-500">Vector Chunk Size: 1,000 chars</span>
+            <span className="text-slate-500">{documents.length} documents</span>
             <button
               onClick={() => navigate('/documents')}
               className="text-clario-navy font-semibold hover:underline flex items-center gap-1"
@@ -555,7 +557,7 @@ export const OverviewPage: React.FC = () => {
               <div className="flex items-center justify-between text-[11px] text-slate-600">
                 <span>Resolution Progress</span>
                 <span className="font-mono">
-                  {findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length} / {findings.length || 1} Evaluated
+                  {findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length} / {findings.length} Evaluated
                 </span>
               </div>
               <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
@@ -614,40 +616,10 @@ export const OverviewPage: React.FC = () => {
               Cross-document semantic clusters linking policies, obligations, and contradictions:
             </p>
 
-            {/* Embedded SVG Mini Topology */}
-            {documents.length > 0 ? (
-              <div className="w-full h-32 rounded bg-slate-50 border border-slate-200 relative overflow-hidden flex items-center justify-center">
-                <svg width="100%" height="100%" viewBox="0 0 280 120" className="pointer-events-none">
-                  {/* Edges */}
-                  <line x1="140" y1="60" x2="60" y2="35" stroke="#CBD5E1" strokeWidth="1.2" />
-                  <line x1="140" y1="60" x2="220" y2="35" stroke="#CBD5E1" strokeWidth="1.2" />
-                  <line x1="140" y1="60" x2="80" y2="90" stroke="#CBD5E1" strokeWidth="1.2" />
-                  <line x1="140" y1="60" x2="200" y2="90" stroke="#CBD5E1" strokeWidth="1.2" />
-                  <line x1="60" y1="35" x2="220" y2="35" stroke="#64748B" strokeWidth="1.5" strokeDasharray="3,3" />
-
-                  {/* Nodes */}
-                  <circle cx="140" cy="60" r="14" fill="#14263D" stroke="#FFFFFF" strokeWidth="2" />
-                  <text x="140" y="63" textAnchor="middle" fontSize="7" fill="#FFFFFF" fontWeight="bold">CORPUS</text>
-
-                  <circle cx="60" cy="35" r="10" fill="#334155" stroke="#FFFFFF" strokeWidth="1.5" />
-                  <text x="60" y="38" textAnchor="middle" fontSize="6" fill="#FFFFFF">TERMS</text>
-
-                  <circle cx="220" cy="35" r="10" fill="#334155" stroke="#FFFFFF" strokeWidth="1.5" />
-                  <text x="220" y="38" textAnchor="middle" fontSize="6" fill="#FFFFFF">POLICIES</text>
-
-                  <circle cx="80" cy="90" r="9" fill="#475569" stroke="#FFFFFF" strokeWidth="1.5" />
-                  <text x="80" y="93" textAnchor="middle" fontSize="6" fill="#FFFFFF">NODES</text>
-
-                  <circle cx="200" cy="90" r="9" fill="#64748B" stroke="#FFFFFF" strokeWidth="1.5" />
-                  <text x="200" y="93" textAnchor="middle" fontSize="6" fill="#FFFFFF">REVISION</text>
-                </svg>
-              </div>
-            ) : (
-              <div className="w-full h-32 rounded bg-slate-50 border border-slate-200 flex flex-col items-center justify-center p-4 text-center">
-                <Network className="w-6 h-6 text-slate-300 mb-1" />
-                <p className="text-xs text-slate-400">No documents in workspace. Upload files to generate topology.</p>
-              </div>
-            )}
+            {graph ? <dl className="grid grid-cols-2 gap-3 rounded-md bg-slate-50 p-4">
+              {Object.entries({ Documents: graph.stats.total_documents, Topics: graph.stats.total_topics, Findings: graph.stats.total_findings, Connections: graph.stats.total_edges }).map(([label, count]) =>
+                <div key={label}><dt className="text-xs text-slate-600">{label}</dt><dd className="font-semibold">{count}</dd></div>)}
+            </dl> : <p className="text-xs text-slate-500">{loading ? 'Loading graph…' : 'Graph unavailable.'}</p>}
           </div>
 
           <div className="pt-4 border-t border-slate-100 mt-4">

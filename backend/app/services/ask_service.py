@@ -1,31 +1,17 @@
+import json
 import re
 import time
 import httpx
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models.entities import Document
+from app.search.bm25_engine import tokenize
+from app.models.entities import AnswerRecord
 from app.schemas.dtos import AskRequest, AskResponse, CitationItem
 from app.services.search_service import search_service
 
 class AskService:
-    @staticmethod
-    def _is_greeting(query: str) -> bool:
-        norm = re.sub(r'[^\w\s]', ' ', query.strip().lower())
-        tokens = [t for t in norm.split() if t]
-        if not tokens:
-            return True
-        first = tokens[0]
-        if first in ("hi", "hello", "hey", "howdy", "greetings", "hola"):
-            if len(tokens) <= 3:
-                return True
-        if tokens in (["who", "are", "you"], ["what", "can", "you", "do"], ["what", "is", "clario"], ["help"]):
-            return True
-        if len(tokens) <= 2 and tokens[0] == "good" and tokens[-1] in ("morning", "afternoon", "evening", "day"):
-            return True
-        return False
-
     @staticmethod
     def _is_comparative_query(query: str) -> bool:
         q = query.lower()
@@ -45,99 +31,47 @@ class AskService:
         return any(re.search(pat, q) for pat in patterns)
 
     @staticmethod
-    def _build_dynamic_greeting(db: Session, document_ids: Optional[List[str]] = None) -> str:
-        query = db.query(Document).filter(Document.status == "READY")
-        if document_ids:
-            query = query.filter(Document.id.in_(document_ids))
-        docs = query.order_by(Document.created_at.desc()).all()
-
-        base_intro = (
-            "Hello, I am Clario, your AI document intelligence research assistant.\n\n"
-            "I analyze, search, and verify clauses across your uploaded documents. "
-            "Every answer I provide is cross-referenced with exact citations.\n\n"
+    def _retrieve_evidence(request: AskRequest, db: Session):
+        query = request.query.lower().replace("’", "'")
+        refusal = "I can only answer questions about your uploaded documents. Ask about a passage, obligation, or difference between documents."
+        unrelated = (
+            r"\b(?:who are you|your (?:name|age)|what can you do|what is clario)\b|"
+            r"\b(?:write|generate|create|implement|give me|tell me|compose)\b[^.!?\n]{0,70}\b(?:code|script|function|program|website|app|joke|poem|story|recipe)\b|"
+            r"\b(?:can|could|will) you (?:code|program)\b"
         )
+        if re.search(unrelated, query):
+            return [], 0.0, refusal
 
-        if not docs:
-            return (
-                base_intro +
-                "**No indexed documents found in this workspace.**\n\n"
-                "Please upload one or more documents (PDF, DOCX, TXT, or Markdown) in the Document Library. "
-                "Once indexed, you can ask questions, verify facts, and compare clauses here."
-            )
-
-        doc_titles = [d.title or d.filename for d in docs]
-        suggestions = []
-
-        if len(docs) >= 2:
-            suggestions.append(f"Compare key obligations and differences between **{doc_titles[0]}** and **{doc_titles[1]}**.")
-            suggestions.append(f"What are the liability limits, warranties, and indemnification caps in **{doc_titles[0]}** vs **{doc_titles[1]}**?")
-            suggestions.append(f"What data retention and security commitments are specified in **{doc_titles[0]}**?")
-            suggestions.append(f"Are there conflicting terms or termination notice deltas between **{doc_titles[0]}** and **{doc_titles[1]}**?")
-        else:
-            d = doc_titles[0]
-            suggestions.append(f"Provide a comprehensive summary of key clauses in **{d}**.")
-            suggestions.append(f"What are the governing terms, liability caps, and breach notifications in **{d}**?")
-            suggestions.append(f"What are the data privacy and retention commitments outlined in **{d}**?")
-            suggestions.append(f"Identify potential risks or unhedged indemnities in **{d}**.")
-
-        docs_summary_lines = "\n".join([f"- **{d.title or d.filename}** ({d.page_count or 1} pages, {d.chunk_count or 0} chunks)" for d in docs[:4]])
-        if len(docs) > 4:
-            docs_summary_lines += f"\n- *...and {len(docs) - 4} more document(s)*"
-
-        suggestions_lines = "\n".join([f"- *{s}*" for s in suggestions])
-
-        return (
-            f"{base_intro}"
-            f"**Indexed workspace documents ({len(docs)} total):**\n"
-            f"{docs_summary_lines}\n\n"
-            f"**Suggested questions for your workspace documents:**\n"
-            f"{suggestions_lines}\n\n"
-            f"You can also use the Compare view to inspect side-by-side differences, or the Search Lab to evaluate retrieval performance."
-        )
+        # Rank within the selected documents, then require evidence for the original question.
+        results, latency = search_service.search(query=request.query, mode="hybrid",
+            top_k=max(request.top_k or settings.DEFAULT_TOP_K, 6 if AskService._is_comparative_query(query) else 5),
+            document_ids=request.document_ids, db=db)
+        generic = {"can", "please", "tell", "explain", "give", "say", "says", "according", "uploaded", "selected",
+                   "document", "documents", "policy", "policies", "file", "files", "contract", "contracts", "summarize",
+                   "summary", "compare", "differences", "difference", "key", "main", "two", "summarise"}
+        terms = set(tokenize(query)) - generic
+        overview = not terms and re.search(r"\b(?:document|file|polic(?:y|ies)|contract)s?\b", query)
+        if not overview:
+            # A filename may scope a question, but is not evidence for an unrelated subject.
+            for title in {item["document_title"].lower() for item in results}:
+                if title and title in query:
+                    terms.difference_update(tokenize(title))
+            if not terms and re.search(r"\b(?:compar\w*|summary|summari[sz]e|differences?)\b", query):
+                return results, latency, refusal
+            if not terms:
+                return [], latency, refusal
+            required = min(2, len(terms))
+            results = [item for item in results if len(terms.intersection(
+                tokenize(item["snippet"]))) >= required]
+        return results, latency, "I could not find supporting passages in the selected documents. Try a question about their contents."
 
     @staticmethod
     def answer_question(request: AskRequest, db: Session) -> AskResponse:
-        t0 = time.perf_counter()
-
-        # Instant check for conversational greetings / orientation
-        if AskService._is_greeting(request.query):
-            return AskResponse(
-                query=request.query,
-                answer=AskService._build_dynamic_greeting(db, request.document_ids),
-                mode="conversational_assistant",
-                citations=[],
-                retrieval_latency_ms=0.5,
-                synthesis_latency_ms=0.5,
-                has_conflicting_evidence=False,
-                conflict_notes=None
-            )
-
-        # Step 1: Retrieval via Hybrid Search
-        is_comparative = AskService._is_comparative_query(request.query)
-        search_query = request.query
-        if is_comparative:
-            search_query = f"{request.query} comparison difference clauses obligations terms"
-
-        results, ret_latency_ms = search_service.search(
-            query=search_query,
-            mode="hybrid",
-            top_k=max(request.top_k or settings.DEFAULT_TOP_K or 5, 6 if is_comparative else 5),
-            document_ids=request.document_ids,
-            db=db
-        )
-
+        results, ret_latency_ms, message = AskService._retrieve_evidence(request, db)
         t_retrieved = time.perf_counter()
-
         if not results:
-            return AskResponse(
-                query=request.query,
-                answer="No relevant passages were found in the uploaded documents matching your query. Please verify that documents have been uploaded and indexed.",
-                mode="extractive_synthesis",
-                citations=[],
-                retrieval_latency_ms=ret_latency_ms,
-                synthesis_latency_ms=round((time.perf_counter() - t_retrieved) * 1000, 2),
-                has_conflicting_evidence=False
-            )
+            return AskResponse(query=request.query, answer=message, mode="document_scope", citations=[],
+                               retrieval_latency_ms=ret_latency_ms, synthesis_latency_ms=0, has_conflicting_evidence=False)
 
         # Sort results by relevance score descending
         results = sorted(results, key=lambda x: x.get("score", 0), reverse=True)
@@ -228,12 +162,12 @@ class AskService:
             mode = "extractive_synthesis (Verified document passages)"
 
         # If thinking mode was requested but model did not output <think> tags, construct chain-of-evidence synthesis
-        if (request.thinking_mode or settings.THINKING_MODE) and not thinking_process and citations:
+        if (request.thinking_mode if request.thinking_mode is not None else settings.THINKING_MODE) and not thinking_process and citations:
             doc_names = list(dict.fromkeys(c.document_title for c in citations))
             thinking_process = (
                 f"1. Query Dissection: Evaluated search parameters for '{request.query}'.\n"
                 f"2. Corpus Cross-Reference: Retrieved and ranked {len(citations)} relevant passages across {', '.join(doc_names)}.\n"
-                f"3. Evidence Validation: Verified page metrics, numerical bounds, and legal liabilities against primary text.\n"
+                f"3. Evidence Validation: Collected page numbers and source passages for review.\n"
                 f"4. Citation Mapping: Bound factual claims to verified bracketed citations [1] through [{min(len(citations), 5)}]."
             )
 
@@ -380,39 +314,27 @@ Direct Cited Answer:"""
         """
         Realtime Server-Sent Events (SSE) generator streaming tokens and reasoning directly to the frontend.
         """
-        import json
         t0 = time.perf_counter()
+        def finish(response):
+            AskService.save_answer(request, response, db)
+            return f"event: done\ndata: {response.model_dump_json()}\n\n"
 
-        # Handle greetings
-        if AskService._is_greeting(request.query):
-            greeting_text = AskService._build_dynamic_greeting(db, request.document_ids)
-            yield f"event: citations\ndata: {json.dumps([])}\n\n"
-            words = greeting_text.split(" ")
-            for w in words:
-                yield f"event: token\ndata: {json.dumps({'text': w + ' '})}\n\n"
-                time.sleep(0.015)
-            yield f"event: done\ndata: {json.dumps({'mode': 'conversational_assistant', 'answer': greeting_text})}\n\n"
+        provider = (request.llm_provider or settings.LLM_PROVIDER or "ollama").lower()
+        if provider != "ollama":
+            response = AskService.answer_question(request, db)
+            yield f"event: citations\ndata: {json.dumps([c.model_dump() for c in response.citations])}\n\n"
+            if response.thinking_process:
+                yield f"event: thinking\ndata: {json.dumps({'text': response.thinking_process})}\n\n"
+            yield f"event: token\ndata: {json.dumps({'text': response.answer})}\n\n"
+            yield finish(response)
             return
 
-        # Step 1: Hybrid Retrieval
-        is_comparative = AskService._is_comparative_query(request.query)
-        search_query = request.query
-        if is_comparative:
-            search_query = f"{request.query} comparison difference clauses obligations terms"
-
-        results, ret_latency_ms = search_service.search(
-            query=search_query,
-            mode="hybrid",
-            top_k=max(request.top_k or settings.DEFAULT_TOP_K or 5, 6 if is_comparative else 5),
-            document_ids=request.document_ids,
-            db=db
-        )
-
+        results, ret_latency_ms, msg = AskService._retrieve_evidence(request, db)
         if not results:
-            yield f"event: citations\ndata: {json.dumps([])}\n\n"
-            msg = "No relevant passages were found in the uploaded documents matching your query. Please verify that documents have been uploaded and indexed."
+            yield "event: citations\ndata: []\n\n"
             yield f"event: token\ndata: {json.dumps({'text': msg})}\n\n"
-            yield f"event: done\ndata: {json.dumps({'mode': 'extractive_synthesis', 'answer': msg})}\n\n"
+            yield finish(AskResponse(query=request.query, answer=msg, citations=[], mode="document_scope",
+                       retrieval_latency_ms=ret_latency_ms, synthesis_latency_ms=0, has_conflicting_evidence=False))
             return
 
         results = sorted(results, key=lambda x: x.get("score", 0), reverse=True)
@@ -434,8 +356,9 @@ Direct Cited Answer:"""
         # Emit citations immediately so UI can display them
         yield f"event: citations\ndata: {json.dumps([c.model_dump() for c in citations])}\n\n"
 
+        thinking_msg = None
         # Emit thinking process if requested
-        if request.thinking_mode or settings.THINKING_MODE:
+        if (request.thinking_mode if request.thinking_mode is not None else settings.THINKING_MODE):
             doc_names = list(dict.fromkeys(c.document_title for c in citations))
             thinking_msg = (
                 f"1. Query Dissection: Analyzed search criteria for '{request.query}'.\n"
@@ -445,48 +368,48 @@ Direct Cited Answer:"""
             )
             yield f"event: thinking\ndata: {json.dumps({'text': thinking_msg})}\n\n"
 
-        # Stream Generation
-        provider = (request.llm_provider or settings.LLM_PROVIDER or "ollama").lower()
         full_text = ""
+        url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
+        top_citations = citations[:5]
+        context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:1500]}" for c in top_citations])
+        system_prompt = (
+            "You are Clario, an elite document intelligence research assistant. "
+            "Answer directly and accurately using ONLY the retrieved context below. Cite claims like [1], [2]."
+        )
+        prompt = f"{system_prompt}\n\nRetrieved Context:\n{context_str}\n\nUser Question: {request.query}\n\nDirect Cited Answer:"
+        model = request.local_model or settings.OLLAMA_MODEL
 
-        if provider == "ollama":
-            url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
-            top_citations = citations[:5]
-            context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:1500]}" for c in top_citations])
-            system_prompt = (
-                "You are Clario, an elite document intelligence research assistant. "
-                "Answer directly and accurately using ONLY the retrieved context below. Cite claims like [1], [2]."
-            )
-            prompt = f"{system_prompt}\n\nRetrieved Context:\n{context_str}\n\nUser Question: {request.query}\n\nDirect Cited Answer:"
-            model = request.local_model or settings.OLLAMA_MODEL
-
-            try:
-                with httpx.Client(timeout=120.0) as client:
-                    with client.stream("POST", url, json={"model": model, "prompt": prompt, "stream": True, "options": {"temperature": 0.1, "num_predict": 450}}) as resp:
-                        for line in resp.iter_lines():
-                            if line:
-                                try:
-                                    chunk_data = json.loads(line)
-                                    token = chunk_data.get("response", "")
-                                    full_text += token
-                                    yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
-                                except Exception:
-                                    continue
-            except Exception:
-                # Fallback to extractive streaming
-                full_text = AskService._extractive_synthesis(request.query, citations, False, None)
-                for w in full_text.split(" "):
-                    yield f"event: token\ndata: {json.dumps({'text': w + ' '})}\n\n"
-                    time.sleep(0.01)
-        else:
-            # Extractive streaming
+        try:
+            with httpx.Client(timeout=120.0) as client:
+                with client.stream("POST", url, json={"model": model, "prompt": prompt, "stream": True, "options": {"temperature": 0.1, "num_predict": 450}}) as resp:
+                    resp.raise_for_status()
+                    for line in resp.iter_lines():
+                        if line:
+                            try:
+                                chunk_data = json.loads(line)
+                                token = chunk_data.get("response", "")
+                                full_text += token
+                                yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
+                            except Exception:
+                                continue
+            if not full_text.strip():
+                raise ValueError("Model returned no answer")
+        except Exception:
+            provider = "extractive"
+            # Fallback to extractive streaming
             full_text = AskService._extractive_synthesis(request.query, citations, False, None)
-            for w in full_text.split(" "):
-                yield f"event: token\ndata: {json.dumps({'text': w + ' '})}\n\n"
-                time.sleep(0.01)
-
+            yield f"event: token\ndata: {json.dumps({'text': full_text})}\n\n"
         synth_ms = round((time.perf_counter() - t0) * 1000, 2)
-        yield f"event: done\ndata: {json.dumps({'mode': f'{provider}_stream', 'answer': full_text, 'synthesis_latency_ms': synth_ms})}\n\n"
+        yield finish(AskResponse(query=request.query, answer=full_text, mode=f"{provider}_stream",
+                    citations=citations, retrieval_latency_ms=ret_latency_ms,
+                    synthesis_latency_ms=max(0, synth_ms - ret_latency_ms), thinking_process=thinking_msg,
+                    has_conflicting_evidence=False))
+
+    @staticmethod
+    def save_answer(request, response, db):
+        db.add(AnswerRecord(query=request.query, document_ids_json=json.dumps(request.document_ids or []),
+                            response_json=response.model_dump_json()))
+        db.commit()
 
     @staticmethod
     def _extractive_synthesis(

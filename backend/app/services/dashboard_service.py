@@ -24,7 +24,7 @@ class DashboardService:
         ).count()
 
         avg_latency_query = db.query(func.avg(SearchQuery.latency_ms)).scalar()
-        avg_latency = round(float(avg_latency_query), 2) if avg_latency_query else 14.2
+        avg_latency = round(float(avg_latency_query), 2) if avg_latency_query is not None else None
 
         recent_docs_db = db.query(Document).order_by(Document.created_at.desc()).limit(6).all()
         recent_docs = []
@@ -51,7 +51,7 @@ class DashboardService:
         for s in recent_searches:
             activities.append({
                 "type": "search_executed",
-                "title": f"Hybrid search executed for \"{s.query_text[:40]}\"",
+                "title": f"{s.mode.title()} search executed for \"{s.query_text[:40]}\"",
                 "timestamp": s.created_at.strftime("%Y-%m-%d %H:%M") if s.created_at else "",
                 "status": f"{s.latency_ms}ms"
             })
