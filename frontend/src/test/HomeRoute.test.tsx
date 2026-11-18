@@ -37,3 +37,14 @@ it('renders legal policy pages in website layout', () => {
   expect(screen.getByText('Permitted Document Processing')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Workspace' })).toBeInTheDocument();
 });
+
+it('redirects /docs to /documents and renders redesigned document library', async () => {
+  sessionStorage.setItem('clario_workspace_entered', 'true');
+  window.history.replaceState(null, '', '/docs');
+  render(<App />);
+  expect(window.location.pathname).toBe('/documents');
+  expect(await screen.findByRole('heading', { level: 1, name: 'Document library' })).toBeInTheDocument();
+  expect(screen.getByText('Total Documents')).toBeInTheDocument();
+  expect(screen.getByText('Indexed Passages')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Upload Documents/i })).toBeInTheDocument();
+});

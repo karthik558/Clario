@@ -62,6 +62,7 @@ export const App: React.FC = () => {
             <Route index element={<RootIndexRoute />} />
             <Route path="renewal-planner" element={<RenewalPlannerPage />} />
             <Route path="documents" element={<DocumentsPage />} />
+            <Route path="docs" element={<Navigate to="/documents" replace />} />
             <Route path="ask" element={<AskPage />} />
             <Route path="compare" element={<ComparePage />} />
             <Route path="graph" element={<KnowledgeGraphPage />} />
