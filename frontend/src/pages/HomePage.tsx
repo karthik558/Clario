@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { ArrowRight, ArrowUpRight, CalendarDays, FileText, GitCompare, MessageSquareQuote } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -8,8 +9,42 @@ const workflows = [
 ];
 
 export function HomePage() {
+  const [showPreloader, setShowPreloader] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFadeOut(true);
+      const removeTimer = setTimeout(() => {
+        setShowPreloader(false);
+      }, 500);
+      return () => clearTimeout(removeTimer);
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-white text-clario-text">
+    <div className="min-h-screen bg-white text-clario-text relative">
+      {/* Home Page Preloader with smooth timing and zero workspace text */}
+      {showPreloader && (
+        <div
+          role="status"
+          aria-label="Loading"
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a] transition-opacity duration-500 ease-in-out ${
+            fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        >
+          <div className="flex flex-col items-center justify-center">
+            <img
+              src="/clario.webp"
+              alt="Clario"
+              className="w-44 sm:w-56 h-auto object-contain select-none animate-pulse"
+            />
+          </div>
+        </div>
+      )}
+
       <header className="bg-clario-navy text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-10">
           <div className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight">
