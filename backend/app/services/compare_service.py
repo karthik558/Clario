@@ -180,10 +180,10 @@ class CompareService:
             return 1, ""
 
         # 1. Data Retention & Deletion Timeline
-        has_retention_a = "30 days" in text_a_combined or "30-day" in text_a_combined
-        has_retention_b = "zero data retention" in text_b_combined.lower() or "zdr" in text_b_combined.lower() or "60 days" in text_b_combined or "60-day" in text_b_combined
+        has_retention_a = any(k in text_a_combined.lower() for k in ["data retention", "retention period", "retain customer data"]) and any(k in text_a_combined.lower() for k in ["30 days", "30-day", "thirty (30) days"])
+        has_retention_b = any(k in text_b_combined.lower() for k in ["zero data retention", "zdr", "audit logging"]) and any(k in text_b_combined.lower() for k in ["60 days", "60-day", "zero retention", "volatile memory"])
         if has_retention_a and has_retention_b:
-            p_a, q_a = find_chunk_evidence(chunks_a, ["30 days", "standard retention", "abuse monitoring"])
+            p_a, q_a = find_chunk_evidence(chunks_a, ["30 days", "standard retention", "abuse monitoring", "retention"])
             p_b, q_b = find_chunk_evidence(chunks_b, ["zero data retention", "zdr", "60 days", "audit logging"])
             differences.append("Data Retention: Standard 30-day retention in Doc A vs Zero Data Retention (ZDR) default & 60-day audit window in Doc B.")
             contradictions.append(ContradictionCandidate(
@@ -197,8 +197,8 @@ class CompareService:
             ))
 
         # 2. Liability & Financial Ceilings
-        has_cap_a = "$100" in text_a_combined or "one hundred" in text_a_combined.lower()
-        has_cap_b = "$250,000" in text_b_combined or "two hundred fifty thousand" in text_b_combined.lower()
+        has_cap_a = any(k in text_a_combined.lower() for k in ["liability", "aggregate liability", "damages"]) and any(k in text_a_combined.lower() for k in ["$100", "one hundred dollars", "nominal"])
+        has_cap_b = any(k in text_b_combined.lower() for k in ["liability", "aggregate liability", "damages"]) and any(k in text_b_combined.lower() for k in ["$250,000", "two hundred fifty thousand", "12 months fees"])
         if has_cap_a and has_cap_b:
             p_a, q_a = find_chunk_evidence(chunks_a, ["$100.00", "aggregate liability", "one hundred united states dollars"])
             p_b, q_b = find_chunk_evidence(chunks_b, ["$250,000", "enterprise liability cap", "twelve (12) months"])
@@ -214,8 +214,8 @@ class CompareService:
             ))
 
         # 3. Security Incident Notice & Forensics
-        has_breach_a = "30" in text_a_combined and ("breach" in text_a_combined.lower() or "incident" in text_a_combined.lower())
-        has_breach_b = "72 hours" in text_b_combined.lower() or "60 days" in text_b_combined
+        has_breach_a = any(k in text_a_combined.lower() for k in ["breach", "security incident"]) and any(k in text_a_combined.lower() for k in ["30 calendar days", "thirty (30) days", "30 days notice"])
+        has_breach_b = any(k in text_b_combined.lower() for k in ["breach", "security incident"]) and any(k in text_b_combined.lower() for k in ["72 hours", "72-hour", "forensic report"])
         if has_breach_a and has_breach_b:
             p_a, q_a = find_chunk_evidence(chunks_a, ["thirty (30) calendar days", "breach notification protocol"])
             p_b, q_b = find_chunk_evidence(chunks_b, ["72 hours", "preliminary alert", "forensic report"])

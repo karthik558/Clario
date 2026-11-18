@@ -76,7 +76,7 @@ class ClauseService:
             text_lower = text.lower()
 
             # Liability
-            if "liability" in text_lower or "consequential damages" in text_lower or "capped at" in text_lower:
+            if any(k in text_lower for k in ["limitation of liability", "aggregate liability", "cumulative liability", "consequential damages", "capped at $", "capped at nominal"]):
                 favorability = "Vendor Favorable" if "aggregate cumulative liability" in text_lower or "$100" in text_lower else "Balanced"
                 categorized_clauses["Limitation of Liability"].append({
                     "id": f"cls-{chunk.id}",
@@ -87,8 +87,20 @@ class ClauseService:
                     "deviation_from_market": "High" if favorability == "Vendor Favorable" else "Standard"
                 })
 
+            # Indemnification
+            if any(k in text_lower for k in ["indemnification", "indemnify and hold", "defend and hold harmless"]):
+                favorability = "Customer Favorable" if "mutual indemn" in text_lower or "copyright shield" in text_lower else "Vendor Favorable"
+                categorized_clauses["Indemnification"].append({
+                    "id": f"cls-{chunk.id}",
+                    "document_title": doc_map.get(chunk.document_id, "Document"),
+                    "page_number": chunk.page_number or 1,
+                    "text": text[:280].strip() + "...",
+                    "favorability": favorability,
+                    "deviation_from_market": "Standard" if favorability == "Customer Favorable" else "High"
+                })
+
             # Data Retention
-            if "retention" in text_lower or "training" in text_lower or "zdr" in text_lower:
+            if any(k in text_lower for k in ["data retention", "retention of customer data", "zero data retention", "zdr", "purge customer data", "telemetry retention", "model training on customer data"]):
                 favorability = "Customer Favorable" if "zero data retention" in text_lower or "opt in" in text_lower else "Vendor Favorable"
                 categorized_clauses["Data Retention & Telemetry"].append({
                     "id": f"cls-{chunk.id}",
@@ -100,9 +112,21 @@ class ClauseService:
                 })
 
             # Termination
-            if "termination" in text_lower or "written notice" in text_lower or "cure period" in text_lower:
+            if any(k in text_lower for k in ["termination for convenience", "terminate without cause", "prior written notice of termination", "cure period of \d+"]):
                 favorability = "Balanced"
                 categorized_clauses["Termination for Convenience"].append({
+                    "id": f"cls-{chunk.id}",
+                    "document_title": doc_map.get(chunk.document_id, "Document"),
+                    "page_number": chunk.page_number or 1,
+                    "text": text[:280].strip() + "...",
+                    "favorability": favorability,
+                    "deviation_from_market": "Standard"
+                })
+
+            # Governing Law
+            if any(k in text_lower for k in ["governing law", "exclusive venue", "jurisdiction of the state", "arbitration rules"]):
+                favorability = "Balanced"
+                categorized_clauses["Governing Law & Venue"].append({
                     "id": f"cls-{chunk.id}",
                     "document_title": doc_map.get(chunk.document_id, "Document"),
                     "page_number": chunk.page_number or 1,

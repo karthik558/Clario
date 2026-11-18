@@ -112,7 +112,11 @@ export const CompliancePage: React.FC = () => {
               {data ? `${data.overall_score}%` : '—'}
             </span>
             <span className="text-[10px] text-slate-400 mt-0.5 block">
-              {data && data.overall_score >= 75 ? 'Passable threshold' : 'Attention required'}
+              {(data as any)?.scope_status === 'operational_non_regulatory'
+                ? 'Not applicable for financial scope'
+                : data && data.overall_score >= 75
+                ? 'Passable threshold'
+                : 'Attention required'}
             </span>
           </div>
           <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
@@ -200,6 +204,23 @@ export const CompliancePage: React.FC = () => {
                 </button>
               );
             })}
+          </div>
+        </Card>
+      )}
+
+      {/* Scope Classification Banner */}
+      {(data as any)?.scope_status === 'operational_non_regulatory' && (
+        <Card className="p-4 bg-slate-50 border border-slate-200 shadow-xs flex items-start gap-3">
+          <div className="w-8 h-8 rounded-md bg-slate-200 flex items-center justify-center text-slate-700 shrink-0 mt-0.5">
+            <FileText className="w-4 h-4" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+              Document Scope: Operational & Financial Records
+            </h4>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              {(data as any)?.scope_description || 'The active documents in this workspace are internal operational / financial schedules. GDPR, HIPAA, SOC 2, and EU AI Act covenants apply to data processing agreements, cloud supplier contracts, and AI governance policies.'}
+            </p>
           </div>
         </Card>
       )}

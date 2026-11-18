@@ -1,7 +1,8 @@
+import re
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from app.models.entities import Document, DocumentChunk, Finding, Report
+from app.models.entities import Document, DocumentChunk, Finding
 from app.schemas.dtos import GraphNode, GraphEdge, GraphDataResponse
 
 class GraphService:
@@ -59,43 +60,65 @@ class GraphService:
                     }
                 ))
 
-        # 2. Key Policy & Obligation Topic Nodes (Teal)
-        topics = [
-            ("topic_retention", "Data Retention & Storage", "30-day baseline vs Zero Data Retention (ZDR) default"),
-            ("topic_liability", "Liability & Financial Ceilings", "$100 USD nominal vs $250,000 USD expanded ceiling"),
-            ("topic_breach", "Security Incident & Breach Notice", "30 days vs 72h preliminary alert & 60-day forensic report"),
-            ("topic_copyright", "Copyright Shield & IP Defense", "Customer unilateral indemnity vs Copyright Shield defense"),
-            ("topic_hipaa", "Healthcare & HIPAA Eligibility", "BAAs prohibited vs BAAs available for dedicated health endpoints"),
-            ("topic_residency", "Sovereign Compute & Data Boundary", "US data centers only vs Sovereign EU data boundary"),
-            ("topic_security", "Hardware Enclaves & Memory Sanitization", "Stateless GPU wipe vs Confidential Computing enclaves"),
-            ("topic_safety", "Frontier Safety & Red-Teaming", "Baseline filters vs Frontier Safety Framework with severe risk gates")
-        ]
+        # 2. Extract REAL Topic / Section Nodes from Documents
+        topic_count = 0
+        for d in docs:
+            chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == d.id).order_by(DocumentChunk.chunk_index).all()
+            
+            # Extract sheets or headings from actual chunk text
+            detected_topics = []
+            for c in chunks:
+                for line in c.content.splitlines():
+                    line = line.strip()
+                    # Spreadsheet sheet headers
+                    if line.startswith('### Sheet:'):
+                        clean_s = line.replace('### Sheet:', '').replace('(continued)', '').strip()
+                        if clean_s and clean_s not in [t[0] for t in detected_topics]:
+                            desc = f"Workbook sheet in {d.title}"
+                            detected_topics.append((clean_s, f"Sheet: {clean_s}", desc, c))
+                    # Markdown section headers
+                    elif line.startswith('# ') or line.startswith('## '):
+                        clean_h = re.sub(r'^#+\s*', '', line).strip()
+                        if len(clean_h) >= 3 and len(clean_h) < 60 and not clean_h.startswith('|') and clean_h not in [t[0] for t in detected_topics]:
+                            desc = f"Section in {d.title}"
+                            detected_topics.append((clean_h, clean_h, desc, c))
 
-        for tid, tlabel, tdesc in topics:
-            if tid not in node_ids:
-                node_ids.add(tid)
-                nodes.append(GraphNode(
-                    id=tid,
-                    label=tlabel,
-                    type="topic",
-                    size=18.0,
-                    color="#477E88", # Muted Teal
-                    metadata={"description": tdesc}
-                ))
+            # Fallback if no sheets or headings found
+            if not detected_topics:
+                detected_topics.append(("core_content", f"{d.title} Provisions", f"Indexed provisions from {d.title}", chunks[0] if chunks else None))
 
-            # Connect each document to governing topics
-            for d in docs:
-                edge_id = f"edge_{d.id}_{tid}"
-                edges.append(GraphEdge(
-                    id=edge_id,
-                    source=f"doc_{d.id}",
-                    target=tid,
-                    label="Governs",
-                    type="governs",
-                    color="#94A3B8",
-                    dashed=False,
-                    weight=1.0
-                ))
+            for raw_key, label, desc, rep_chunk in detected_topics[:6]:
+                topic_slug = re.sub(r'[^a-zA-Z0-9_]', '_', raw_key.lower())[:30]
+                tid = f"topic_{d.id[:8]}_{topic_slug}"
+                if tid not in node_ids:
+                    node_ids.add(tid)
+                    topic_count += 1
+                    nodes.append(GraphNode(
+                        id=tid,
+                        label=label,
+                        type="topic",
+                        size=18.0,
+                        color="#477E88", # Muted Teal
+                        metadata={
+                            "document_id": d.id,
+                            "document_title": d.title,
+                            "description": desc,
+                            "topic_name": raw_key
+                        }
+                    ))
+
+                    # Edge: Document -> governs/contains -> Topic
+                    edge_id = f"edge_{d.id}_{tid}"
+                    edges.append(GraphEdge(
+                        id=edge_id,
+                        source=f"doc_{d.id}",
+                        target=tid,
+                        label="Contains",
+                        type="governs",
+                        color="#94A3B8",
+                        dashed=False,
+                        weight=1.0
+                    ))
 
         # 3. Contradiction & Finding Nodes (Crimson Rose / Amber)
         for f in findings:
@@ -145,13 +168,15 @@ class GraphService:
                         weight=2.0
                     ))
 
-        # 4. Sample Key Chunk Nodes (Sage)
+        # 4. Sample Key Chunk Nodes (Slate)
         for d in docs:
-            chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == d.id).limit(3).all()
+            chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == d.id).limit(4).all()
             for c in chunks:
                 cid = f"chunk_{c.id}"
                 if cid not in node_ids:
                     node_ids.add(cid)
+                    clean_snippet = c.content.strip().splitlines()[0] if c.content.strip().splitlines() else ""
+                    clean_snippet = re.sub(r'^[#| \-:]+', '', clean_snippet)[:80]
                     nodes.append(GraphNode(
                         id=cid,
                         label=f"{d.title} (p.{c.page_number})",
@@ -161,14 +186,14 @@ class GraphService:
                         metadata={
                             "chunk_id": c.id,
                             "page": c.page_number,
-                            "snippet": c.content[:100]
+                            "snippet": clean_snippet or c.content[:100]
                         }
                     ))
                     edges.append(GraphEdge(
                         id=f"edge_chunk_{c.id}",
                         source=f"doc_{d.id}",
                         target=cid,
-                        label="Contains",
+                        label="Passage",
                         type="contains",
                         color="#CBD5E1",
                         dashed=False,
@@ -181,7 +206,7 @@ class GraphService:
             stats={
                 "total_documents": len(docs),
                 "total_findings": len(findings),
-                "total_topics": len(topics),
+                "total_topics": topic_count,
                 "total_nodes": len(nodes),
                 "total_edges": len(edges)
             }

@@ -77,6 +77,23 @@ export const ClauseLibraryPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Non-Contract Scope Notice */}
+      {documents.length > 0 && data && data.benchmarks.every(b => b.detected_count === 0) && (
+        <Card className="p-4 bg-slate-50 border border-slate-200 shadow-xs flex items-start gap-3">
+          <div className="w-8 h-8 rounded-md bg-slate-200 flex items-center justify-center text-slate-700 shrink-0 mt-0.5">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+              Document Scope: Non-Contractual Records
+            </h4>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              Active workspace document(s) (e.g. '{documents[0]?.title}') contain operational and financial data rather than commercial contract covenants. Standard market benchmarks below are provided for reference. You can test any clause in the benchmark sandbox below or upload contracts (MSAs, NDAs, SLAs) to extract active clauses.
+            </p>
+          </div>
+        </Card>
+      )}
+
       {/* KPI Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">

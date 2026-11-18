@@ -32,11 +32,11 @@ export const NegotiatePage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedFindingId, setSelectedFindingId] = useState<string>('');
 
-  const [topic, setTopic] = useState('Data Retention & Liability Cap');
-  const [statementA, setStatementA] = useState('2023 Baseline: Standard 30-day retention of API logs; aggregate cumulative liability capped at $100 USD.');
-  const [statementB, setStatementB] = useState('2024 Modernized: Zero Data Retention (ZDR) default; expanded ceiling up to $250,000 USD.');
-  const [docATitle, setDocATitle] = useState('2023 Baseline Terms');
-  const [docBTitle, setDocBTitle] = useState('2024 Modernized Policy');
+  const [topic, setTopic] = useState('');
+  const [statementA, setStatementA] = useState('');
+  const [statementB, setStatementB] = useState('');
+  const [docATitle, setDocATitle] = useState('');
+  const [docBTitle, setDocBTitle] = useState('');
 
   const [stance, setStance] = useState<StanceType>('balanced');
   const [customInstructions, setCustomInstructions] = useState('');
@@ -55,6 +55,11 @@ export const NegotiatePage: React.FC = () => {
       setDocuments(dList);
       if (fList.length > 0) {
         applyFinding(fList[0]);
+      } else if (dList.length > 0) {
+        setDocATitle(dList[0].title);
+        if (dList.length > 1) {
+          setDocBTitle(dList[1].title);
+        }
       }
     });
   }, []);
