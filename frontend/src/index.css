@@ -41,9 +41,12 @@
   .sidebar { transform: translateX(-100%); visibility: hidden; }
   .sidebar-open { transform: translateX(0); visibility: visible; }
 }
+:where(button, a, input, select, textarea, [tabindex]):focus {
+  outline: none;
+}
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid #0F172A !important;
-  outline-offset: 3px;
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
 }
 :where(input, select, textarea) { accent-color: #0F172A; }
 @media (prefers-reduced-motion: reduce) {

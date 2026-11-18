@@ -23,7 +23,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onOpenNavigation }
       <button
         aria-label="Search documents"
         onClick={onOpenSearch}
-        className="flex items-center justify-between w-full max-w-sm sm:max-w-md bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 px-3.5 py-1.5 rounded-md border border-slate-200 hover:border-slate-300 transition-all text-xs shadow-xs"
+        className="flex items-center justify-between w-full max-w-sm sm:max-w-md bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 px-3.5 py-1.5 rounded-md border border-slate-200 hover:border-slate-300 transition-all text-xs shadow-xs outline-none focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer"
       >
         <span className="flex items-center gap-2.5 min-w-0">
           <Search className="w-4 h-4 text-slate-400 shrink-0" />

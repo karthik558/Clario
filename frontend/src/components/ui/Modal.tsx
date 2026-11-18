@@ -34,7 +34,8 @@ export const Modal: React.FC<ModalProps> = ({
           'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]'
         ) ?? []
       );
-    (focusable()[0] ?? dialog)?.focus();
+    const autoFocusTarget = dialog?.querySelector<HTMLElement>('input[autofocus], [autofocus], input:not(:disabled), textarea:not(:disabled)');
+    (autoFocusTarget ?? focusable()[0] ?? dialog)?.focus();
 
     const handler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -87,7 +88,7 @@ export const Modal: React.FC<ModalProps> = ({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`bg-white w-full ${maxWidthStyles[maxWidth]} rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90dvh] animate-in fade-in zoom-in-95 duration-150`}
+        className={`bg-white w-full ${maxWidthStyles[maxWidth]} rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90dvh] animate-in fade-in zoom-in-95 duration-150 outline-none focus:outline-none`}
       >
         <div className="shrink-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 bg-white">
           <h3 id={titleId} className="font-semibold text-base text-slate-900 tracking-tight">

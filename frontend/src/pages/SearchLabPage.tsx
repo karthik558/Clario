@@ -158,7 +158,7 @@ export const SearchLabPage: React.FC = () => {
                       setQuery(sq);
                       executeComparison(sq, topK);
                     }}
-                    className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 truncate max-w-[240px]"
+                    className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-200 text-slate-700 text-[11px] truncate max-w-[260px] cursor-pointer outline-none focus:outline-none focus:ring-1 focus:ring-slate-300 transition-colors"
                   >
                     "{sq}"
                   </button>
@@ -219,25 +219,31 @@ export const SearchLabPage: React.FC = () => {
                     <Badge variant="navy" size="sm">k1=1.5, b=0.75</Badge>
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
-                    {comparison.bm25_results.map((r) => (
-                      <div key={r.chunk_id} className="p-3 rounded-md border border-slate-200 bg-slate-50/70">
-                        <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="font-semibold text-slate-900 truncate max-w-[140px]">{r.document_title}</span>
-                          <span className="font-mono text-blue-700">Rank #{r.rank} &bull; {r.score}</span>
-                        </div>
-                        <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
-                          {r.snippet}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
-                          className="mt-2 text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
-                        >
-                          <BookOpen className="w-3 h-3" />
-                          <span>Page {r.page_number} in Viewer</span>
-                        </button>
+                    {comparison.bm25_results.length === 0 ? (
+                      <div className="py-12 text-center text-xs text-slate-400">
+                        No passages retrieved via BM25 lexical index.
                       </div>
-                    ))}
+                    ) : (
+                      comparison.bm25_results.map((r) => (
+                        <div key={r.chunk_id} className="p-3 rounded-md border border-slate-200 bg-slate-50/70">
+                          <div className="flex items-center justify-between text-[11px] mb-1">
+                            <span className="font-semibold text-slate-900 truncate max-w-[140px]">{r.document_title}</span>
+                            <span className="font-mono text-blue-700">Rank #{r.rank} &bull; {r.score}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
+                            {r.snippet}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
+                            className="mt-2 text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                          >
+                            <BookOpen className="w-3 h-3" />
+                            <span>Page {r.page_number} in Viewer</span>
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -251,25 +257,31 @@ export const SearchLabPage: React.FC = () => {
                     <Badge variant="gray" size="sm">Cosine Sim</Badge>
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
-                    {comparison.vector_results.map((r) => (
-                      <div key={r.chunk_id} className="p-3 rounded-md border border-slate-200 bg-slate-50/70">
-                        <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="font-semibold text-slate-900 truncate max-w-[140px]">{r.document_title}</span>
-                          <span className="font-mono text-purple-700">Rank #{r.rank} &bull; {r.score}</span>
-                        </div>
-                        <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
-                          {r.snippet}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
-                          className="mt-2 text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
-                        >
-                          <BookOpen className="w-3 h-3" />
-                          <span>Page {r.page_number} in Viewer</span>
-                        </button>
+                    {comparison.vector_results.length === 0 ? (
+                      <div className="py-12 text-center text-xs text-slate-400">
+                        No passages retrieved via dense vector similarity.
                       </div>
-                    ))}
+                    ) : (
+                      comparison.vector_results.map((r) => (
+                        <div key={r.chunk_id} className="p-3 rounded-md border border-slate-200 bg-slate-50/70">
+                          <div className="flex items-center justify-between text-[11px] mb-1">
+                            <span className="font-semibold text-slate-900 truncate max-w-[140px]">{r.document_title}</span>
+                            <span className="font-mono text-purple-700">Rank #{r.rank} &bull; {r.score}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
+                            {r.snippet}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
+                            className="mt-2 text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                          >
+                            <BookOpen className="w-3 h-3" />
+                            <span>Page {r.page_number} in Viewer</span>
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -283,25 +295,31 @@ export const SearchLabPage: React.FC = () => {
                     <Badge variant="navy" size="sm">RRF (k=60)</Badge>
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
-                    {comparison.hybrid_results.map((r) => (
-                      <div key={r.chunk_id} className="p-3 rounded-md border border-slate-200 bg-slate-50/70">
-                        <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="font-semibold text-slate-900 truncate max-w-[140px]">{r.document_title}</span>
-                          <span className="font-mono text-slate-900 font-bold">Rank #{r.rank} &bull; {r.score}</span>
-                        </div>
-                        <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
-                          {r.snippet}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
-                          className="mt-2 text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
-                        >
-                          <BookOpen className="w-3 h-3" />
-                          <span>Page {r.page_number} in Viewer</span>
-                        </button>
+                    {comparison.hybrid_results.length === 0 ? (
+                      <div className="py-12 text-center text-xs text-slate-400">
+                        No passages retrieved via hybrid reciprocal fusion.
                       </div>
-                    ))}
+                    ) : (
+                      comparison.hybrid_results.map((r) => (
+                        <div key={r.chunk_id} className="p-3 rounded-md border border-slate-200 bg-slate-50/70">
+                          <div className="flex items-center justify-between text-[11px] mb-1">
+                            <span className="font-semibold text-slate-900 truncate max-w-[140px]">{r.document_title}</span>
+                            <span className="font-mono text-slate-900 font-bold">Rank #{r.rank} &bull; {r.score}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
+                            {r.snippet}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setViewerChunk({ docId: r.document_id, chunkId: r.chunk_id, page: r.page_number })}
+                            className="mt-2 text-[10px] text-slate-700 hover:text-slate-900 font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                          >
+                            <BookOpen className="w-3 h-3" />
+                            <span>Page {r.page_number} in Viewer</span>
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>

@@ -45,7 +45,12 @@ class SearchService:
         self._last_chunk_count = len(chunk_dicts)
 
     def ensure_index(self, db: Session):
-        current_count = db.query(DocumentChunk).count()
+        current_count = (
+            db.query(DocumentChunk)
+            .join(Document, DocumentChunk.document_id == Document.id)
+            .filter(Document.status == "READY")
+            .count()
+        )
         if current_count != self._last_chunk_count:
             self.reload_index(db)
 
