@@ -14,7 +14,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onOpenNavigation }
           type="button"
           onClick={onOpenNavigation}
           aria-label="Open navigation menu"
-          className="md:hidden p-1.5 -ml-1 rounded-md text-clario-navy hover:bg-slate-100 transition-colors mr-1 shrink-0"
+          className="lg:hidden p-1.5 -ml-1 rounded-md text-clario-navy hover:bg-slate-100 transition-colors mr-1 shrink-0"
         >
           <Menu className="w-5 h-5" />
         </button>

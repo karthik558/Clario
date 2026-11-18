@@ -1,3 +1,4 @@
+import { RenewalPlannerPage } from './pages/RenewalPlannerPage';
 import React from 'react';
 import { PolicyPage } from './pages/PolicyPage';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -34,6 +35,7 @@ export const App: React.FC = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
+            <Route path="renewal-planner" element={<RenewalPlannerPage />} />
             <Route index element={<OverviewPage />} />
             <Route path="documents" element={<DocumentsPage />} />
             <Route path="ask" element={<AskPage />} />

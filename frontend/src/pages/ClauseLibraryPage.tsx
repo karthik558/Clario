@@ -87,7 +87,7 @@ export const ClauseLibraryPage: React.FC = () => {
       )}
 
       {/* KPI Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
         <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
@@ -304,10 +304,10 @@ export const ClauseLibraryPage: React.FC = () => {
               ) : (
                 activeBenchmark.clauses.map((clause, idx) => (
                   <Card key={idx} className="p-4 bg-white border border-slate-200 shadow-xs space-y-2">
-                    <div className="flex items-center justify-between text-xs pb-1.5 border-b border-slate-100">
+                    <div className="flex flex-wrap gap-2 items-center justify-between text-xs pb-1.5 border-b border-slate-100">
                       <div className="flex items-center gap-2">
                         <FileText className="w-3.5 h-3.5 text-slate-500" />
-                        <span className="font-semibold text-slate-900">{clause.document_title}</span>
+                        <span className="font-semibold text-slate-900 [overflow-wrap:anywhere]">{clause.document_title}</span>
                         <span className="text-slate-400 font-mono text-[11px]">
                           Page {clause.page_number}
                         </span>

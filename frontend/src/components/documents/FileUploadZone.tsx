@@ -1,17 +1,17 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, FileText, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
+import { UploadCloud, FileText, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { api } from '../../services/api';
 import { Button } from '../ui/Button';
 
 interface FileUploadZoneProps {
-  onUploadSuccess: () => void;
+  onUploadSuccess: (complete: boolean) => void;
   compact?: boolean;
 }
 
 export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess, compact = false }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [title, setTitle] = useState('');
+  const [files, setFiles] = useState<{ file: File; title: string }[]>([]);
+  const [progress, setProgress] = useState('');
   const [collection, setCollection] = useState('General');
   const [tagsInput, setTagsInput] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -31,55 +31,59 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileSelected(e.dataTransfer.files[0]);
-    }
+    selectFiles(e.dataTransfer.files);
   };
 
-  const handleFileSelected = (file: File) => {
-    setError(null);
+  const selectFiles = (selection: FileList) => {
+    if (!selection.length) return;
+    const accepted = [];
+    const errors = [];
+    for (const file of Array.from(selection)) {
+      if (!/\.(pdf|docx?|txt|md|xlsx?|csv|json)$/i.test(file.name)) {
+        errors.push(`${file.name}: unsupported file format.`);
+      } else if (file.size > 50 * 1024 * 1024 || file.size === 0) {
+        errors.push(`${file.name}: files must be nonempty and 50 MB or smaller.`);
+      } else {
+        accepted.push({ file, title: file.name.replace(/\.[^/.]+$/, '') });
+      }
+    }
+    setFiles(accepted);
+    setError(errors.join('\n') || null);
     setSuccessMsg(null);
-    const validExts = ['pdf', 'docx', 'doc', 'txt', 'md', 'xlsx', 'xls', 'csv', 'json'];
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    if (!validExts.includes(ext)) {
-      setError(`Unsupported format ".${ext}". Please upload PDF, DOCX, TXT, MD, Excel (.xlsx, .xls), or CSV documents.`);
-      return;
-    }
-    if (file.size > 50 * 1024 * 1024) { setError('Files must be 50 MB or smaller.'); return; }
-    if (file.size === 0) {
-      setError('The selected file is empty (0 bytes).');
-      return;
-    }
-    setSelectedFile(file);
-    setTitle(file.name.replace(/\.[^/.]+$/, ''));
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!files.length || uploading) return;
     setUploading(true);
-    setError(null);
-    try {
-      const tags = tagsInput
-        ? tagsInput.split(',').map((t) => t.trim()).filter(Boolean)
-        : [];
-      await api.uploadDocument(selectedFile, title, tags, collection);
-      setSuccessMsg(`"${selectedFile.name}" successfully indexed into Clario.`);
-      setSelectedFile(null);
-      setTitle('');
-      setTagsInput('');
-      onUploadSuccess();
-    } catch (err: any) {
-      setError(err.message || 'Failed to process document');
-    } finally {
-      setUploading(false);
+    setSuccessMsg(null);
+    const failed = [];
+    const errors = [];
+    const tags = tagsInput.split(',').map(tag => tag.trim()).filter(Boolean);
+    for (const [index, item] of files.entries()) {
+      setProgress(`Uploading ${index + 1} of ${files.length}…`);
+      try {
+        await api.uploadDocument(item.file, item.title, tags, collection);
+      } catch (err) {
+        failed.push(item);
+        errors.push(`${item.file.name}: ${err instanceof Error ? err.message : 'Upload failed'}`);
+      }
+    }
+    setFiles(failed);
+    setError(errors.join('\n') || null);
+    setUploading(false);
+    const count = files.length - failed.length;
+    if (!failed.length) setTagsInput('');
+    if (count) {
+      setSuccessMsg(`${count} document${count === 1 ? '' : 's'} uploaded.`);
+      onUploadSuccess(failed.length === 0);
     }
   };
 
   return (
     <div className="w-full">
-      {!selectedFile ? (
+      {!files.length ? (
         <div
-          role="button" tabIndex={0} aria-label="Choose a document to upload"
+          role="button" tabIndex={0} aria-label="Choose documents to upload"
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -94,14 +98,13 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
           }`}
         >
           <input
-            type="file"
+            type="file" multiple
             ref={fileInputRef}
             className="hidden"
             accept=".pdf,.docx,.doc,.txt,.md,.xlsx,.xls,.csv,.json"
             onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                handleFileSelected(e.target.files[0]);
-              }
+              if (e.target.files) selectFiles(e.target.files);
+              e.target.value = "";
             }}
           />
           <div className="w-12 h-12 rounded-md bg-slate-100 text-slate-800 flex items-center justify-center mx-auto mb-3 shadow-xs">
@@ -116,46 +119,32 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
         </div>
       ) : (
         <div className="border border-slate-200 rounded-md p-5 bg-white shadow-subtle animate-in fade-in">
-          <div className="flex items-center justify-between pb-3 border-b border-clario-border mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-md bg-clario-navy/10 text-clario-navy flex items-center justify-center">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-clario-text truncate max-w-sm">{selectedFile.name}</p>
-                <p className="text-[11px] text-clario-text-secondary">
-                  {(selectedFile.size / 1024).toFixed(1)} KB &bull; Ready for indexing
-                </p>
-              </div>
-            </div>
-            <button
-              aria-label="Remove selected file" disabled={uploading}
-              onClick={() => setSelectedFile(null)}
-              className="p-1 rounded-md text-clario-text-secondary hover:text-clario-text hover:bg-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-            <div>
-              <label className="block text-[11px] font-medium text-clario-text-secondary mb-1">
-                Document Title
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
-              />
-            </div>
+          <ul className="mb-4 divide-y divide-slate-200">
+            {files.map((item, index) => (
+              <li key={index} className="flex items-start gap-3 py-3">
+                <FileText className="mt-1 h-4 w-4 shrink-0 text-slate-500" />
+                <label className="min-w-0 flex-1 text-xs text-slate-600">
+                  <span className="block break-all font-semibold">{item.file.name}</span>
+                  Document title
+                  <input disabled={uploading} value={item.title}
+                    onChange={e => setFiles(files.map((row, i) => i === index ? { ...row, title: e.target.value } : row))}
+                    className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-slate-900" />
+                </label>
+                <button aria-label={`Remove ${item.file.name}`} disabled={uploading}
+                  onClick={() => setFiles(files.filter((_, i) => i !== index))} className="p-2 text-slate-500">
+                  <X size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div>
               <label className="block text-[11px] font-medium text-slate-500 mb-1">
                 Collection
               </label>
               <input
                 type="text"
-                value={collection}
+                disabled={uploading} aria-label="Collection" value={collection}
                 onChange={(e) => setCollection(e.target.value)}
                 placeholder="e.g. Policies, Contracts"
                 className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
@@ -167,7 +156,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
               </label>
               <input
                 type="text"
-                value={tagsInput}
+                disabled={uploading} aria-label="Tags" value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="compliance, 2024, audit"
                 className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
@@ -176,11 +165,11 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
           </div>
 
           <div className="flex items-center justify-end space-x-2">
-            <Button variant="outline" size="sm" onClick={() => setSelectedFile(null)} disabled={uploading}>
+            <Button variant="outline" size="sm" onClick={() => { setFiles([]); setError(null); setSuccessMsg(null); }} disabled={uploading}>
               Cancel
             </Button>
             <Button variant="primary" size="sm" onClick={handleUpload} loading={uploading}>
-              {uploading ? 'Extracting & Indexing...' : 'Upload & Ingest'}
+              {uploading ? progress : files.length === 1 ? 'Upload & Ingest' : `Upload ${files.length} documents`}
             </Button>
           </div>
         </div>
@@ -189,14 +178,14 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
       {error && (
         <div className="mt-3 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2 animate-in fade-in">
           <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
+          <span role="alert" className="whitespace-pre-line break-all">{error}</span>
         </div>
       )}
 
       {successMsg && (
         <div className="mt-3 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span>{successMsg}</span>
+          <span role="status">{successMsg}</span>
         </div>
       )}
     </div>

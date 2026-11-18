@@ -190,7 +190,7 @@ export const FindingsPage: React.FC = () => {
       </PageHeader>
 
       {/* Findings Stat Ribbon */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
         <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Total Flagged</span>

@@ -29,7 +29,7 @@ export const Layout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col lg:flex-row">
       {/* Sidebar */}
       <Sidebar
         collapsed={sidebarCollapsed}
@@ -40,8 +40,8 @@ export const Layout: React.FC = () => {
 
       {/* Main Content Area */}
       <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ml-0 ${
-          sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'
+        className={`flex-1 flex flex-col min-w-0 ml-0 ${
+          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         }`}
       >
         <Header
@@ -52,8 +52,7 @@ export const Layout: React.FC = () => {
         <main className="mx-auto max-w-[100rem] flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
           <Outlet />
         </main>
-        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-clario-border px-4 py-4 text-xs text-clario-text-secondary sm:px-6 lg:px-8">
-          <a href="https://karthiklal.in" target="_blank" rel="noopener noreferrer">© 2026 Clario</a>
+        <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-clario-border px-4 py-4 text-xs text-clario-text-secondary sm:px-6 lg:px-8">
           <nav aria-label="Legal" className="flex gap-5">
             <Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/cookies">Cookies</Link>
           </nav>

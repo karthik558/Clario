@@ -463,7 +463,7 @@ export const AskPage: React.FC = () => {
               className="p-3.5 rounded-md border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 transition-all text-left group flex items-start space-x-3 shadow-subtle"
             >
               <SearchCheck className="w-4 h-4 text-clario-navy shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-medium text-clario-text group-hover:text-clario-navy transition-colors">
+              <span className="min-w-0 [overflow-wrap:anywhere] text-xs font-medium text-clario-text group-hover:text-clario-navy transition-colors">
                 "{p}"
               </span>
             </button>

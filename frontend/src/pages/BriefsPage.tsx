@@ -185,7 +185,7 @@ export const BriefsPage: React.FC = () => {
           <p className="text-xs text-slate-500">No brief available. Select a template above to generate.</p>
         </Card>
       ) : (
-        <Card className="p-6 sm:p-8 bg-white border border-slate-200 shadow-sm space-y-6">
+        <Card className="[overflow-wrap:anywhere] p-6 sm:p-8 bg-white border border-slate-200 shadow-sm space-y-6">
           {/* Header Memo Style */}
           <div className="border-b border-slate-200 pb-5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -255,7 +255,7 @@ export const BriefsPage: React.FC = () => {
               <div className="space-y-2.5">
                 {brief.legal_risks.map((r, i) => (
                   <div key={i} className="p-3 rounded bg-slate-50 border border-slate-200 space-y-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
                       <span className="text-xs font-bold text-slate-900">{r.item}</span>
                       <Badge variant={r.status === 'Action Required' ? 'red' : 'navy'} size="sm">
                         {r.status}

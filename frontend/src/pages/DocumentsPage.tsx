@@ -118,9 +118,9 @@ export const DocumentsPage: React.FC = () => {
       {showUploadZone && (
         <Card className="animate-in fade-in border-slate-200 bg-white">
           <FileUploadZone
-            onUploadSuccess={() => {
+            onUploadSuccess={complete => {
               fetchDocuments();
-              setShowUploadZone(false);
+              if (complete) setShowUploadZone(false);
             }}
           />
         </Card>
