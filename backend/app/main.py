@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,10 +28,10 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("Shutting down Clario backend...")
 
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.openapi.docs import get_swagger_ui_html
 
-CLARIO_FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4" fill="#0F172A"/><g transform="translate(4 4)" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 10 5-10 5L2 8l10-5Z"/><path d="m2 12 10 5 10-5M2 16l10 5 10-5"/></g></svg>"""
+BRAND_ASSETS = Path(__file__).resolve().parents[2] / "frontend" / "public"
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -55,7 +56,11 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 @app.get("/favicon.svg", include_in_schema=False)
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
-    return Response(content=CLARIO_FAVICON_SVG, media_type="image/svg+xml")
+    return FileResponse(BRAND_ASSETS / "favicon.svg", media_type="image/svg+xml")
+
+@app.get("/clario.webp", include_in_schema=False)
+async def brand_logo():
+    return FileResponse(BRAND_ASSETS / "clario.webp", media_type="image/webp")
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui():
@@ -196,12 +201,7 @@ async def custom_swagger_ui():
     clario_header = """
     <div class="clario-header">
       <a href="http://localhost:5173" class="clario-logo-wrap clario-app-link" title="Open Clario Workspace">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-          <polyline points="2 17 12 22 22 17"/>
-          <polyline points="2 12 12 17 22 12"/>
-        </svg>
-        <span class="clario-title">Clario</span>
+        <img src="/clario.webp" alt="Clario" height="32" style="width:auto" />
         <span class="clario-badge-tag">API Docs</span>
       </a>
       <div class="clario-nav-right">

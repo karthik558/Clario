@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, CalendarDays, FileText, GitCompare, Layers, MessageSquareQuote } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, CalendarDays, FileText, GitCompare, MessageSquareQuote } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const workflows = [
@@ -13,7 +13,7 @@ export function HomePage() {
       <header className="bg-clario-navy text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-10">
           <div className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight">
-            <Layers aria-hidden="true" size={28} /> Clario
+            <img src="/clario.webp" alt="Clario" width="784" height="196" className="h-8 w-auto" />
           </div>
           <Link to="/" className="flex items-center gap-2 text-sm font-medium text-slate-200 hover:text-white">
             Workspace <ArrowUpRight aria-hidden="true" size={16} />
@@ -64,13 +64,13 @@ export function HomePage() {
           </div>
         </section>
       </main>
-      <footer className="border-t border-clario-border bg-white">
+      <footer className="bg-clario-navy">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-7 sm:px-10">
-          <p className="flex items-center gap-2 text-sm text-slate-600">
-            <Layers aria-hidden="true" size={20} className="text-clario-navy" />
-            © {new Date().getFullYear()} Clario
-          </p>
-          <nav aria-label="Legal" className="flex flex-wrap gap-x-6 text-sm text-slate-600">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-300">
+            <img src="/clario.webp" alt="Clario" width="784" height="196" className="h-8 w-auto" />
+            <span>© {new Date().getFullYear()}</span>
+          </div>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-6 text-sm text-slate-300 [&_a:hover]:text-white">
             <Link to="/terms">Terms</Link>
             <Link to="/privacy">Privacy</Link>
             <Link to="/cookies">Cookies</Link>

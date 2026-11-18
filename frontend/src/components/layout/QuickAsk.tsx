@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { ArrowUp, BookOpen, Maximize2, MessageCircle, Search, X } from 'lucide-react';
+import { ArrowUp, Maximize2, Search, X } from 'lucide-react';
 import { api } from '../../services/api';
 import type { AskResponse, CitationItem } from '../../types';
 import { Markdown } from '../ui/Markdown';
@@ -57,7 +57,7 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
     }}>
       {open && <section id="quick-ask-panel" role="dialog" aria-label="Quick Ask Clario" className="quick-panel flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-elevated">
         <header className="flex shrink-0 items-center gap-2 border-b px-4 py-3">
-          <MessageCircle size={18} /><h2 className="flex-1 font-semibold">Ask Clario</h2>
+          <img src="/favicon.svg" alt="" width="24" height="24" className="brightness-0 opacity-90" /><h2 className="flex-1 font-semibold">Ask Clario</h2>
           <button aria-label="Expand to Ask Clario" title="Open full conversation" disabled={pending} onClick={() => onExpand(draft)} className="rounded-md p-2 hover:bg-slate-100 disabled:opacity-40"><Maximize2 size={16} /></button>
           <button aria-label="Close quick chat" onClick={close} className="rounded-md p-2 hover:bg-slate-100"><X size={17} /></button>
         </header>
@@ -82,7 +82,7 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
         </form>
       </section>}
       <button ref={button} aria-expanded={open} aria-controls={open ? 'quick-ask-panel' : undefined} onClick={() => open ? close() : setOpen(true)} className="quick-pill inline-flex items-center gap-2 rounded-full border border-white/20 bg-clario-navy py-2 pl-2 pr-4 text-sm font-semibold text-white shadow-elevated">
-        <span className="rounded-full bg-white/10 p-1.5"><BookOpen size={16} /></span>Ask Clario
+        <img src="/favicon.svg" alt="" width="28" height="28" />Ask Clario
       </button>
     </div>
   );

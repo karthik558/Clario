@@ -12,7 +12,6 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
-  Layers,
   X,
   Scale,
   ShieldCheck,
@@ -85,10 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`flex items-center gap-3 text-white hover:opacity-90 transition-opacity min-w-0 ${collapsed ? 'lg:hidden' : ''}`}
             title="Clario Overview"
           >
-            <Layers className="w-7 h-7 text-white shrink-0" aria-hidden="true" />
-            <div className="sidebar-label">
-              <span className="text-xl font-semibold tracking-tight text-white">Clario</span>
-            </div>
+            <img src="/clario.webp" alt="Clario" width="784" height="196" className="h-8 w-auto" />
           </Link>
 
           {/* Desktop Collapse / Expand Button near Clario */}
