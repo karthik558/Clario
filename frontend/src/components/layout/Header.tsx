@@ -8,7 +8,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onOpenNavigation }) => {
   return (
-    <header className="h-14 shrink-0 bg-white border-b border-clario-border sticky top-0 z-20 px-4 md:px-6 flex items-center gap-3">
+    <header className="h-16 shrink-0 bg-white border-b border-clario-border sticky top-0 z-20 px-4 md:px-6 flex items-center gap-3">
       {onOpenNavigation && (
         <button
           type="button"

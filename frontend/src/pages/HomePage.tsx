@@ -99,13 +99,15 @@ export function HomePage() {
           </div>
         </section>
       </main>
-      <footer className="bg-clario-navy">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-7 sm:px-10">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-300">
-            <img src="/clario.webp" alt="Clario" width="784" height="196" className="h-8 w-auto" />
-            <span>© {new Date().getFullYear()}</span>
+      <footer className="bg-clario-navy border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col md:flex-row items-center justify-between gap-y-4 px-5 py-7 sm:px-10">
+          <div className="flex items-center">
+            <img src="/clario.webp" alt="Clario" width="784" height="196" className="h-7 w-auto" />
           </div>
-          <nav aria-label="Legal" className="flex flex-wrap gap-x-6 text-sm text-slate-300 [&_a:hover]:text-white">
+          <p className="text-xs text-slate-400 font-normal order-last md:order-none">
+            © 2026 Clario • All rights reserved.
+          </p>
+          <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-6 text-xs text-slate-300 [&_a:hover]:text-white">
             <Link to="/terms">Terms</Link>
             <Link to="/privacy">Privacy</Link>
             <Link to="/cookies">Cookies</Link>

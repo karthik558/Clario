@@ -77,14 +77,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-black/50 lg:hidden" />}
       <aside ref={sidebarRef} id="workspace-navigation" aria-label="Workspace navigation" className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-open' : ''}`}>
-        <div className={`flex h-14 shrink-0 items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-4 sm:px-5'} border-b border-white/10`}>
+        <div className={`flex h-16 shrink-0 items-center ${collapsed ? 'justify-center px-2 py-3.5' : 'justify-between px-5 py-3.5 gap-4'} border-b border-white/10`}>
           <Link
             to="/"
             onClick={onCloseMobile}
-            className={`flex items-center gap-3 text-white hover:opacity-90 transition-opacity min-w-0 ${collapsed ? 'lg:hidden' : ''}`}
+            className={`flex items-center text-white hover:opacity-90 transition-opacity min-w-0 pr-1 ${collapsed ? 'lg:hidden' : ''}`}
             title="Clario Overview"
           >
-            <img src="/clario.webp" alt="Clario" width="784" height="196" className="h-8 w-auto" />
+            <img src="/clario.webp" alt="Clario" width="784" height="196" className="h-7 w-auto object-contain my-0.5" />
           </Link>
 
           {/* Desktop Collapse / Expand Button near Clario */}
@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             aria-expanded={!collapsed}
             aria-controls="workspace-navigation"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden lg:flex p-2 rounded-md text-slate-300 hover:bg-white/10 hover:text-white transition-colors shrink-0"
+            className="hidden lg:flex p-1.5 rounded-md text-slate-400 hover:bg-white/10 hover:text-white transition-colors shrink-0"
           >
             {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
           </button>
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             aria-label="Close navigation"
             onClick={onCloseMobile}
-            className="lg:hidden ml-auto p-2 text-slate-300 hover:text-white"
+            className="lg:hidden ml-auto p-1.5 text-slate-300 hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -131,18 +131,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </React.Fragment>
           ))}
         </nav>
-        <div className="shrink-0 border-t border-white/10 px-3 py-3 text-xs text-slate-300">
-          <a
-            className="flex min-h-8 items-center px-3 rounded-md hover:text-white transition-colors group"
-            href="https://karthiklal.in"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="© 2026 Clario • All rights reserved."
-            title="© 2026 Clario • All rights reserved."
-          >
-            <span>©</span>
-            <span className="sidebar-label ml-1">2026 Clario • All rights reserved.</span>
-          </a>
+        <div className={`shrink-0 border-t border-white/10 ${collapsed ? 'py-4 px-2 flex justify-center items-center' : 'px-4 py-3.5'} text-xs text-slate-400`}>
+          {collapsed ? (
+            <Link
+              to="/home"
+              className="flex items-center justify-center p-2 rounded-md hover:bg-white/10 transition-colors"
+              title="Clario"
+              aria-label="Clario"
+            >
+              <img src="/favicon.svg" alt="Clario" className="w-5 h-5 opacity-80 hover:opacity-100 transition-opacity" />
+            </Link>
+          ) : (
+            <a
+              className="flex min-h-8 items-center px-2 py-1 rounded-md hover:text-white transition-colors group text-slate-400"
+              href="https://karthiklal.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="© 2026 Clario • All rights reserved."
+              title="© 2026 Clario • All rights reserved."
+            >
+              <span>©</span>
+              <span className="sidebar-label ml-1.5 text-[11px] text-slate-400 group-hover:text-white transition-colors truncate">2026 Clario • All rights reserved.</span>
+            </a>
+          )}
         </div>
       </aside>
     </>
