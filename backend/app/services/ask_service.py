@@ -161,8 +161,9 @@ class AskService:
             answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
             mode = "extractive_synthesis (Verified document passages)"
 
+        show_thinking = request.thinking_mode if request.thinking_mode is not None else settings.THINKING_MODE
         # If thinking mode was requested but model did not output <think> tags, construct chain-of-evidence synthesis
-        if (request.thinking_mode if request.thinking_mode is not None else settings.THINKING_MODE) and not thinking_process and citations:
+        if show_thinking and not thinking_process and citations:
             doc_names = list(dict.fromkeys(c.document_title for c in citations))
             thinking_process = (
                 f"1. Query Dissection: Evaluated search parameters for '{request.query}'.\n"
@@ -182,7 +183,7 @@ class AskService:
             synthesis_latency_ms=synth_latency_ms,
             has_conflicting_evidence=has_conflict,
             conflict_notes=conflict_notes,
-            thinking_process=thinking_process
+            thinking_process=thinking_process if show_thinking else None
         )
 
     @staticmethod

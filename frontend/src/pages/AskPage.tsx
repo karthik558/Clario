@@ -1,3 +1,4 @@
+import { useOutletContext } from 'react-router-dom';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -28,7 +29,10 @@ import { Button } from '../components/ui/Button';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 
 export const AskPage: React.FC = () => {
-  const [query, setQuery] = useState('');
+  const handoff = useOutletContext<{ askDraft: string | null; setAskDraft: (value: string | null) => void } | null>();
+  const [query, setQuery] = useState(handoff?.askDraft ?? '');
+  const fromQuickAsk = useRef(handoff?.askDraft != null);
+  const questionInput = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [streamingMode, setStreamingMode] = useState(false);
@@ -47,11 +51,20 @@ export const AskPage: React.FC = () => {
   const [localModel, setLocalModel] = useState<string>('gemma3:latest');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [savingThinking, setSavingThinking] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [thinkingMode, setThinkingMode] = useState<boolean>(true);
 
   const [error, setError] = useState('');
   const [pendingQuery, setPendingQuery] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(true);
+  useEffect(() => {
+    if (!loadingHistory && fromQuickAsk.current) {
+      fromQuickAsk.current = false;
+      handoff?.setAskDraft(null);
+      questionInput.current?.focus();
+    }
+  }, [loadingHistory, handoff]);
   const [clearing, setClearing] = useState(false);
   const [expandedCitations, setExpandedCitations] = useState<Record<number, boolean>>({});
   const [expandedThinking, setExpandedThinking] = useState<Record<number, boolean>>({});
@@ -94,6 +107,7 @@ export const AskPage: React.FC = () => {
         setLlmProvider(prov);
         setLocalModel((prov === 'ollama' ? config.ollama_model : config.local_ai_model) || '');
         setThinkingMode(config.thinking_mode ?? true);
+        setSettingsLoaded(true);
         refreshModelList(prov);
       }
     }).catch(() => {});
@@ -113,6 +127,19 @@ export const AskPage: React.FC = () => {
     loadDocs();
     return () => { cancelled = true; };
   }, []);
+
+  async function toggleThinkingMode() {
+    if (!settingsLoaded || savingThinking) return;
+    setSavingThinking(true);
+    try {
+      await api.updateSettings({ thinking_mode: !thinkingMode });
+      setThinkingMode(!thinkingMode);
+    } catch {
+      setError('Could not save Thinking Mode. Please try again.');
+    } finally {
+      setSavingThinking(false);
+    }
+  }
 
   const handleSwitchProvider = async (provider: string) => {
     setLlmProvider(provider);
@@ -248,7 +275,7 @@ export const AskPage: React.FC = () => {
   }, [documents, selectedDocIds]);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-5">
       {/* Header */}
       <PageHeader title="Ask Clario" description="Ask questions across your documents and follow each answer back to its sources.">
         <div className="flex flex-wrap items-center gap-2">
@@ -271,7 +298,9 @@ export const AskPage: React.FC = () => {
       {loadingHistory && <p role="status" className="text-sm text-clario-text-secondary">Loading saved answers…</p>}
 
       {/* Local AI Gateway & Engine Toolbar */}
-      <div className="p-3.5 bg-white rounded-md border border-clario-border space-y-3 shadow-subtle">
+      <details className="rounded-xl border border-clario-border bg-white p-4 shadow-subtle">
+        <summary className="cursor-pointer text-sm font-medium text-slate-700">Answer settings</summary>
+        <div className="mt-3 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Provider Selector */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -292,9 +321,9 @@ export const AskPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => handleSwitchProvider('local_openai')}
+              onClick={() => handleSwitchProvider('openai_compatible')}
               className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                llmProvider === 'local_openai'
+                llmProvider === 'openai_compatible'
                   ? 'bg-clario-navy text-white border-clario-navy'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
@@ -310,7 +339,7 @@ export const AskPage: React.FC = () => {
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
             >
-              Extractive Synthesis (Instant)
+              Document excerpts
             </button>
           </div>
 
@@ -318,7 +347,9 @@ export const AskPage: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              onClick={() => setThinkingMode((prev) => !prev)}
+              onClick={toggleThinkingMode}
+              disabled={!settingsLoaded || savingThinking || loading}
+              aria-pressed={thinkingMode}
               className={`px-2.5 py-1 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors ${
                 thinkingMode
                   ? 'bg-navy-50 text-navy-900 border-navy-800 ring-1 ring-navy-800'
@@ -327,7 +358,7 @@ export const AskPage: React.FC = () => {
               title="Extract or synthesize step-by-step reasoning (DeepSeek-R1 <think> tags)"
             >
               <Brain className={`w-3.5 h-3.5 ${thinkingMode ? 'text-navy-900' : 'text-slate-400'}`} />
-              <span>Thinking Mode: {thinkingMode ? 'ON' : 'OFF'}</span>
+              <span>Thinking Mode: {settingsLoaded ? (thinkingMode ? 'ON' : 'OFF') : '…'}</span>
             </button>
 
             <button
@@ -341,7 +372,7 @@ export const AskPage: React.FC = () => {
               title="Stream tokens in real-time via Server-Sent Events (SSE)"
             >
               <Radio className={`w-3.5 h-3.5 ${streamingMode ? 'text-teal-700' : 'text-slate-400'}`} />
-              <span>Realtime Streaming: {streamingMode ? 'ON' : 'OFF'}</span>
+              <span>Stream answers: {streamingMode ? 'ON' : 'OFF'}</span>
             </button>
           </div>
         </div>
@@ -385,17 +416,18 @@ export const AskPage: React.FC = () => {
             </div>
 
             <span className="text-[11px] text-slate-500">
-              {statusMessage || 'Local endpoint ready'}
+              {statusMessage}
             </span>
           </div>
         )}
-      </div>
+        </div>
+      </details>
 
       {/* Scope Selector */}
       {documents.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-slate-200 text-xs shadow-xs">
           <span className="text-slate-700 font-semibold flex items-center gap-1.5 mr-1 shrink-0">
-            Search Scope:
+            Sources
           </span>
           <button
             aria-pressed={selectedDocIds.length === 0}
@@ -491,7 +523,7 @@ export const AskPage: React.FC = () => {
               </div>
 
               {/* Expandable Thinking Process / Chain-of-Thought */}
-              {item.response.thinking_process && (
+              {settingsLoaded && thinkingMode && item.response.thinking_process && (
                 <div className="border border-slate-200 rounded-md bg-slate-50 overflow-hidden">
                   <button
                     type="button"
@@ -627,7 +659,7 @@ export const AskPage: React.FC = () => {
               </div>
 
               {/* Streaming Thinking Process */}
-              {streamThinking && (
+              {thinkingMode && streamThinking && (
                 <div className="border border-slate-200 rounded-md bg-slate-50 p-3 text-xs text-slate-700 font-mono whitespace-pre-wrap leading-relaxed">
                   <div className="flex items-center gap-1.5 font-sans font-semibold text-clario-navy mb-1">
                     <Brain className="w-3.5 h-3.5 text-clario-navy animate-pulse" />
@@ -669,7 +701,7 @@ export const AskPage: React.FC = () => {
       </div>
 
       {/* Input Form Bar */}
-      <Card className="sticky bottom-4 z-10 p-3 shadow-elevated border-slate-200 bg-white">
+      <Card className="sticky bottom-3 z-10 p-2 sm:p-3 shadow-elevated border-slate-300 bg-white">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -678,6 +710,7 @@ export const AskPage: React.FC = () => {
           className="flex items-center space-x-2"
         >
           <textarea
+            ref={questionInput}
             rows={2}
             disabled={loading || loadingHistory}
             value={query}
@@ -688,9 +721,9 @@ export const AskPage: React.FC = () => {
                 handleAsk();
               }
             }}
-            placeholder="Ask anything about policies, contracts, findings, or research... (Press Enter to send, Shift+Enter for newline)"
+            placeholder="Ask a question about your documents…"
             aria-label="Question about your documents"
-            className="min-w-0 flex-1 text-xs px-3.5 py-2.5 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900 resize-none"
+            className="min-w-0 flex-1 text-base sm:text-sm px-3.5 py-2.5 rounded-md border border-transparent bg-white focus:outline-none focus:border-slate-900 text-slate-900 resize-none"
           />
           <Button
             type="submit"

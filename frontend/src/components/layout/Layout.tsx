@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { QuickAsk } from './QuickAsk';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { GlobalSearchModal } from './GlobalSearchModal';
@@ -7,6 +8,8 @@ import { DocumentViewerModal } from '../documents/DocumentViewerModal';
 import { SearchResultItem } from '../../types';
 
 export const Layout: React.FC = () => {
+  const navigate = useNavigate();
+  const [askDraft, setAskDraft] = useState<string | null>(null);
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -15,7 +18,7 @@ export const Layout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [selectedResult, setSelectedResult] = useState<SearchResultItem | null>(null);
+  const [selectedResult, setSelectedResult] = useState<Pick<SearchResultItem, 'document_id' | 'chunk_id' | 'page_number'> | null>(null);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -50,14 +53,21 @@ export const Layout: React.FC = () => {
         />
 
         <main className="mx-auto max-w-[100rem] flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
-          <Outlet />
+          <Outlet context={{ askDraft, setAskDraft }} />
         </main>
-        <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-clario-border px-4 py-4 text-xs text-clario-text-secondary sm:px-6 lg:px-8">
+        <footer className="flex flex-wrap items-center justify-start gap-3 border-t border-clario-border px-4 py-4 text-xs text-clario-text-secondary sm:px-6 lg:px-8">
           <nav aria-label="Legal" className="flex gap-5">
             <Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/cookies">Cookies</Link>
           </nav>
         </footer>
+        {pathname.replace(/\/$/, '') !== '/ask' && <div className="h-12" aria-hidden="true" />}
       </div>
+
+      {pathname.replace(/\/$/, '') !== '/ask' && <QuickAsk
+        onExpand={draft => { setAskDraft(draft); navigate('/ask'); }}
+        onSearch={() => setSearchModalOpen(true)}
+        onSource={setSelectedResult}
+      />}
 
       {/* Global Search Dialog (⌘K) */}
       <GlobalSearchModal

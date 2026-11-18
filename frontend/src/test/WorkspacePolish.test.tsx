@@ -1,6 +1,7 @@
 import React from 'react';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QuickAsk } from '../components/layout/QuickAsk';
 import { Modal } from '../components/ui/Modal';
 import { Markdown } from '../components/ui/Markdown';
 import { ComparePage } from '../pages/ComparePage';
@@ -78,3 +79,35 @@ describe('Document workspace polish', () => {
    fireEvent.click(screen.getByRole('option', { name: 'Policy c (TXT)' }));
    expect(screen.queryByText('Evidence for A and B')).not.toBeInTheDocument();
  });
+
+it('saves Thinking Mode and restores off after reopening Ask Clario', async () => {
+  let saved = true;
+  vi.spyOn(api, 'getSettings').mockImplementation(async () => ({ thinking_mode: saved, llm_provider: 'extractive' } as Awaited<ReturnType<typeof api.getSettings>>));
+  vi.spyOn(api, 'getDocuments').mockResolvedValue([]);
+  vi.spyOn(api, 'getAnswerHistory').mockResolvedValue([]);
+  vi.spyOn(api, 'getLocalAIStatus').mockRejectedValue(new Error('offline'));
+  const save = vi.spyOn(api, 'updateSettings').mockImplementation(async changes => { saved = changes.thinking_mode!; });
+  const first = render(<AskPage />);
+  fireEvent.click(screen.getByText('Answer settings'));
+  fireEvent.click(await screen.findByRole('button', { name: 'Thinking Mode: ON' }));
+  expect(await screen.findByRole('button', { name: 'Thinking Mode: OFF' })).toHaveAttribute('aria-pressed', 'false');
+  expect(save).toHaveBeenCalledWith({ thinking_mode: false });
+  first.unmount();
+  render(<AskPage />);
+  fireEvent.click(screen.getByText('Answer settings'));
+  expect(await screen.findByRole('button', { name: 'Thinking Mode: OFF' })).toHaveAttribute('aria-pressed', 'false');
+});
+
+it('asks from the pill and opens the source returned by the API', async () => {
+  const source = { citation_id: 1, chunk_id: 'chunk', document_id: 'doc', document_title: 'Policy', page_number: 2, snippet: 'Thirty days.', relevance_score: 1 };
+  const ask = vi.spyOn(api, 'ask').mockResolvedValue({ ...answer, citations: [source] });
+  const openSource = vi.fn();
+  render(<QuickAsk onExpand={vi.fn()} onSearch={vi.fn()} onSource={openSource} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Ask Clario' }));
+  fireEvent.change(screen.getByLabelText('Quick document question'), { target: { value: 'Retention?' } });
+  fireEvent.click(screen.getByLabelText('Send quick question'));
+  await screen.findByRole('heading', { name: 'Evidence summary' });
+  expect(ask).toHaveBeenCalledWith('Retention?');
+  fireEvent.click(screen.getByRole('button', { name: /Policy · p. 2/ }));
+  expect(openSource).toHaveBeenCalledWith(source);
+});
