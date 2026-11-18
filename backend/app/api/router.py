@@ -16,7 +16,8 @@ from app.api.endpoints import (
     obligations,
     critique,
     clauses,
-    briefs
+    briefs,
+    risk
 )
 
 api_router = APIRouter()
@@ -38,3 +39,4 @@ api_router.include_router(obligations.router, prefix="/obligations", tags=["Obli
 api_router.include_router(critique.router, prefix="/critique", tags=["Document Critique"])
 api_router.include_router(clauses.router, prefix="/clauses", tags=["Clause Library"])
 api_router.include_router(briefs.router, prefix="/briefs", tags=["Executive Briefs"])
+api_router.include_router(risk.router, prefix="/risk", tags=["Risk Scorecard & Benchmarking"])

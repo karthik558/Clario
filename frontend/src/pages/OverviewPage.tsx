@@ -46,20 +46,24 @@ export const OverviewPage: React.FC = () => {
   const [quickDocB, setQuickDocB] = useState<string>('');
   const [comparing, setComparing] = useState(false);
   const [quickCompareResult, setQuickCompareResult] = useState<any | null>(null);
+  const [riskScorecard, setRiskScorecard] = useState<any | null>(null);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     setError('');
     try {
-      const [data, findingsData, docsData, graphData] = await Promise.all([
+      const [data, findingsData, docsData, graphData, riskData] = await Promise.all([
         api.getDashboard(),
         api.getFindings().catch(() => []),
-        api.getDocuments().catch(() => []), api.getKnowledgeGraph().catch(() => null)
+        api.getDocuments().catch(() => []),
+        api.getKnowledgeGraph().catch(() => null),
+        api.getRiskScorecard().catch(() => null)
       ]);
       setGraph(graphData);
       setStats(data);
       setFindings(findingsData);
       setDocuments(docsData);
+      setRiskScorecard(riskData);
 
       if (docsData.length >= 2) {
         setQuickDocA((prev) => (prev && docsData.some(d => d.id === prev) ? prev : docsData[0].id));
@@ -298,6 +302,114 @@ export const OverviewPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Enterprise Contract Risk Scorecard & Health Index */}
+      {riskScorecard && riskScorecard.total_documents > 0 && (
+        <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 rounded-md bg-slate-900 text-white">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 tracking-tight">
+                  Portfolio Contract Risk Scorecard
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Autonomous 0–100 risk rating synthesized across privacy, auto-renewal lock-in, IP defense, SLAs, and liability super-caps.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="navy" size="md">
+                Portfolio Grade: {riskScorecard.composite_grade}
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/compare')}
+                className="flex items-center gap-1.5 shrink-0"
+              >
+                <span>Benchmark Documents</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            {/* Left Column: Composite Portfolio Index */}
+            <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col justify-between h-full">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Workspace Risk Index
+                </span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-3xl font-extrabold text-slate-900 font-mono">
+                    {riskScorecard.composite_score}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-400 font-mono">/ 100</span>
+                </div>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  Higher scores indicate stronger customer-protective covenants, uncapped IP indemnities, and balanced notice terms.
+                </p>
+              </div>
+              <div className="pt-3 border-t border-slate-200 mt-3">
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {riskScorecard.total_documents} active documents audited
+                </span>
+              </div>
+            </div>
+
+            {/* Middle & Right: Active Document Cards */}
+            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {riskScorecard.documents?.map((doc: any) => (
+                <div
+                  key={doc.document_id}
+                  className="p-4 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-2.5 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-900 truncate max-w-[170px]" title={doc.document_title}>
+                      {doc.document_title}
+                    </span>
+                    <Badge variant={doc.composite_score >= 80 ? 'navy' : 'gray'} size="sm">
+                      {doc.composite_score}/100
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex items-center justify-between text-slate-600">
+                      <span>Strongest Protection:</span>
+                      <span className="font-semibold text-slate-800 truncate max-w-[120px] text-right">
+                        {doc.strongest_protection?.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-600">
+                      <span>Primary Exposure:</span>
+                      <span className="font-semibold text-rose-700 truncate max-w-[120px] text-right">
+                        {doc.highest_risk_area?.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 font-medium truncate max-w-[130px]">
+                      {doc.composite_grade}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/negotiate')}
+                      className="text-[11px] font-semibold text-slate-900 hover:text-slate-700 flex items-center gap-0.5"
+                    >
+                      <span>Redline</span>
+                      <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Side-by-Side Document Comparison & Contradiction Scanner */}
       <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">

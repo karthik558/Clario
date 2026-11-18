@@ -11,7 +11,8 @@ import {
   Search,
   Scan,
   Shield,
-  Layers
+  Layers,
+  Download
 } from 'lucide-react';
 import { api } from '../services/api';
 import { ObligationItem, DocumentItem } from '../types';
@@ -86,6 +87,15 @@ export const ObligationsPage: React.FC = () => {
       <PageHeader title="Obligations timeline" description="Track commitments, renewal dates, and notice periods across documents.">
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate('/renewal-planner')}><Calendar size={16} />Renewal planner</Button>
+          <a
+            href="/api/obligations/export-calendar"
+            download="clario-contract-obligations.ics"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors shadow-xs"
+            title="Download iCalendar (.ics) file to sync with Google Calendar, Outlook, or Apple Calendar"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-600" />
+            <span>Export Calendar (.ics)</span>
+          </a>
           <Button
             size="sm"
             onClick={handleScan}

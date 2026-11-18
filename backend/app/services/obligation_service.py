@@ -171,3 +171,91 @@ class ObligationService:
                 break  # Avoid duplicating multiple categories per same chunk
 
         return obligations
+
+    @staticmethod
+    def generate_icalendar(obligations: List[Dict[str, Any]]) -> str:
+        """
+        Generate standard RFC 5545 iCalendar (.ics) format from extracted contract obligations.
+        Includes UID, alarms (-7d, -1d), and detailed legal clause descriptions.
+        """
+        import datetime
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        now_str = now.strftime("%Y%m%dT%H%M%SZ")
+
+        lines = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//Clario Enterprise//Contract Obligations Engine//EN",
+            "CALSCALE:GREGORIAN",
+            "METHOD:PUBLISH",
+            "X-WR-CALNAME:Clario Contract Obligations",
+            "X-WR-TIMEZONE:UTC"
+        ]
+
+        for obl in obligations:
+            due_text = str(obl.get("due_date_or_window", "")).lower()
+            days_offset = 30  # baseline default
+
+            if "48 hour" in due_text:
+                days_offset = 2
+            elif "72 hour" in due_text:
+                days_offset = 3
+            elif "15 day" in due_text or "15 calendar" in due_text:
+                days_offset = 15
+            elif "30 day" in due_text or "net 30" in due_text:
+                days_offset = 30
+            elif "60 day" in due_text or "net 60" in due_text:
+                days_offset = 60
+            elif "90 day" in due_text or "net 90" in due_text:
+                days_offset = 90
+            elif "120 day" in due_text:
+                days_offset = 120
+            elif "annual" in due_text or "year" in due_text:
+                days_offset = 365
+
+            event_date = now + datetime.timedelta(days=days_offset)
+            start_str = event_date.strftime("%Y%m%dT090000Z")
+            end_str = event_date.strftime("%Y%m%dT100000Z")
+
+            priority_map = {"Critical": "1", "High": "2", "Medium": "5", "Low": "9"}
+            prio = priority_map.get(obl.get("risk_level", "Medium"), "5")
+
+            uid = f"{obl.get('id', 'obl-event')}@clario.ai"
+            title = f"[{obl.get('risk_level', 'Notice')}] {obl.get('title', 'Obligation Deadline')}"
+            clean_title = re.sub(r'[\r\n]+', ' ', title).replace(',', '\\,')
+
+            doc_title = obl.get('document_title', 'Document')
+            party = obl.get('obligated_party', 'Mutual')
+            trigger = obl.get('trigger_condition', 'Standard')
+            quote = obl.get('clause_quote', '').replace('\n', ' ').strip()
+            if len(quote) > 300:
+                quote = quote[:297] + '...'
+
+            desc = f"Document: {doc_title}\\nParty: {party}\\nDue/Window: {obl.get('due_date_or_window')}\\nTrigger: {trigger}\\nClause: {quote}"
+
+            lines.extend([
+                "BEGIN:VEVENT",
+                f"UID:{uid}",
+                f"DTSTAMP:{now_str}",
+                f"DTSTART:{start_str}",
+                f"DTEND:{end_str}",
+                f"SUMMARY:{clean_title}",
+                f"DESCRIPTION:{desc}",
+                f"PRIORITY:{prio}",
+                f"STATUS:CONFIRMED",
+                "BEGIN:VALARM",
+                "ACTION:DISPLAY",
+                f"DESCRIPTION:Advance Reminder: {clean_title}",
+                "TRIGGER:-P7D",
+                "END:VALARM",
+                "BEGIN:VALARM",
+                "ACTION:DISPLAY",
+                f"DESCRIPTION:Urgent Reminder: {clean_title}",
+                "TRIGGER:-P1D",
+                "END:VALARM",
+                "END:VEVENT"
+            ])
+
+        lines.append("END:VCALENDAR")
+        return "\r\n".join(lines)

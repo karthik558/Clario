@@ -13,7 +13,12 @@ import {
   Info,
   ChevronDown,
   Scale,
-  FileText
+  FileText,
+  ShieldCheck,
+  ShieldAlert,
+  Award,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
 import { api } from '../services/api';
 import { ComparisonResponse, DocumentItem, ContradictionCandidate } from '../types';
@@ -37,10 +42,12 @@ export const ComparePage: React.FC = () => {
   const [promoting, setPromoting] = useState(false);
   const [error, setError] = useState('');
   const [negotiateCandidate, setNegotiateCandidate] = useState<ContradictionCandidate | null>(null);
+  const [riskBenchmark, setRiskBenchmark] = useState<any | null>(null);
 
   const changeDocument = (side: 'a' | 'b', value: string) => {
     (side === 'a' ? setDocAId : setDocBId)(value);
     setComparison(null);
+    setRiskBenchmark(null);
     setPromotedIndices([]);
     setError('');
   };
@@ -74,8 +81,12 @@ export const ComparePage: React.FC = () => {
           if (aId && bId && aId !== bId) {
             setLoading(true);
             try {
-              const data = await api.compareDocuments(aId, bId);
+              const [data, bench] = await Promise.all([
+                api.compareDocuments(aId, bId),
+                api.getRiskBenchmark(aId, bId).catch(() => null)
+              ]);
               setComparison(data);
+              setRiskBenchmark(bench);
             } catch (compareErr) {
               // Ignore initial auto-compare failure
             } finally {
@@ -94,11 +105,16 @@ export const ComparePage: React.FC = () => {
     if (!docAId || !docBId || docAId === docBId) return;
     setLoading(true);
     setComparison(null);
+    setRiskBenchmark(null);
     setPromotedIndices([]);
     setError('');
     try {
-      const data = await api.compareDocuments(docAId, docBId);
+      const [data, bench] = await Promise.all([
+        api.compareDocuments(docAId, docBId),
+        api.getRiskBenchmark(docAId, docBId).catch(() => null)
+      ]);
       setComparison(data);
+      setRiskBenchmark(bench);
     } catch (err) {
       setError('The comparison could not be completed. Please try again.');
     } finally {
@@ -300,6 +316,126 @@ export const ComparePage: React.FC = () => {
               </div>
             </div>
           </Card>
+
+          {/* Contract Risk Benchmark & Protection Index */}
+          {riskBenchmark && (
+            <Card className="p-5 bg-white border border-slate-200 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Contract Risk Benchmark & Protection Index
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Autonomous 6-pillar comparison analyzing customer risk exposure and commercial advantage.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Overall Winner Callout */}
+                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg">
+                  <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-semibold text-slate-500 block">
+                      Protective Stance Advantage
+                    </span>
+                    <span className="text-xs font-bold text-slate-900 block truncate max-w-[220px]">
+                      {riskBenchmark.overall_winner}
+                    </span>
+                  </div>
+                  <div className="border-l border-slate-300 pl-3 flex items-center gap-2">
+                    <div className="text-center">
+                      <span className="text-[9px] uppercase font-mono text-slate-400 block">Doc A</span>
+                      <span className="text-xs font-bold text-slate-900 font-mono">
+                        {riskBenchmark.doc_a?.composite_score}/100
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-400">vs</span>
+                    <div className="text-center">
+                      <span className="text-[9px] uppercase font-mono text-slate-400 block">Doc B</span>
+                      <span className="text-xs font-bold text-slate-900 font-mono">
+                        {riskBenchmark.doc_b?.composite_score}/100
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 6-Pillar Benchmark Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                {riskBenchmark.pillar_comparisons?.map((p: any) => (
+                  <div
+                    key={p.pillar_id}
+                    className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white transition-colors space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-slate-900">
+                        {p.pillar_name}
+                      </span>
+                      <Badge
+                        variant={p.winner === 'Parity / Equivalent' ? 'gray' : 'navy'}
+                        size="sm"
+                      >
+                        {p.winner === 'Parity / Equivalent' ? 'Parity' : `Advantage: ${p.winner}`}
+                      </Badge>
+                    </div>
+
+                    {/* Dual Score Progress Comparison */}
+                    <div className="space-y-1.5">
+                      {/* Doc A Bar */}
+                      <div>
+                        <div className="flex justify-between text-[11px] font-medium text-slate-700 mb-0.5">
+                          <span className="truncate max-w-[200px]">{riskBenchmark.doc_a?.document_title}</span>
+                          <span className="font-mono font-bold text-slate-900">{p.doc_a_score}/100</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-slate-900 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, p.doc_a_score)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Doc B Bar */}
+                      <div>
+                        <div className="flex justify-between text-[11px] font-medium text-slate-700 mb-0.5">
+                          <span className="truncate max-w-[200px]">{riskBenchmark.doc_b?.document_title}</span>
+                          <span className="font-mono font-bold text-slate-900">{p.doc_b_score}/100</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-slate-600 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, p.doc_b_score)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-600 leading-snug">
+                      {p.advantage}
+                    </p>
+
+                    {/* Quick Indicator Tags */}
+                    {p.doc_a_findings?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {p.doc_a_findings.slice(0, 2).map((f: any, i: number) => (
+                          <span
+                            key={i}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-medium truncate max-w-full"
+                          >
+                            • {f.text}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {/* Contradiction Candidates Section */}
           {comparison.contradiction_candidates.length > 0 && (

@@ -484,5 +484,19 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to generate executive brief');
     return res.json();
+  },
+
+  // Risk Scorecard & Benchmarking
+  getRiskScorecard: async (documentId?: string) => {
+    const params = documentId ? `?document_id=${encodeURIComponent(documentId)}` : '';
+    const res = await fetch(`${API_BASE}/risk/scorecard${params}`);
+    if (!res.ok) throw new Error('Failed to fetch risk scorecard');
+    return res.json();
+  },
+
+  getRiskBenchmark: async (docAId: string, docBId: string) => {
+    const res = await fetch(`${API_BASE}/risk/benchmark?doc_a=${encodeURIComponent(docAId)}&doc_b=${encodeURIComponent(docBId)}`);
+    if (!res.ok) throw new Error('Failed to fetch risk benchmark');
+    return res.json();
   }
 };

@@ -10,7 +10,8 @@ import {
   BookmarkCheck,
   ArrowRight,
   Layers,
-  RotateCcw
+  RotateCcw,
+  Download
 } from 'lucide-react';
 import { api } from '../services/api';
 import { FindingItem, DocumentItem, NegotiateResponse } from '../types';
@@ -46,6 +47,44 @@ export const NegotiatePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [savedNotes, setSavedNotes] = useState(false);
+  const [exportingDocx, setExportingDocx] = useState(false);
+
+  const handleExportDocx = async () => {
+    if (!result) return;
+    try {
+      setExportingDocx(true);
+      const res = await fetch('/api/negotiate/export-docx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: result.topic || topic || 'Contract Provision',
+          stance: result.stance || stance,
+          doc_a_title: docATitle || 'Document A',
+          doc_b_title: docBTitle || 'Document B',
+          statement_a: statementA,
+          statement_b: statementB,
+          proposed_clause: result.proposed_clause,
+          rationale: result.rationale,
+          risk_level: result.risk_level,
+          key_concessions: result.key_concessions,
+        })
+      });
+      if (!res.ok) throw new Error('Failed to generate docx');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clario-redline-${(result.topic || 'clause').toLowerCase().replace(/\s+/g, '-')}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Failed to export docx', err);
+    } finally {
+      setExportingDocx(false);
+    }
+  };
 
   useEffect(() => {
     Promise.all([
@@ -306,18 +345,30 @@ export const NegotiatePage: React.FC = () => {
 
                 {/* Proposed Clause Box */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
                       Proposed Redline Amendment
                     </span>
-                    <button
-                      type="button"
-                      onClick={handleCopy}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 transition-colors"
-                    >
-                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copied ? 'Copied' : 'Copy Clause'}</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleExportDocx}
+                        disabled={exportingDocx}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200 shadow-xs"
+                        title="Download Microsoft Word document with tracked changes markup"
+                      >
+                        <Download className="w-3.5 h-3.5 text-slate-600" />
+                        <span>{exportingDocx ? 'Exporting...' : 'Export Track Changes (.docx)'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCopy}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 transition-colors"
+                      >
+                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copied ? 'Copied' : 'Copy Clause'}</span>
+                      </button>
+                    </div>
                   </div>
                   <div className="p-4 rounded-md border border-slate-200 bg-slate-50 text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-slate-200">
                     {result.proposed_clause}
