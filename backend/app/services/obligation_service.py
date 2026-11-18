@@ -54,6 +54,8 @@ class ObligationService:
         if document_ids:
             chunks_query = chunks_query.filter(DocumentChunk.document_id.in_(document_ids))
         chunks = chunks_query.all()
+        if not docs or not chunks:
+            return []
 
         obligations = []
         doc_map = {d.id: (d.title or d.filename) for d in docs}
@@ -100,24 +102,5 @@ class ObligationService:
                         "fulfillment_verified": False
                     })
                     break  # Avoid duplicating multiple categories per same chunk
-
-        # Fallback if no specific chunks matched
-        if not obligations and docs:
-            d = docs[0]
-            obligations.append({
-                "id": f"obl-{uuid.uuid4().hex[:10]}",
-                "document_id": d.id,
-                "document_title": d.title or d.filename,
-                "page_number": 1,
-                "category": "Termination & Notice",
-                "title": "Termination Notice Window",
-                "clause_quote": "Either party may terminate upon sixty (60) days prior written notice before annual renewal.",
-                "obligated_party": "Mutual",
-                "due_date_or_window": "60 Days Prior Notice",
-                "trigger_condition": "Annual Contract Renewal",
-                "risk_level": "High",
-                "status": "Action Required",
-                "fulfillment_verified": False
-            })
 
         return obligations

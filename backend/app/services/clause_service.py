@@ -48,6 +48,23 @@ class ClauseService:
             chunks_query = chunks_query.filter(DocumentChunk.document_id.in_(document_ids))
         chunks = chunks_query.all()
 
+        if not docs or not chunks:
+            return {
+                "total_categories": len(BENCHMARKS),
+                "total_clauses_extracted": 0,
+                "benchmarks": [
+                    {
+                        "category": b["category"],
+                        "market_standard": b["market_standard"],
+                        "common_pitfall": b["common_pitfall"],
+                        "risk_weight": b["risk_weight"],
+                        "detected_count": 0,
+                        "clauses": []
+                    }
+                    for b in BENCHMARKS
+                ]
+            }
+
         doc_map = {d.id: (d.title or d.filename) for d in docs}
 
         categorized_clauses: Dict[str, List[Dict[str, Any]]] = {

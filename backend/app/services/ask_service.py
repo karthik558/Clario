@@ -408,6 +408,13 @@ Direct Cited Answer:"""
             db=db
         )
 
+        if not results:
+            yield f"event: citations\ndata: {json.dumps([])}\n\n"
+            msg = "No relevant passages were found in the uploaded documents matching your query. Please verify that documents have been uploaded and indexed."
+            yield f"event: token\ndata: {json.dumps({'text': msg})}\n\n"
+            yield f"event: done\ndata: {json.dumps({'mode': 'extractive_synthesis', 'answer': msg})}\n\n"
+            return
+
         results = sorted(results, key=lambda x: x.get("score", 0), reverse=True)
 
         citations: List[CitationItem] = []

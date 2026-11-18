@@ -49,12 +49,39 @@ def create_sample_pdf(title: str, text: str, output_path: str):
     doc.build(elements)
 
 def seed_sample_documents():
+    import json
+    from app.models.entities import AppConfiguration
+
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
+
+    config = db.query(AppConfiguration).filter(AppConfiguration.id == "workspace").first()
+    has_seeded = False
+    if config:
+        try:
+            cfg_data = json.loads(config.settings_json or "{}")
+            has_seeded = cfg_data.get("has_seeded", False)
+        except Exception:
+            has_seeded = False
+
+    # If the workspace was already seeded before, respect user deletions!
+    if has_seeded:
+        logger.info("Workspace already initialized. Skipping auto-seed so deleted documents stay deleted.")
+        search_service.reload_index(db)
+        db.close()
+        return
 
     existing_docs = db.query(Document).count()
     if existing_docs > 0:
         logger.info(f"Database already has {existing_docs} documents. Skipping seed.")
+        if config:
+            try:
+                cfg_data = json.loads(config.settings_json or "{}")
+                cfg_data["has_seeded"] = True
+                config.settings_json = json.dumps(cfg_data)
+                db.commit()
+            except Exception:
+                pass
         search_service.reload_index(db)
         db.close()
         return
@@ -137,6 +164,19 @@ def seed_sample_documents():
                             db.add(finding)
                 except Exception as e:
                     logger.warning(f"Error during initial seed comparison: {e}")
+
+    # Mark workspace as seeded so deletions are permanent
+    config = db.query(AppConfiguration).filter(AppConfiguration.id == "workspace").first()
+    if not config:
+        config = AppConfiguration(id="workspace", settings_json=json.dumps({"has_seeded": True}))
+        db.add(config)
+    else:
+        try:
+            cfg_data = json.loads(config.settings_json or "{}")
+            cfg_data["has_seeded"] = True
+            config.settings_json = json.dumps(cfg_data)
+        except Exception:
+            pass
 
     db.commit()
     db.close()

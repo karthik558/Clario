@@ -10,7 +10,8 @@ import {
   SearchCheck,
   Info,
   ChevronDown,
-  Scale
+  Scale,
+  FileText
 } from 'lucide-react';
 import { api } from '../services/api';
 import { ComparisonResponse, DocumentItem, ContradictionCandidate } from '../types';
@@ -18,6 +19,11 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { ClauseNegotiatorModal } from '../components/negotiate/ClauseNegotiatorModal';
+
+const getSearchParam = (key: string): string => {
+  if (typeof window === 'undefined') return '';
+  return new URLSearchParams(window.location.search).get(key) || '';
+};
 
 export const ComparePage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -43,11 +49,26 @@ export const ComparePage: React.FC = () => {
         const docs = await api.getDocuments();
         setDocuments(docs);
         if (docs.length >= 2) {
-          // Pre-select policies or contracts if available
-          const ret1 = docs.find((d) => d.title.includes('2023') || d.title.includes('v1.0'));
-          const ret2 = docs.find((d) => d.title.includes('2024') || d.title.includes('v2.0'));
-          const aId = ret1 ? ret1.id : docs[0].id;
-          const bId = ret2 ? ret2.id : docs[1].id;
+          const urlDocA = getSearchParam('doc_a');
+          const urlDocB = getSearchParam('doc_b');
+
+          let aId = '';
+          let bId = '';
+
+          if (urlDocA && docs.some((d) => d.id === urlDocA)) {
+            aId = urlDocA;
+          }
+          if (urlDocB && docs.some((d) => d.id === urlDocB)) {
+            bId = urlDocB;
+          }
+
+          if (!aId || !bId || aId === bId) {
+            const ret1 = docs.find((d) => d.title.includes('2023') || d.title.includes('v1.0'));
+            const ret2 = docs.find((d) => d.title.includes('2024') || d.title.includes('v2.0'));
+            aId = ret1 ? ret1.id : docs[0].id;
+            bId = ret2 && ret2.id !== aId ? ret2.id : (docs[1]?.id || '');
+          }
+
           setDocAId(aId);
           setDocBId(bId);
 
@@ -193,6 +214,38 @@ export const ComparePage: React.FC = () => {
       </Card>
 
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+
+      {/* Empty State when fewer than 2 documents */}
+      {!loading && !comparison && documents.length < 2 && (
+        <Card className="p-10 text-center bg-white border border-slate-200">
+          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mx-auto mb-3">
+            <GitCompare className="w-6 h-6" />
+          </div>
+          <h3 className="text-sm font-semibold text-slate-900 mb-1">
+            {documents.length === 0 ? 'No Documents in Workspace' : 'Second Document Required for Comparison'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
+            {documents.length === 0
+              ? 'Upload at least two document versions or counterparty agreements in the Document Library to perform side-by-side diffing, clause revisions, and contradiction detection.'
+              : 'You currently have 1 document indexed. Upload a revised version or counterparty agreement to run comparative difference analysis.'}
+          </p>
+          <Button variant="secondary" size="sm" onClick={() => { window.location.href = '/documents'; }}>
+            <FileText className="w-3.5 h-3.5 mr-1.5" />
+            Go to Document Library
+          </Button>
+        </Card>
+      )}
+
+      {/* Placeholder prompt when documents >= 2 but comparison not yet run */}
+      {!loading && !comparison && documents.length >= 2 && (
+        <Card className="p-8 text-center bg-white border border-slate-200">
+          <GitCompare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+          <h3 className="text-xs font-semibold text-slate-700 mb-1">Ready for Comparative Diff</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Select Document A and Document B in the selector above and click "Compare" to scan for semantic contradictions, revisions, and clause amendments.
+          </p>
+        </Card>
+      )}
 
       {/* Comparison Analysis Results */}
       {comparison && (

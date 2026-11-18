@@ -172,6 +172,18 @@ class ComplianceService:
         if document_ids:
             chunks_query = chunks_query.filter(DocumentChunk.document_id.in_(document_ids))
         chunks = chunks_query.all()
+
+        if not docs or not chunks:
+            return {
+                "overall_score": 0,
+                "audited_documents": 0,
+                "total_checks": 0,
+                "passed_checks": 0,
+                "gaps_count": 0,
+                "frameworks": [],
+                "gaps": []
+            }
+
         corpus_text = " ".join([c.content.lower() for c in chunks])
 
         target_fws = FRAMEWORKS

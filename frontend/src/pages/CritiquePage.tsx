@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Scale,
   ShieldAlert,
@@ -19,6 +20,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 
 export const CritiquePage: React.FC = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState<CritiqueResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
@@ -174,7 +176,7 @@ export const CritiquePage: React.FC = () => {
       </div>
 
       {/* Strategic Leverage Callout */}
-      {data && (
+      {data && data.personas.length > 0 && (
         <div className="p-4 rounded-md bg-white border-l-4 border-l-clario-navy border border-slate-200 shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-clario-navy">
@@ -192,6 +194,27 @@ export const CritiquePage: React.FC = () => {
             <span className="text-slate-800">{data.leverage_summary}</span>
           </div>
         </div>
+      )}
+
+      {/* Empty State when no personas/data */}
+      {!loading && (!data || data.personas.length === 0) && (
+        <Card className="p-10 text-center bg-white border border-slate-200">
+          <ShieldAlert className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+          <h3 className="text-sm font-semibold text-slate-900 mb-1">
+            {documents.length === 0 ? 'No Documents in Workspace' : 'No Clause Provided for Red Team Review'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
+            {documents.length === 0
+              ? 'Upload contracts or agreements in the Document Library, or type/paste a custom clause in the input box above to trigger adversarial executive critique.'
+              : 'Paste or type a clause in the input area above and click "Evaluate Clause" to analyze via General Counsel, CFO, and CISO personas.'}
+          </p>
+          {documents.length === 0 && (
+            <Button variant="secondary" size="sm" onClick={() => navigate('/documents')}>
+              <FileText className="w-3.5 h-3.5 mr-1.5" />
+              Go to Document Library
+            </Button>
+          )}
+        </Card>
       )}
 
       {/* Persona Selector Tabs */}

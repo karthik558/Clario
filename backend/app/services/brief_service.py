@@ -49,6 +49,20 @@ class BriefService:
         doc_titles = [d.title or d.filename for d in docs]
         now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%B %d, %Y")
 
+        if not docs:
+            return {
+                "title": "Executive Briefing Memorandum",
+                "template_id": template_id,
+                "generated_date": now_str,
+                "audited_documents": [],
+                "critical_findings_count": 0,
+                "executive_summary": "No documents uploaded in workspace. Upload documents to generate an executive brief.",
+                "key_recommendation": "Upload documents to begin executive risk synthesis.",
+                "financial_exposure": [],
+                "legal_risks": [],
+                "action_items": ["Upload documents to start the executive audit."]
+            }
+
         if template_id == "ma_due_diligence":
             title = "M&A Transaction Due Diligence Executive Briefing"
             summary = (

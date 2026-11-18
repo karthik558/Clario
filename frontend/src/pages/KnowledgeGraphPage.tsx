@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Network,
   ZoomIn,
@@ -32,6 +33,7 @@ interface LayoutNode extends GraphNode {
 }
 
 export const KnowledgeGraphPage: React.FC = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState<GraphDataResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
@@ -500,6 +502,20 @@ export const KnowledgeGraphPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center h-full text-rose-500 p-6">
               <AlertTriangle className="w-8 h-8 mb-2" />
               <p className="text-xs">{error}</p>
+            </div>
+          ) : !data || data.nodes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-50/50">
+              <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 border border-slate-200">
+                <Network className="w-7 h-7" />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-1">No Knowledge Topology Available</h3>
+              <p className="text-xs text-slate-500 max-w-sm mb-4">
+                Upload documents in the Document Library to index provisions, map citations, and visualize cross-clause relationships in 2D space.
+              </p>
+              <Button variant="secondary" size="sm" onClick={() => navigate('/documents')}>
+                <FileText className="w-3.5 h-3.5 mr-1.5" />
+                Go to Document Library
+              </Button>
             </div>
           ) : (
             <svg

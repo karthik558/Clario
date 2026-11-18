@@ -34,20 +34,38 @@ export const OverviewPage: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [findings, setFindings] = useState<FindingItem[]>([]);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+
+  // Quick Compare State
+  const [quickDocA, setQuickDocA] = useState<string>('');
+  const [quickDocB, setQuickDocB] = useState<string>('');
+  const [comparing, setComparing] = useState(false);
+  const [quickCompareResult, setQuickCompareResult] = useState<any | null>(null);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     setError('');
     try {
-      const [data, findingsData] = await Promise.all([
+      const [data, findingsData, docsData] = await Promise.all([
         api.getDashboard(),
-        api.getFindings().catch(() => [])
+        api.getFindings().catch(() => []),
+        api.getDocuments().catch(() => [])
       ]);
       setStats(data);
       setFindings(findingsData);
+      setDocuments(docsData);
+
+      if (docsData.length >= 2) {
+        setQuickDocA((prev) => (prev && docsData.some(d => d.id === prev) ? prev : docsData[0].id));
+        setQuickDocB((prev) => (prev && docsData.some(d => d.id === prev) ? prev : docsData[1].id));
+      } else {
+        setQuickDocA('');
+        setQuickDocB('');
+        setQuickCompareResult(null);
+      }
     } catch (err) {
       setError('Could not load workspace metrics. Check the API connection and retry.');
     } finally {
@@ -58,6 +76,26 @@ export const OverviewPage: React.FC = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const handleQuickCompare = async () => {
+    if (!quickDocA || !quickDocB || quickDocA === quickDocB) return;
+    setComparing(true);
+    setError('');
+    try {
+      const res = await api.compareDocuments(quickDocA, quickDocB);
+      setQuickCompareResult(res);
+      const [updatedStats, updatedFindings] = await Promise.all([
+        api.getDashboard(),
+        api.getFindings().catch(() => [])
+      ]);
+      setStats(updatedStats);
+      setFindings(updatedFindings);
+    } catch (err) {
+      setError('Comparison failed. Ensure both documents have been processed and indexed.');
+    } finally {
+      setComparing(false);
+    }
+  };
 
   const handleDelete = async (docId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -264,6 +302,157 @@ export const OverviewPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Side-by-Side Document Comparison & Contradiction Scanner */}
+      <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-md bg-slate-100 text-slate-800">
+              <GitCompare className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900 tracking-tight">
+                Side-by-Side Document Comparison & Contradiction Scanner
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Select two document versions from your workspace to run differential analysis and extract discrepancies.
+              </p>
+            </div>
+          </div>
+          {documents.length >= 2 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/compare')}
+              className="flex items-center gap-1.5 shrink-0"
+            >
+              <span>Full Redline Workspace</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
+
+        {documents.length >= 2 ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Document A (Base Version)
+                </label>
+                <select
+                  aria-label="Document A base version"
+                  value={quickDocA}
+                  onChange={(e) => setQuickDocA(e.target.value)}
+                  className="w-full text-xs font-medium bg-white border border-slate-200 rounded-md p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                >
+                  <option value="">-- Choose Base Document --</option>
+                  {documents.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title} ({d.file_type.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-center sm:pb-0.5">
+                <Button
+                  size="sm"
+                  onClick={handleQuickCompare}
+                  loading={comparing}
+                  disabled={!quickDocA || !quickDocB || quickDocA === quickDocB}
+                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 h-[38px] px-4"
+                >
+                  <GitCompare className="w-3.5 h-3.5" />
+                  <span>Compare</span>
+                </Button>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Document B (Target Version)
+                </label>
+                <select
+                  aria-label="Document B target version"
+                  value={quickDocB}
+                  onChange={(e) => setQuickDocB(e.target.value)}
+                  className="w-full text-xs font-medium bg-white border border-slate-200 rounded-md p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                >
+                  <option value="">-- Choose Target Document --</option>
+                  {documents.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title} ({d.file_type.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {quickDocA === quickDocB && quickDocA !== '' && (
+              <p className="text-[11px] text-amber-600 font-medium">
+                Please choose two distinct documents to run a comparative difference analysis.
+              </p>
+            )}
+
+            {quickCompareResult && (
+              <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                  <div className="flex items-center gap-4 text-xs flex-wrap">
+                    <span>
+                      <strong className="text-slate-900">Similarity:</strong>{' '}
+                      {(quickCompareResult.similarity_score * 100).toFixed(1)}%
+                    </span>
+                    <span>•</span>
+                    <span className="text-emerald-700 font-semibold">
+                      +{quickCompareResult.added_count} Added
+                    </span>
+                    <span className="text-rose-700 font-semibold">
+                      -{quickCompareResult.removed_count} Removed
+                    </span>
+                    <span className="text-amber-700 font-semibold">
+                      ~{quickCompareResult.changed_count} Changed
+                    </span>
+                    {quickCompareResult.contradiction_candidates && (
+                      <>
+                        <span>•</span>
+                        <span className="text-slate-900 font-bold">
+                          {quickCompareResult.contradiction_candidates.length} Discrepancies Flagged
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(`/compare?doc_a=${quickDocA}&doc_b=${quickDocB}`)}
+                    className="text-xs flex items-center gap-1"
+                  >
+                    <span>Open Side-by-Side View</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+
+                {quickCompareResult.summary && (
+                  <p className="text-xs text-slate-700 leading-relaxed">
+                    {quickCompareResult.summary}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-6 text-center bg-slate-50 rounded-md border border-slate-200 space-y-2">
+            <GitCompare className="w-8 h-8 text-slate-400 mx-auto" />
+            <h4 className="text-xs font-bold text-slate-800">Two Documents Required for Comparison</h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              You currently have {documents.length} document(s) in your workspace. Upload at least two documents (e.g. Master Agreement vs Addendum, or 2023 vs 2024 Policy) to compare side-by-side.
+            </p>
+            <Button size="sm" onClick={() => navigate('/documents')} className="mt-2">
+              <Upload className="w-3.5 h-3.5 mr-1.5" />
+              Upload Documents
+            </Button>
+          </div>
+        )}
+      </Card>
+
       {/* Visual Analytics & Intelligence Graphs Dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Graph 1: Document Chunk & Volume Topology */}
@@ -431,37 +620,39 @@ export const OverviewPage: React.FC = () => {
             </p>
 
             {/* Embedded SVG Mini Topology */}
-            <div className="w-full h-32 rounded bg-slate-50 border border-slate-200 relative overflow-hidden flex items-center justify-center">
-              <svg width="100%" height="100%" viewBox="0 0 280 120" className="pointer-events-none">
-                {/* Edges */}
-                <line x1="140" y1="60" x2="60" y2="35" stroke="#CBD5E1" strokeWidth="1.2" />
-                <line x1="140" y1="60" x2="220" y2="35" stroke="#CBD5E1" strokeWidth="1.2" />
-                <line x1="140" y1="60" x2="80" y2="90" stroke="#CBD5E1" strokeWidth="1.2" />
-                <line x1="140" y1="60" x2="200" y2="90" stroke="#CBD5E1" strokeWidth="1.2" />
-                <line x1="60" y1="35" x2="220" y2="35" stroke="#64748B" strokeWidth="1.5" strokeDasharray="3,3" />
+            {documents.length > 0 ? (
+              <div className="w-full h-32 rounded bg-slate-50 border border-slate-200 relative overflow-hidden flex items-center justify-center">
+                <svg width="100%" height="100%" viewBox="0 0 280 120" className="pointer-events-none">
+                  {/* Edges */}
+                  <line x1="140" y1="60" x2="60" y2="35" stroke="#CBD5E1" strokeWidth="1.2" />
+                  <line x1="140" y1="60" x2="220" y2="35" stroke="#CBD5E1" strokeWidth="1.2" />
+                  <line x1="140" y1="60" x2="80" y2="90" stroke="#CBD5E1" strokeWidth="1.2" />
+                  <line x1="140" y1="60" x2="200" y2="90" stroke="#CBD5E1" strokeWidth="1.2" />
+                  <line x1="60" y1="35" x2="220" y2="35" stroke="#64748B" strokeWidth="1.5" strokeDasharray="3,3" />
 
-                {/* Nodes */}
-                {/* Core Document Node */}
-                <circle cx="140" cy="60" r="14" fill="#14263D" stroke="#FFFFFF" strokeWidth="2" />
-                <text x="140" y="63" textAnchor="middle" fontSize="7" fill="#FFFFFF" fontWeight="bold">CORPUS</text>
+                  {/* Nodes */}
+                  <circle cx="140" cy="60" r="14" fill="#14263D" stroke="#FFFFFF" strokeWidth="2" />
+                  <text x="140" y="63" textAnchor="middle" fontSize="7" fill="#FFFFFF" fontWeight="bold">CORPUS</text>
 
-                {/* Topic Node 1 */}
-                <circle cx="60" cy="35" r="10" fill="#334155" stroke="#FFFFFF" strokeWidth="1.5" />
-                <text x="60" y="38" textAnchor="middle" fontSize="6" fill="#FFFFFF">ZDR</text>
+                  <circle cx="60" cy="35" r="10" fill="#334155" stroke="#FFFFFF" strokeWidth="1.5" />
+                  <text x="60" y="38" textAnchor="middle" fontSize="6" fill="#FFFFFF">TERMS</text>
 
-                {/* Topic Node 2 */}
-                <circle cx="220" cy="35" r="10" fill="#334155" stroke="#FFFFFF" strokeWidth="1.5" />
-                <text x="220" y="38" textAnchor="middle" fontSize="6" fill="#FFFFFF">SLA</text>
+                  <circle cx="220" cy="35" r="10" fill="#334155" stroke="#FFFFFF" strokeWidth="1.5" />
+                  <text x="220" y="38" textAnchor="middle" fontSize="6" fill="#FFFFFF">POLICIES</text>
 
-                {/* Finding Node 1 */}
-                <circle cx="80" cy="90" r="9" fill="#475569" stroke="#FFFFFF" strokeWidth="1.5" />
-                <text x="80" y="93" textAnchor="middle" fontSize="6" fill="#FFFFFF">DIFF</text>
+                  <circle cx="80" cy="90" r="9" fill="#475569" stroke="#FFFFFF" strokeWidth="1.5" />
+                  <text x="80" y="93" textAnchor="middle" fontSize="6" fill="#FFFFFF">NODES</text>
 
-                {/* Finding Node 2 */}
-                <circle cx="200" cy="90" r="9" fill="#64748B" stroke="#FFFFFF" strokeWidth="1.5" />
-                <text x="200" y="93" textAnchor="middle" fontSize="6" fill="#FFFFFF">REV</text>
-              </svg>
-            </div>
+                  <circle cx="200" cy="90" r="9" fill="#64748B" stroke="#FFFFFF" strokeWidth="1.5" />
+                  <text x="200" y="93" textAnchor="middle" fontSize="6" fill="#FFFFFF">REVISION</text>
+                </svg>
+              </div>
+            ) : (
+              <div className="w-full h-32 rounded bg-slate-50 border border-slate-200 flex flex-col items-center justify-center p-4 text-center">
+                <Network className="w-6 h-6 text-slate-300 mb-1" />
+                <p className="text-xs text-slate-400">No documents in workspace. Upload files to generate topology.</p>
+              </div>
+            )}
           </div>
 
           <div className="pt-4 border-t border-slate-100 mt-4">

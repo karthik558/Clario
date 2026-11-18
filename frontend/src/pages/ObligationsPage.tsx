@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Clock,
   Calendar,
@@ -19,6 +20,7 @@ import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 
 export const ObligationsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [obligations, setObligations] = useState<ObligationItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,9 +223,22 @@ export const ObligationsPage: React.FC = () => {
             Parsing contractual covenants and deadline timelines...
           </div>
         ) : filteredObligations.length === 0 ? (
-          <Card className="p-8 text-center bg-white border border-slate-200">
-            <Calendar className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-            <p className="text-xs text-slate-500">No obligations matching current criteria.</p>
+          <Card className="p-10 text-center bg-white border border-slate-200">
+            <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+            <h3 className="text-sm font-semibold text-slate-800 mb-1">
+              {documents.length === 0 ? 'No Documents in Workspace' : 'No Obligations Discovered'}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+              {documents.length === 0
+                ? 'Upload contractual agreements or master service agreements in the Document Library to extract renewal windows, notice deadlines, and recurring covenants.'
+                : 'No obligations matching the current filters were found in your indexed documents.'}
+            </p>
+            {documents.length === 0 && (
+              <Button variant="secondary" size="sm" onClick={() => navigate('/documents')}>
+                <FileText className="w-3.5 h-3.5 mr-1.5" />
+                Go to Document Library
+              </Button>
+            )}
           </Card>
         ) : (
           <div className="space-y-3 relative before:absolute before:inset-0 before:left-5 before:w-0.5 before:bg-slate-200 sm:before:left-7">

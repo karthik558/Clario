@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -19,6 +20,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 
 export const CompliancePage: React.FC = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState<ComplianceAuditResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
@@ -213,8 +215,22 @@ export const CompliancePage: React.FC = () => {
             Analyzing document corpus against regulatory frameworks...
           </div>
         ) : !data || data.frameworks.length === 0 ? (
-          <Card className="p-8 text-center bg-white border border-slate-200">
-            <p className="text-xs text-slate-500">No regulatory frameworks loaded.</p>
+          <Card className="p-10 text-center bg-white border border-slate-200">
+            <ShieldCheck className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+            <h3 className="text-sm font-semibold text-slate-800 mb-1">
+              {documents.length === 0 ? 'No Documents in Workspace' : 'No Regulatory Frameworks Loaded'}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+              {documents.length === 0
+                ? 'Upload governance policies, data privacy terms, or supplier agreements in the Document Library to audit compliance against GDPR, HIPAA, SOC 2, and EU AI Act covenants.'
+                : 'No regulatory framework data is currently available.'}
+            </p>
+            {documents.length === 0 && (
+              <Button variant="secondary" size="sm" onClick={() => navigate('/documents')}>
+                <FileText className="w-3.5 h-3.5 mr-1.5" />
+                Go to Document Library
+              </Button>
+            )}
           </Card>
         ) : (
           data.frameworks.map((fw) => {

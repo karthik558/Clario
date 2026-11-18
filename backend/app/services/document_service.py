@@ -207,6 +207,9 @@ class DocumentService:
 
     @staticmethod
     def delete_document(doc_id: str, db: Session) -> bool:
+        from app.models.entities import Finding, Comparison, IngestionJob, DocumentChunk, AnswerRecord, Report
+        from app.services.search_service import search_service
+
         doc = db.query(Document).filter(Document.id == doc_id).first()
         if not doc:
             return False
@@ -218,13 +221,44 @@ class DocumentService:
         except Exception as e:
             logger.warning(f"Could not remove file {doc.storage_path}: {e}")
 
+        # Delete all findings and comparisons referencing this document
+        db.query(Finding).filter(
+            (Finding.doc_a_id == doc_id) | (Finding.doc_b_id == doc_id)
+        ).delete(synchronize_session=False)
+
+        db.query(Comparison).filter(
+            (Comparison.doc_a_id == doc_id) | (Comparison.doc_b_id == doc_id)
+        ).delete(synchronize_session=False)
+
+        # Explicitly delete chunks and jobs
+        db.query(DocumentChunk).filter(DocumentChunk.document_id == doc_id).delete(synchronize_session=False)
+        db.query(IngestionJob).filter(IngestionJob.document_id == doc_id).delete(synchronize_session=False)
+
+        # Delete document record
         db.delete(doc)
+
+        # Purge any remaining orphan findings or comparisons
+        all_doc_ids = [d.id for d in db.query(Document.id).filter(Document.id != doc_id).all()]
+        if not all_doc_ids:
+            db.query(Finding).delete(synchronize_session=False)
+            db.query(Comparison).delete(synchronize_session=False)
+            db.query(Report).delete(synchronize_session=False)
+            db.query(AnswerRecord).delete(synchronize_session=False)
+        else:
+            db.query(Finding).filter(~Finding.doc_a_id.in_(all_doc_ids)).delete(synchronize_session=False)
+            db.query(Comparison).filter(~Comparison.doc_a_id.in_(all_doc_ids)).delete(synchronize_session=False)
+
         db.commit()
+
+        # Reload in-memory search index immediately to purge deleted chunks
+        search_service.reload_index(db)
         return True
 
     @staticmethod
     def clear_all_documents(db: Session) -> int:
-        from app.models.entities import Finding, Comparison, IngestionJob, DocumentChunk
+        from app.models.entities import Finding, Comparison, IngestionJob, DocumentChunk, AnswerRecord, Report
+        from app.services.search_service import search_service
+
         docs = db.query(Document).all()
         count = len(docs)
         for doc in docs:
@@ -239,5 +273,10 @@ class DocumentService:
         db.query(IngestionJob).delete()
         db.query(Finding).delete()
         db.query(Comparison).delete()
+        db.query(AnswerRecord).delete()
+        db.query(Report).delete()
         db.commit()
+
+        # Reload in-memory search index so it is completely empty
+        search_service.reload_index(db)
         return count

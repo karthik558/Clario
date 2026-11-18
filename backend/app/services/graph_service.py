@@ -12,7 +12,19 @@ class GraphService:
             doc_query = doc_query.filter(Document.id.in_(document_ids))
         docs = doc_query.all()
 
-        finding_query = db.query(Finding)
+        if not docs:
+            return GraphDataResponse(
+                nodes=[],
+                edges=[],
+                summary="No documents in workspace. Upload documents to generate the visual knowledge network.",
+                total_nodes=0,
+                total_edges=0
+            )
+
+        active_doc_ids = {d.id for d in docs}
+        finding_query = db.query(Finding).filter(
+            Finding.doc_a_id.in_(active_doc_ids)
+        )
         if document_ids:
             finding_query = finding_query.filter(
                 or_(Finding.doc_a_id.in_(document_ids), Finding.doc_b_id.in_(document_ids))
