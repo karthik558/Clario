@@ -66,6 +66,7 @@ export const Layout: React.FC = () => {
           <Outlet context={{ askDraft, setAskDraft, selection }} />
         </main>
         <footer className="flex flex-wrap items-center justify-start gap-3 border-t border-clario-border px-4 py-4 text-xs text-clario-text-secondary sm:px-6 lg:px-8">
+          <Link to="/home">About Clario</Link>
           <nav aria-label="Legal" className="flex gap-5">
             <Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/cookies">Cookies</Link>
           </nav>
