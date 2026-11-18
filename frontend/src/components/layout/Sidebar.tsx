@@ -14,7 +14,12 @@ import {
   PanelLeftOpen,
   Layers,
   X,
-  Scale
+  Scale,
+  ShieldCheck,
+  Calendar,
+  ShieldAlert,
+  BookOpen,
+  FileCheck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -49,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     sidebar?.addEventListener('keydown', trap);
     return () => { media.removeEventListener('change', resize); sidebar?.removeEventListener('keydown', trap); previous?.focus(); };
   }, [mobileOpen]);
+
   const navItems = [
     { name: 'Overview', path: '/', icon: LayoutDashboard },
     { name: 'Documents', path: '/documents', icon: Files },
@@ -57,10 +63,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Knowledge Graph', path: '/graph', icon: Network },
     { name: 'Findings', path: '/findings', icon: AlertTriangle },
     { name: 'Clause Redline', path: '/negotiate', icon: Scale },
-    { name: 'Reports', path: '/reports', icon: FileText },
+    { name: 'Compliance Matrix', path: '/compliance', icon: ShieldCheck },
+    { name: 'Obligations Timeline', path: '/obligations', icon: Calendar },
+    { name: 'Red Team Critique', path: '/critique', icon: ShieldAlert },
+    { name: 'Clause Library', path: '/clauses', icon: BookOpen },
+    { name: 'Executive Briefs', path: '/briefs', icon: FileText },
+    { name: 'Reports', path: '/reports', icon: FileCheck },
     { name: 'Search Lab', path: '/search-lab', icon: FlaskConical },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
+
   return (
     <>
       {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-black/50 md:hidden" />}
@@ -100,22 +112,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-1">
+        <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1">
           {navItems.map(({ name, path, icon: Icon }) => (
-            <NavLink key={path} to={path} end={path === '/'} onClick={onCloseMobile} aria-label={name} title={name}
-              className={({ isActive }) => `sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all ${isActive ? 'bg-white/15 text-white font-medium shadow-xs border-l-2 border-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
-              <Icon className="w-5 h-5 shrink-0" aria-hidden="true" /><span className="sidebar-label">{name}</span>
+            <NavLink
+              key={path}
+              to={path}
+              end={path === '/'}
+              onClick={onCloseMobile}
+              aria-label={name}
+              title={name}
+              className={({ isActive }) =>
+                `sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all ${
+                  isActive
+                    ? 'bg-white/15 text-white font-medium shadow-xs border-l-2 border-white'
+                    : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                }`
+              }
+            >
+              <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
+              <span className="sidebar-label truncate min-w-0">{name}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="p-3 border-t border-white/10">
-          <div className="sidebar-label px-3 py-2 text-xs text-slate-400">
+        <div className="p-3 border-t border-white/10 shrink-0">
+          <div className="sidebar-label px-3 py-2 text-xs text-slate-300">
             © 2026{' '}
             <a
               href="https://karthiklal.in"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-300 hover:text-white underline transition-colors"
+              className="text-white font-medium hover:underline transition-colors"
             >
               Clario
             </a>

@@ -180,13 +180,28 @@ export const SettingsPage: React.FC = () => {
     <div className="space-y-8 max-w-5xl">
       {error && <p role="alert" className="p-4 rounded-md bg-rose-50 text-rose-800 text-sm">{error}</p>}
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-          <span>Workspace Settings</span>
-        </h2>
-        <p className="text-xs text-clario-text-secondary">
-          Connect local Ollama models, inspect the SQLite database, and configure retrieval parameters
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
+        <div>
+          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
+            <span>Workspace Settings</span>
+          </h2>
+          <p className="text-xs text-clario-text-secondary">
+            Connect local Ollama models, inspect the SQLite database, and configure retrieval parameters
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <a
+            href="http://localhost:8000/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-clario-navy text-white hover:bg-slate-800 transition-colors shadow-xs"
+          >
+            <Terminal className="w-3.5 h-3.5" />
+            <span>Open API Docs</span>
+            <ExternalLink className="w-3 h-3 text-slate-300" />
+          </a>
+        </div>
       </div>
 
       {successMsg && (
@@ -452,6 +467,35 @@ export const SettingsPage: React.FC = () => {
             Save All Settings
           </Button>
         </div>
+      </Card>
+
+      {/* Developer API Documentation Card */}
+      <Card className="rounded-md p-6 border-slate-200 bg-white shadow-card space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-clario-border">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-md bg-clario-navy/5 text-clario-navy">
+              <Terminal className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-clario-navy">REST API Documentation & Swagger UI</h3>
+              <p className="text-xs text-clario-text-secondary mt-0.5">
+                Interactive OpenAPI schema, compliance audits, redline endpoints, and query testing
+              </p>
+            </div>
+          </div>
+          <a
+            href="http://localhost:8000/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold bg-clario-navy text-white hover:bg-slate-800 transition-colors shrink-0 shadow-xs"
+          >
+            <span>Open Swagger UI</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+        <p className="text-xs text-slate-600 leading-relaxed">
+          Access the backend Swagger UI directly at <code className="font-mono text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">http://localhost:8000/docs</code> to inspect endpoints, test schemas, and integrate with external pipelines.
+        </p>
       </Card>
     </div>
   );

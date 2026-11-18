@@ -1,0 +1,378 @@
+import React, { useState, useEffect } from 'react';
+import {
+  ShieldCheck,
+  AlertTriangle,
+  FileCheck,
+  Layers,
+  Copy,
+  Check,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  AlertCircle
+} from 'lucide-react';
+import { api } from '../services/api';
+import { ComplianceAuditResponse, DocumentItem, ComplianceGap } from '../types';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+
+export const CompliancePage: React.FC = () => {
+  const [data, setData] = useState<ComplianceAuditResponse | null>(null);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [auditing, setAuditing] = useState(false);
+  const [expandedFramework, setExpandedFramework] = useState<string | null>('gdpr');
+  const [copiedGapId, setCopiedGapId] = useState<string | null>(null);
+
+  const fetchInitialData = async () => {
+    try {
+      setLoading(true);
+      const [docs, auditRes] = await Promise.all([
+        api.getDocuments().catch(() => []),
+        api.auditCompliance().catch(() => null)
+      ]);
+      setDocuments(docs);
+      if (auditRes) setData(auditRes);
+    } catch (err) {
+      console.error('Failed to load compliance data', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const handleRunAudit = async () => {
+    try {
+      setAuditing(true);
+      const res = await api.auditCompliance(
+        selectedDocIds.length > 0 ? selectedDocIds : undefined
+      );
+      setData(res);
+    } catch (err) {
+      console.error('Audit execution failed', err);
+    } finally {
+      setAuditing(false);
+    }
+  };
+
+  const handleCopyRemediation = (gap: ComplianceGap) => {
+    navigator.clipboard.writeText(gap.remediation_clause);
+    setCopiedGapId(gap.id);
+    setTimeout(() => setCopiedGapId(null), 2000);
+  };
+
+  const toggleDocSelection = (id: string) => {
+    setSelectedDocIds((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
+        <div>
+          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
+            <span>Compliance & Regulatory Audit Matrix</span>
+          </h2>
+          <p className="text-xs text-clario-text-secondary">
+            Automated verification against GDPR, HIPAA, SOC 2, and EU AI Act covenants
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Button
+            size="sm"
+            onClick={handleRunAudit}
+            loading={auditing}
+            className="flex items-center gap-1.5"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>{auditing ? 'Auditing Corpus...' : 'Re-Run Compliance Scan'}</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* KPI Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Readiness Score
+            </span>
+            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
+              {data ? `${data.overall_score}%` : '—'}
+            </span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">
+              {data && data.overall_score >= 75 ? 'Passable threshold' : 'Attention required'}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Frameworks
+            </span>
+            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
+              {data ? data.frameworks.length : 4}
+            </span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">GDPR, HIPAA, SOC 2, AI Act</span>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+            <Layers className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Compliance Gaps
+            </span>
+            <span className="text-2xl font-bold text-rose-600 font-mono mt-0.5 block">
+              {data ? data.gaps_count : 0}
+            </span>
+            <span className="text-[10px] text-rose-500 mt-0.5 block">Missing covenants</span>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Audited Scope
+            </span>
+            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
+              {data ? data.audited_documents : documents.length}
+            </span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">Active documents</span>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
+            <FileCheck className="w-5 h-5" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Multi-Document Scope Filter */}
+      {documents.length > 0 && (
+        <Card className="p-3 bg-white border border-slate-200 shadow-xs">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            <span className="text-slate-500 font-semibold uppercase text-[10px] shrink-0 tracking-wider">
+              Document Scope:
+            </span>
+            <button
+              onClick={() => setSelectedDocIds([])}
+              className={`px-2.5 py-1 rounded text-xs transition-colors shrink-0 ${
+                selectedDocIds.length === 0
+                  ? 'bg-slate-900 text-white font-medium'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              All Workspace ({documents.length})
+            </button>
+            {documents.map((d) => {
+              const isSelected = selectedDocIds.includes(d.id);
+              return (
+                <button
+                  key={d.id}
+                  onClick={() => toggleDocSelection(d.id)}
+                  className={`px-2.5 py-1 rounded text-xs transition-colors shrink-0 flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-slate-900 text-white font-medium'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <FileText className="w-3 h-3" />
+                  <span className="truncate max-w-[180px]">{d.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* Framework Accordion Breakdown */}
+      <div className="space-y-4">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+          Regulatory Framework Assessment
+        </h2>
+
+        {loading ? (
+          <div className="py-12 text-center text-xs text-slate-500">
+            Analyzing document corpus against regulatory frameworks...
+          </div>
+        ) : !data || data.frameworks.length === 0 ? (
+          <Card className="p-8 text-center bg-white border border-slate-200">
+            <p className="text-xs text-slate-500">No regulatory frameworks loaded.</p>
+          </Card>
+        ) : (
+          data.frameworks.map((fw) => {
+            const isExpanded = expandedFramework === fw.framework_id;
+            return (
+              <Card
+                key={fw.framework_id}
+                className="overflow-hidden bg-white border border-slate-200 shadow-xs"
+              >
+                <div
+                  onClick={() =>
+                    setExpandedFramework(isExpanded ? null : fw.framework_id)
+                  }
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-50 transition-colors select-none"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2.5">
+                      <h3 className="font-bold text-sm text-slate-900">{fw.framework_name}</h3>
+                      <Badge variant="navy" size="sm">
+                        {fw.jurisdiction}
+                      </Badge>
+                      <Badge
+                        variant={
+                          fw.readiness_score >= 80
+                            ? 'sage'
+                            : fw.readiness_score >= 50
+                            ? 'gold'
+                            : 'red'
+                        }
+                        size="sm"
+                      >
+                        {fw.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-slate-500">{fw.category}</p>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="text-xs font-mono font-bold text-slate-900">
+                        {fw.passed_count} / {fw.total_count} Verified
+                      </div>
+                      <div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+                        <div
+                          className="h-full bg-slate-900 rounded-full"
+                          style={{ width: `${fw.readiness_score}%` }}
+                        />
+                      </div>
+                    </div>
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                    )}
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-3 bg-slate-50/50">
+                    <div className="divide-y divide-slate-200">
+                      {fw.criteria.map((c) => (
+                        <div key={c.id} className="py-3 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                          <div className="space-y-1 max-w-2xl">
+                            <div className="flex items-center gap-2">
+                              {c.status === 'compliant' ? (
+                                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                              ) : (
+                                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                              )}
+                              <span className="text-xs font-bold text-slate-900">{c.title}</span>
+                              <span className="text-[11px] text-slate-500 font-mono">
+                                ({c.clause_target})
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-700 pl-6">{c.description}</p>
+                            <p className="text-xs italic text-slate-800 pl-6 bg-white p-2.5 rounded border border-slate-200 mt-1 leading-relaxed">
+                              "{c.evidence_quote}"
+                            </p>
+                          </div>
+                          <Badge
+                            variant={c.status === 'compliant' ? 'sage' : 'red'}
+                            size="sm"
+                            className="shrink-0 self-start sm:self-center"
+                          >
+                            {c.status === 'compliant' ? 'Verified' : 'Gap Found'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* Identified Compliance Gaps & Auto-Remediation */}
+      {data && data.gaps.length > 0 && (
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+              Identified Compliance Gaps & Recommended Amendments ({data.gaps.length})
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {data.gaps.map((gap) => (
+              <Card key={gap.id} className="p-5 bg-white border border-slate-200 shadow-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant={gap.severity === 'critical' ? 'red' : 'gold'} size="sm">
+                      {gap.severity.toUpperCase()}
+                    </Badge>
+                    <span className="text-xs font-bold text-slate-900">{gap.criterion_title}</span>
+                    <Badge variant="navy" size="sm">
+                      {gap.framework_name}
+                    </Badge>
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    Target: {gap.clause_target}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-700">{gap.gap_summary}</p>
+
+                <div className="bg-slate-50 rounded-md border border-slate-200 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
+                      Suggested Contractual Remediation Clause
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyRemediation(gap)}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2 py-1 rounded bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
+                    >
+                      {copiedGapId === gap.id ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3 text-slate-500" />
+                          <span>Copy Clause</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap">
+                    {gap.remediation_clause}
+                  </p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

@@ -27,12 +27,17 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("Shutting down Clario backend...")
 
+from fastapi.responses import HTMLResponse, Response
+from fastapi.openapi.docs import get_swagger_ui_html
+
+CLARIO_FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4" fill="#0F172A"/><g transform="translate(4 4)" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 10 5-10 5L2 8l10-5Z"/><path d="m2 12 10 5 10-5M2 16l10 5 10-5"/></g></svg>"""
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Clario — AI Document Intelligence Workspace with Vector Search & Comparative Analysis",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
+    docs_url=None,
     redoc_url="/redoc",
     openapi_url="/api/openapi.json"
 )
@@ -46,6 +51,184 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
+@app.get("/favicon.svg", include_in_schema=False)
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(content=CLARIO_FAVICON_SVG, media_type="image/svg+xml")
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui():
+    html = get_swagger_ui_html(
+        openapi_url="/api/openapi.json",
+        title=f"{settings.PROJECT_NAME} — API Specification",
+        swagger_favicon_url="/favicon.svg",
+        swagger_ui_parameters={"defaultModelsExpandDepth": 1, "docExpansion": "list"}
+    )
+    custom_css = """
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0 !important;
+        background-color: #F8FAFC !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        color: #0F172A !important;
+        -webkit-font-smoothing: antialiased;
+      }
+      .clario-header {
+        background: #0F172A;
+        padding: 0 28px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .clario-logo-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: opacity 0.15s ease;
+      }
+      .clario-logo-wrap:hover {
+        opacity: 0.9;
+      }
+      .clario-title {
+        color: #FFFFFF;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        margin: 0;
+        line-height: 1;
+      }
+      .clario-badge-tag {
+        font-size: 11px;
+        font-weight: 500;
+        color: #94A3B8;
+        font-family: 'JetBrains Mono', monospace;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        margin-left: 2px;
+      }
+      .clario-nav-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .clario-badge {
+        background: rgba(255, 255, 255, 0.08);
+        color: #E2E8F0;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .clario-web-btn {
+        color: #FFFFFF;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 7px 14px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 6px;
+        transition: all 0.15s ease;
+      }
+      .clario-web-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #FFFFFF;
+      }
+      .swagger-ui .topbar { display: none !important; }
+      .swagger-ui { font-family: 'Inter', sans-serif !important; }
+      .swagger-ui .wrapper { max-width: 1240px; padding: 0 24px; }
+      .swagger-ui .info { margin: 32px 0 24px 0 !important; }
+      .swagger-ui .info .title { font-size: 28px !important; font-weight: 700 !important; color: #0F172A !important; letter-spacing: -0.02em; }
+      .swagger-ui .info p { font-size: 14px !important; color: #475569 !important; line-height: 1.6 !important; }
+      .swagger-ui .opblock-tag { font-size: 17px !important; font-weight: 700 !important; color: #0F172A !important; border-bottom: 1px solid #E2E8F0 !important; padding: 16px 0 8px 0 !important; margin: 24px 0 12px 0 !important; }
+      .swagger-ui .opblock { border-radius: 8px !important; margin-bottom: 12px !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important; border: 1px solid #E2E8F0 !important; background: #FFFFFF !important; overflow: hidden; }
+      .swagger-ui .opblock .opblock-summary { padding: 10px 16px !important; }
+      .swagger-ui .opblock-summary-method { border-radius: 6px !important; font-weight: 700 !important; font-size: 11px !important; padding: 4px 10px !important; min-width: 65px !important; text-shadow: none !important; letter-spacing: 0.02em; }
+      .swagger-ui .opblock.opblock-get .opblock-summary-method { background: #0F172A !important; color: #FFFFFF !important; }
+      .swagger-ui .opblock.opblock-get { border-color: #E2E8F0 !important; background: #FFFFFF !important; }
+      .swagger-ui .opblock.opblock-post .opblock-summary-method { background: #1E40AF !important; color: #FFFFFF !important; }
+      .swagger-ui .opblock.opblock-post { border-color: #E2E8F0 !important; background: #FFFFFF !important; }
+      .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: #BE123C !important; color: #FFFFFF !important; }
+      .swagger-ui .opblock.opblock-delete { border-color: #E2E8F0 !important; background: #FFFFFF !important; }
+      .swagger-ui .opblock.opblock-put .opblock-summary-method { background: #B45309 !important; color: #FFFFFF !important; }
+      .swagger-ui .opblock.opblock-put { border-color: #E2E8F0 !important; background: #FFFFFF !important; }
+      .swagger-ui .opblock-summary-path { font-family: 'JetBrains Mono', monospace !important; font-size: 13px !important; font-weight: 600 !important; color: #0F172A !important; }
+      .swagger-ui .opblock-summary-description { font-size: 13px !important; color: #64748B !important; font-weight: 400 !important; }
+      .swagger-ui .btn.execute { background: #0F172A !important; border-color: #0F172A !important; color: #FFFFFF !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 12px !important; padding: 6px 18px !important; }
+      .swagger-ui .btn.try-out__btn { border: 1px solid #CBD5E1 !important; color: #0F172A !important; border-radius: 6px !important; font-size: 12px !important; font-weight: 500 !important; background: #F8FAFC !important; }
+      .swagger-ui .btn.try-out__btn:hover { background: #F1F5F9 !important; }
+      .swagger-ui .btn.cancel { border: 1px solid #E2E8F0 !important; color: #64748B !important; border-radius: 6px !important; font-size: 12px !important; }
+      .swagger-ui section.models { border: 1px solid #E2E8F0 !important; border-radius: 8px !important; background: #FFFFFF !important; margin: 32px 0 !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important; }
+      .swagger-ui section.models h4 { font-weight: 700 !important; color: #0F172A !important; font-size: 16px !important; border-bottom: 1px solid #E2E8F0 !important; padding: 12px 16px !important; }
+      .swagger-ui .model-box { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !important; background: #F8FAFC !important; border-radius: 6px !important; padding: 14px !important; }
+      .swagger-ui table.parameters { font-size: 13px !important; }
+      .swagger-ui input[type=text], .swagger-ui textarea, .swagger-ui select { border: 1px solid #CBD5E1 !important; border-radius: 6px !important; font-family: 'Inter', sans-serif !important; font-size: 13px !important; }
+      .swagger-ui input[type=text]:focus, .swagger-ui textarea:focus, .swagger-ui select:focus { outline: 2px solid #0F172A !important; border-color: #0F172A !important; }
+      .clario-docs-footer {
+        text-align: center;
+        padding: 32px 24px;
+        margin-top: 48px;
+        border-top: 1px solid #E2E8F0;
+        font-size: 12px;
+        color: #64748B;
+        background: #FFFFFF;
+      }
+    </style>
+    """
+    clario_header = """
+    <div class="clario-header">
+      <a href="http://localhost:5173" class="clario-logo-wrap clario-app-link" title="Open Clario Workspace">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+          <polyline points="2 17 12 22 22 17"/>
+          <polyline points="2 12 12 17 22 12"/>
+        </svg>
+        <span class="clario-title">Clario</span>
+        <span class="clario-badge-tag">API Docs</span>
+      </a>
+      <div class="clario-nav-right">
+        <span class="clario-badge">v1.0.0</span>
+        <a href="http://localhost:5173" class="clario-web-btn clario-app-link">&larr; Back to Clario App</a>
+      </div>
+    </div>
+    """
+    clario_footer = """
+    <div class="clario-docs-footer">
+      &copy; 2026 Clario &bull; Enterprise Document Intelligence Platform
+    </div>
+    <script>
+      (function() {
+        var host = window.location.hostname || 'localhost';
+        var appUrl = (window.location.port === '8000') ? window.location.protocol + '//' + host + ':5173' : '/';
+        document.querySelectorAll('.clario-app-link').forEach(function(el) {
+          el.href = appUrl;
+        });
+      })();
+    </script>
+    """
+    content = html.body.decode("utf-8")
+    content = content.replace("</head>", f"{custom_css}</head>")
+    content = content.replace("<body>", f"<body>{clario_header}")
+    content = content.replace("</body>", f"{clario_footer}</body>")
+    return HTMLResponse(content=content)
 
 @app.get("/")
 def root():

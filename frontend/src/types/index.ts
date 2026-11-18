@@ -284,3 +284,155 @@ export interface GraphDataResponse {
     total_edges: number;
   };
 }
+
+// --- Compliance Types ---
+export interface FrameworkCriterion {
+  id: string;
+  title: string;
+  clause_target: string;
+  status: 'compliant' | 'gap_identified' | 'advisory_warning';
+  description: string;
+  evidence_quote: string;
+}
+
+export interface FrameworkReport {
+  framework_id: string;
+  framework_name: string;
+  jurisdiction: string;
+  category: string;
+  readiness_score: number;
+  status: string;
+  passed_count: number;
+  total_count: number;
+  criteria: FrameworkCriterion[];
+}
+
+export interface ComplianceGap {
+  id: string;
+  framework_id: string;
+  framework_name: string;
+  criterion_id: string;
+  criterion_title: string;
+  severity: 'critical' | 'high' | 'medium';
+  clause_target: string;
+  gap_summary: string;
+  remediation_clause: string;
+}
+
+export interface ComplianceAuditResponse {
+  overall_score: number;
+  audited_documents: number;
+  total_checks: number;
+  passed_checks: number;
+  gaps_count: number;
+  frameworks: FrameworkReport[];
+  gaps: ComplianceGap[];
+}
+
+// --- Obligations Types ---
+export interface ObligationItem {
+  id: string;
+  document_id: string;
+  document_title: string;
+  page_number: number;
+  category: string;
+  title: string;
+  clause_quote: string;
+  obligated_party: string;
+  due_date_or_window: string;
+  trigger_condition: string;
+  risk_level: 'Critical' | 'High' | 'Medium' | 'Low';
+  status: string;
+  fulfillment_verified: boolean;
+}
+
+export interface ObligationsResponse {
+  total: number;
+  items: ObligationItem[];
+}
+
+// --- Critique Types ---
+export interface CritiqueRedFlag {
+  severity: 'Critical' | 'High' | 'Medium' | 'Low';
+  point: string;
+  detail: string;
+  counter_clause: string;
+}
+
+export interface CritiquePersona {
+  persona_id: string;
+  role_title: string;
+  avatar_color: string;
+  verdict: string;
+  risk_score: number;
+  focus: string;
+  red_flags: CritiqueRedFlag[];
+}
+
+export interface CritiqueResponse {
+  evaluated_documents: number;
+  findings_referenced: number;
+  composite_risk_score: number;
+  overall_assessment: string;
+  leverage_summary: string;
+  personas: CritiquePersona[];
+}
+
+// --- Clause Library Types ---
+export interface ClauseItem {
+  id: string;
+  document_title: string;
+  page_number: number;
+  text: string;
+  favorability: string;
+  deviation_from_market: string;
+}
+
+export interface ClauseBenchmark {
+  category: string;
+  market_standard: string;
+  common_pitfall: string;
+  risk_weight: string;
+  detected_count: number;
+  clauses: ClauseItem[];
+}
+
+export interface ClauseLibraryResponse {
+  total_documents: number;
+  total_categories: number;
+  benchmarks: ClauseBenchmark[];
+}
+
+export interface ClauseAnalysisResult {
+  favorability: string;
+  alignment_score: number;
+  recommendation: string;
+  word_count: number;
+  key_phrases: string[];
+}
+
+// --- Executive Brief Types ---
+export interface BriefFinancialExposure {
+  label: string;
+  detail: string;
+}
+
+export interface BriefLegalRisk {
+  item: string;
+  status: string;
+  assessment: string;
+}
+
+export interface BriefResponse {
+  title: string;
+  generated_date: string;
+  template_id: string;
+  audited_documents: string[];
+  executive_summary: string;
+  financial_exposure: BriefFinancialExposure[];
+  legal_risks: BriefLegalRisk[];
+  critical_findings_count: number;
+  key_recommendation: string;
+  action_items: string[];
+  custom_notes: string;
+}

@@ -12,6 +12,11 @@ import { KnowledgeGraphPage } from './pages/KnowledgeGraphPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { NegotiatePage } from './pages/NegotiatePage';
+import { CompliancePage } from './pages/CompliancePage';
+import { ObligationsPage } from './pages/ObligationsPage';
+import { CritiquePage } from './pages/CritiquePage';
+import { ClauseLibraryPage } from './pages/ClauseLibraryPage';
+import { BriefsPage } from './pages/BriefsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +41,11 @@ export const App: React.FC = () => {
             <Route path="search-lab" element={<SearchLabPage />} />
             <Route path="findings" element={<FindingsPage />} />
             <Route path="negotiate" element={<NegotiatePage />} />
+            <Route path="compliance" element={<CompliancePage />} />
+            <Route path="obligations" element={<ObligationsPage />} />
+            <Route path="critique" element={<CritiquePage />} />
+            <Route path="clauses" element={<ClauseLibraryPage />} />
+            <Route path="briefs" element={<BriefsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -15,7 +15,13 @@ import {
   DBTableInfo,
   NegotiateRequest,
   NegotiateResponse,
-  GraphDataResponse
+  GraphDataResponse,
+  ComplianceAuditResponse,
+  ObligationsResponse,
+  CritiqueResponse,
+  ClauseLibraryResponse,
+  ClauseAnalysisResult,
+  BriefResponse
 } from '../types';
 
 const API_BASE = '/api';
@@ -386,6 +392,102 @@ export const api = {
     }
     const res = await fetch(`${API_BASE}/graph?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to load knowledge graph');
+    return res.json();
+  },
+
+  // Compliance & Regulatory Audit
+  getComplianceFrameworks: async (): Promise<any[]> => {
+    const res = await fetch(`${API_BASE}/compliance/frameworks`);
+    if (!res.ok) throw new Error('Failed to load compliance frameworks');
+    return res.json();
+  },
+
+  auditCompliance: async (documentIds?: string[], frameworkIds?: string[]): Promise<ComplianceAuditResponse> => {
+    const res = await fetch(`${API_BASE}/compliance/audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_ids: documentIds, framework_ids: frameworkIds }),
+    });
+    if (!res.ok) throw new Error('Compliance audit failed');
+    return res.json();
+  },
+
+  // Obligations & Timeline
+  getObligations: async (category?: string, risk?: string): Promise<ObligationsResponse> => {
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (risk) params.append('risk', risk);
+    const res = await fetch(`${API_BASE}/obligations?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to load obligations');
+    return res.json();
+  },
+
+  scanObligations: async (documentIds?: string[]): Promise<ObligationsResponse> => {
+    const res = await fetch(`${API_BASE}/obligations/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_ids: documentIds }),
+    });
+    if (!res.ok) throw new Error('Obligations extraction failed');
+    return res.json();
+  },
+
+  // Multi-Persona Critique
+  evaluateCritique: async (documentIds?: string[], customClause?: string): Promise<CritiqueResponse> => {
+    const res = await fetch(`${API_BASE}/critique/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_ids: documentIds, custom_clause: customClause }),
+    });
+    if (!res.ok) throw new Error('Critique evaluation failed');
+    return res.json();
+  },
+
+  // Clause Library & Benchmarks
+  getClauseBenchmarks: async (): Promise<ClauseLibraryResponse> => {
+    const res = await fetch(`${API_BASE}/clauses`);
+    if (!res.ok) throw new Error('Failed to load clause library');
+    return res.json();
+  },
+
+  benchmarkClauses: async (documentIds?: string[]): Promise<ClauseLibraryResponse> => {
+    const res = await fetch(`${API_BASE}/clauses/benchmark`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_ids: documentIds }),
+    });
+    if (!res.ok) throw new Error('Failed to benchmark clauses');
+    return res.json();
+  },
+
+  analyzeClause: async (clauseText: string): Promise<ClauseAnalysisResult> => {
+    const res = await fetch(`${API_BASE}/clauses/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clause_text: clauseText }),
+    });
+    if (!res.ok) throw new Error('Clause analysis failed');
+    return res.json();
+  },
+
+  // Executive Briefs
+  getBriefTemplates: async (): Promise<any[]> => {
+    const res = await fetch(`${API_BASE}/briefs/templates`);
+    if (!res.ok) throw new Error('Failed to load brief templates');
+    return res.json();
+  },
+
+  generateBrief: async (templateId?: string, documentIds?: string[], customNotes?: string): Promise<BriefResponse> => {
+    const res = await fetch(`${API_BASE}/briefs/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        template_id: templateId || 'board_executive',
+        document_ids: documentIds,
+        custom_notes: customNotes
+      }),
+    });
+    if (!res.ok) throw new Error('Failed to generate executive brief');
     return res.json();
   }
 };
