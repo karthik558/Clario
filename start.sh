@@ -14,7 +14,7 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 echo -e "${TEAL}================================================================${NC}"
-echo -e "${GOLD}   CLARIO — AI DOCUMENT INTELLIGENCE WORKSPACE${NC}"
+echo -e "${GOLD}   CLARIO — DOCUMENT INTELLIGENCE WORKSPACE${NC}"
 echo -e "   Tagline: ${GREEN}Every document. A clearer answer.${NC}"
 echo -e "${TEAL}================================================================${NC}"
 
@@ -35,7 +35,7 @@ else
 fi
 
 # 2. Database & Seed Corpus
-echo -e "${NAVY}[2/4] Verifying SQLite database & synthetic corpus...${NC}"
+echo -e "${NAVY}[2/4] Verifying SQLite database & document corpus...${NC}"
 cd "$BACKEND_DIR"
 PYTHONPATH=. python3 -m app.database.seed
 

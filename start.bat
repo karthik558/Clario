@@ -5,7 +5,7 @@ REM Local Startup Script (Windows)
 REM ==============================================================================
 
 echo ================================================================
-echo    CLARIO -- AI DOCUMENT INTELLIGENCE WORKSPACE
+echo    CLARIO -- DOCUMENT INTELLIGENCE WORKSPACE
 echo    Tagline: Every document. A clearer answer.
 echo ================================================================
 
