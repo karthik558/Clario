@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import { workspaceDate } from '../utils/date';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
@@ -88,17 +89,8 @@ export const DocumentsPage: React.FC = () => {
     <div className="space-y-6">
       {error && <div role="alert" className="p-4 rounded-md bg-rose-50 text-rose-800 text-sm">{error} <button onClick={fetchDocuments} className="underline">Retry</button></div>}
       {/* Top Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Document Library</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Manage, inspect, and segment enterprise documents across formats (PDF, DOCX, TXT, MD, Excel, CSV)
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2.5">
+      <PageHeader title="Document library" description="Manage your files and inspect the passages available for review.">
+        <div className="flex flex-wrap items-center gap-2">
           {documents.length > 0 && (
             <Button
               variant="outline"
@@ -120,7 +112,7 @@ export const DocumentsPage: React.FC = () => {
             {showUploadZone ? 'Close Upload' : 'Upload Documents'}
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Collapsible Upload Zone */}
       {showUploadZone && (

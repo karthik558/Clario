@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
@@ -267,16 +268,8 @@ export const AskPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Ask Clario</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Universal Local AI Gateway: Ask questions across contracts, view step-by-step reasoning, and verify against cited evidence
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
+      <PageHeader title="Ask Clario" description="Ask questions across your documents and follow each answer back to its sources.">
+        <div className="flex flex-wrap items-center gap-2">
           {history.length > 0 && (
             <Button
               variant="outline"
@@ -290,7 +283,7 @@ export const AskPage: React.FC = () => {
             </Button>
           )}
         </div>
-      </div>
+      </PageHeader>
 
       {error && <p role="alert" className="p-3 border border-rose-200 bg-rose-50 text-rose-800 rounded-md text-sm">{error}</p>}
       {loadingHistory && <p role="status" className="text-sm text-clario-text-secondary">Loading saved answers…</p>}

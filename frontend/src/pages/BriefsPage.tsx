@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -95,17 +96,8 @@ export const BriefsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Executive Briefings & Board Summaries</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            One-page decision-ready memorandums tailored for boardrooms, M&A due diligence, and closing approvals
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
+      <PageHeader title="Executive briefs" description="Prepare a decision-ready summary of the documents under review.">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -136,7 +128,7 @@ export const BriefsPage: React.FC = () => {
             <span>{generating ? 'Synthesizing...' : 'Re-Generate Briefing'}</span>
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Template Chooser Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

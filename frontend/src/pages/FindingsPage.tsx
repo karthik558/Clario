@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import { workspaceDate } from '../utils/date';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
@@ -151,17 +152,8 @@ export const FindingsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Reviewable Findings & Contradictions</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Human-in-the-loop review workflow for flagged inconsistencies, altered obligations, and policy changes
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
+      <PageHeader title="Findings" description="Review flagged inconsistencies, changes in obligations, and supporting evidence.">
+        <div className="flex flex-wrap items-center gap-2">
           {findings.length > 0 && (
             <>
               <Button
@@ -195,7 +187,7 @@ export const FindingsPage: React.FC = () => {
             {scanning ? 'Scanning Corpus...' : 'Run Aggressive Contradiction Scan'}
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Findings Stat Ribbon */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

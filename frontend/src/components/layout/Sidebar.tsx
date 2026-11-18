@@ -77,11 +77,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-black/50 md:hidden" />}
       <aside ref={sidebarRef} id="workspace-navigation" aria-label="Workspace navigation" className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-open' : ''}`}>
-        <div className={`flex h-20 shrink-0 items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-4 sm:px-5'} border-b border-white/10`}>
+        <div className={`flex h-14 shrink-0 items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-4 sm:px-5'} border-b border-white/10`}>
           <Link
             to="/"
             onClick={onCloseMobile}
-            className={`flex items-center gap-3 text-white hover:opacity-90 transition-opacity min-w-0 ${collapsed ? 'hidden md:hidden' : ''}`}
+            className={`flex items-center gap-3 text-white hover:opacity-90 transition-opacity min-w-0 ${collapsed ? 'md:hidden' : ''}`}
             title="Clario Overview"
           >
             <Layers className="w-7 h-7 text-white shrink-0" aria-hidden="true" />
@@ -111,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1">
+        <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-0.5">
           {navItems.map(({ name, path, icon: Icon }) => (
             <NavLink
               key={path}
@@ -121,32 +121,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               aria-label={name}
               title={name}
               className={({ isActive }) =>
-                `sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all ${
+                `sidebar-link flex items-center gap-3 min-h-9 px-3 py-2 rounded-md text-[13px] leading-5 transition-colors ${
                   isActive
-                    ? 'bg-white/15 text-white font-medium shadow-xs border-l-2 border-white'
-                    : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                    ? 'bg-slate-700 text-white font-semibold'
+                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
-              <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
+              <Icon strokeWidth={1.65} className="w-[17px] h-[17px] shrink-0" aria-hidden="true" />
               <span className="sidebar-label truncate min-w-0">{name}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="p-3 border-t border-white/10 shrink-0">
-          <div className="sidebar-label px-3 py-2 text-xs text-slate-300">
-            © 2026{' '}
-            <a
-              href="https://karthiklal.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white font-medium hover:underline transition-colors"
-            >
-              Clario
-            </a>
-            . All rights reserved.
-          </div>
-        </div>
       </aside>
     </>
   );

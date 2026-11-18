@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect } from 'react';
 import {
   BookOpen,
@@ -66,16 +67,7 @@ export const ClauseLibraryPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Smart Clause Library & Market Benchmark Hub</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Standard market baselines, contractual taxonomy, and automated favorability benchmarking
-          </p>
-        </div>
-      </div>
+      <PageHeader title="Clause library" description="Explore standard clauses and compare terms against market benchmarks." />
 
       {/* Non-Contract Scope Notice */}
       {documents.length > 0 && data && data.benchmarks.every(b => b.detected_count === 0) && (

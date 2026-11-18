@@ -1,4 +1,5 @@
 import React from 'react';
+import { PolicyPage } from './pages/PolicyPage';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/layout/Layout';
@@ -48,6 +49,9 @@ export const App: React.FC = () => {
             <Route path="briefs" element={<BriefsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="terms" element={<PolicyPage policy="terms" />} />
+            <Route path="privacy" element={<PolicyPage policy="privacy" />} />
+            <Route path="cookies" element={<PolicyPage policy="cookies" />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

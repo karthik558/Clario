@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { GlobalSearchModal } from './GlobalSearchModal';
@@ -49,9 +49,15 @@ export const Layout: React.FC = () => {
           onOpenNavigation={() => setMobileNavOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
+        <main className="mx-auto max-w-[100rem] flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
           <Outlet />
         </main>
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-clario-border px-4 py-4 text-xs text-clario-text-secondary sm:px-6 lg:px-8">
+          <a href="https://karthiklal.in" target="_blank" rel="noopener noreferrer">© 2026 Clario</a>
+          <nav aria-label="Legal" className="flex gap-5">
+            <Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/cookies">Cookies</Link>
+          </nav>
+        </footer>
       </div>
 
       {/* Global Search Dialog (⌘K) */}

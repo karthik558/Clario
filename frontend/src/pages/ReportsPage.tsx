@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import { workspaceDate } from '../utils/date';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
@@ -118,17 +119,8 @@ export const ReportsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Intelligence Reports & Dossiers</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Export selected documents, saved comparisons, findings, and reviewer notes as a PDF.
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
+      <PageHeader title="Reports" description="Export documents, comparisons, findings, and reviewer notes as a PDF.">
+        <div className="flex flex-wrap items-center gap-2">
           {reports.length > 0 && (
             <Button
               variant="outline"
@@ -153,7 +145,7 @@ export const ReportsPage: React.FC = () => {
             Generate New Report
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {error && !showGenerateModal && <p role="alert" className="rounded-md p-3 text-sm text-rose-800 bg-rose-50">{error}</p>}
       {/* Reports Grid */}

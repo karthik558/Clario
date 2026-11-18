@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -180,17 +181,8 @@ export const SettingsPage: React.FC = () => {
     <div className="space-y-8 max-w-5xl">
       {error && <p role="alert" className="p-4 rounded-md bg-rose-50 text-rose-800 text-sm">{error}</p>}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Workspace Settings</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Connect local Ollama models, inspect the SQLite database, and configure retrieval parameters
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
+      <PageHeader title="Workspace settings" description="Configure model connections and retrieval, and inspect the workspace database.">
+        <div className="flex flex-wrap items-center gap-2">
           <a
             href="http://localhost:8000/docs"
             target="_blank"
@@ -202,7 +194,7 @@ export const SettingsPage: React.FC = () => {
             <ExternalLink className="w-3 h-3 text-slate-300" />
           </a>
         </div>
-      </div>
+      </PageHeader>
 
       {successMsg && (
         <div className="p-4 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2.5 animate-in fade-in shadow-xs">

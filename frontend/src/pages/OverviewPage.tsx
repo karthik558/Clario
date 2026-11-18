@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -112,14 +113,8 @@ export const OverviewPage: React.FC = () => {
   return (
     <div className="space-y-7">
       {/* Top Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Overview</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">Workspace metrics, document status, and recent activity</p>
-        </div>
-        <div className="flex items-center space-x-2">
+      <PageHeader title="Overview" description="Track document activity, review findings, and return to recent work.">
+        <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={() => navigate('/documents')}>
             <Upload className="w-3.5 h-3.5 mr-1.5" />
             Upload
@@ -137,7 +132,7 @@ export const OverviewPage: React.FC = () => {
             Redline
           </Button>
         </div>
-      </div>
+      </PageHeader>
       {error && <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error} <button className="underline ml-2" onClick={fetchDashboardData}>Retry</button></div>}
 
       {/* Metric Cards Grid */}
@@ -149,7 +144,7 @@ export const OverviewPage: React.FC = () => {
               <Files className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.total_documents ?? '—'}</span>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy">{loading ? '…' : stats?.total_documents ?? '—'}</span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Uploaded & stored</span>
         </Card>
 
@@ -160,7 +155,7 @@ export const OverviewPage: React.FC = () => {
               <FileCheck2 className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.indexed_documents ?? '—'}</span>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy">{loading ? '…' : stats?.indexed_documents ?? '—'}</span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Available for review</span>
         </Card>
 
@@ -171,7 +166,7 @@ export const OverviewPage: React.FC = () => {
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.total_searchable_passages ?? '—'}</span>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy">{loading ? '…' : stats?.total_searchable_passages ?? '—'}</span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Dense vector chunks</span>
         </Card>
 
@@ -182,7 +177,7 @@ export const OverviewPage: React.FC = () => {
               <SearchCheck className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.recent_analyses_count ?? '—'}</span>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy">{loading ? '…' : stats?.recent_analyses_count ?? '—'}</span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Searches & diffs</span>
         </Card>
 
@@ -193,7 +188,7 @@ export const OverviewPage: React.FC = () => {
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-clario-navy">{loading ? '…' : stats?.potential_conflicts_count ?? '—'}</span>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy">{loading ? '…' : stats?.potential_conflicts_count ?? '—'}</span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Candidate differences</span>
         </Card>
 
@@ -204,7 +199,7 @@ export const OverviewPage: React.FC = () => {
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-extrabold text-clario-navy font-mono">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
             {stats?.average_latency_ms != null ? `${stats.average_latency_ms}ms` : '—'}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Hybrid retrieval</span>

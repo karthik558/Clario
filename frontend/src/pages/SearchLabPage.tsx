@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
 import {
@@ -69,16 +70,7 @@ export const SearchLabPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Search Lab & IR Benchmark</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Comparative Information Retrieval analysis across Lexical BM25, Dense Vector, and Hybrid RRF fusion
-          </p>
-        </div>
-
+      <PageHeader title="Search lab" description="Compare keyword, vector, and hybrid search results for the same query.">
         {/* View Switcher Tabs */}
         <div className="flex bg-white rounded-md p-1 border border-clario-border text-xs">
           <button
@@ -105,7 +97,7 @@ export const SearchLabPage: React.FC = () => {
             Academic IR Evaluation Suite
           </button>
         </div>
-      </div>
+      </PageHeader>
 
       {activeTab === 'methods' ? (
         <div className="space-y-6">

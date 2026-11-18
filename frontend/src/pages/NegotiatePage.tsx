@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect } from 'react';
 import {
   Scale,
@@ -127,16 +128,7 @@ export const NegotiatePage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Clause Redline & Negotiation Studio</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Autonomous contract drafting engine bridging discrepancies with balanced, customer-protective, or vendor-favorable stances
-          </p>
-        </div>
-
+      <PageHeader title="Clause redline" description="Compare alternative wording and draft revisions to a clause.">
         {findings.length > 0 && (
           <div className="w-full sm:w-72">
             <Select
@@ -154,7 +146,7 @@ export const NegotiatePage: React.FC = () => {
             </Select>
           </div>
         )}
-      </div>
+      </PageHeader>
 
       {error && (
         <div role="alert" className="p-3.5 rounded-md bg-rose-50 border border-rose-200 text-xs text-rose-800">

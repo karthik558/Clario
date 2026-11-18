@@ -4,60 +4,15 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
     <title>Clario</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-      #clario-preloader {
-        position: fixed;
-        inset: 0;
-        z-index: 99999;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: #0F1D30;
-        transition: opacity 0.4s ease, visibility 0.4s ease;
-      }
-      #clario-preloader.fade-out {
-        opacity: 0;
-        visibility: hidden;
-      }
-      @keyframes bounce {
-        0%, 100% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-12px);
-        }
-      }
-      .preloader-logo {
-        width: 44px;
-        height: 44px;
-        animation: bounce 0.8s ease-in-out infinite;
-      }
+      #clario-preloader { min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 1rem; background: #f8fafc; color: #0f172a; font: 600 1.5rem system-ui, sans-serif; }
+      #clario-preloader img { width: 3rem; height: 3rem; }
     </style>
   </head>
-  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-slate-200 selection:text-slate-900">
-    <!-- Simple Preloader -->
-    <div id="clario-preloader">
-      <img src="/favicon.svg" alt="Clario" class="preloader-logo" />
-    </div>
-
-    <div id="root"></div>
+  <body style="margin:0" class="antialiased selection:bg-slate-200 selection:text-slate-900">
+    <div id="root"><div id="clario-preloader" role="status"><img src="/favicon.svg" alt="" /><span>Clario</span><small style="font: .85rem system-ui">Loading workspace…</small></div></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Hide preloader once React DOM is mounted
-      window.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-          const preloader = document.getElementById('clario-preloader');
-          if (preloader) {
-            preloader.classList.add('fade-out');
-            setTimeout(() => preloader.remove(), 400);
-          }
-        }, 150);
-      });
-    </script>
   </body>
 </html>

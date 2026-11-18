@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -82,17 +83,8 @@ export const ObligationsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Smart Obligations & Renewal Timeline</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Chronological commitments, notice windows, termination deadlines, and recurring covenants
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
+      <PageHeader title="Obligations timeline" description="Track commitments, renewal dates, and notice periods across documents.">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             onClick={handleScan}
@@ -103,7 +95,7 @@ export const ObligationsPage: React.FC = () => {
             <span>{scanning ? 'Extracting Obligations...' : 'Extract Corpus Obligations'}</span>
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* KPI Stat Ribbon */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

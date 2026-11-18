@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
 import {
@@ -140,14 +141,7 @@ export const ComparePage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-          <span>Compare Document Versions</span>
-        </h2>
-        <p className="text-xs text-clario-text-secondary">
-          Compare version revisions, identify added/removed clauses, and detect semantic contradiction candidates
-        </p>
-      </div>
+      <PageHeader title="Compare versions" description="Choose two documents to review changes, additions, and potential contradictions." />
 
       {/* Document Selector Card */}
       <Card className="p-5">

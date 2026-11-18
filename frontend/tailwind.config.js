@@ -39,6 +39,7 @@ export default {
         'elevated': '0 10px 15px -3px rgba(20, 38, 61, 0.08), 0 4px 6px -2px rgba(20, 38, 61, 0.04)',
       },
       borderRadius: {
+        md: '8px',
         'clario': '12px',
       }
     },

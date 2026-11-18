@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -277,16 +278,7 @@ export const KnowledgeGraphPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Interactive Knowledge & Citation Graph</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            2D semantic topology mapping documents, governing provisions, cross-clause contradictions, and evidence citations
-          </p>
-        </div>
-      </div>
+      <PageHeader title="Knowledge graph" description="Explore connections between documents, clauses, findings, and citations." />
 
       {/* Executive Metric Cards */}
       {data?.stats && (

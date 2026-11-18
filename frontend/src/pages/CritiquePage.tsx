@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -89,17 +90,8 @@ export const CritiquePage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-clario-border">
-        <div>
-          <h2 className="text-xl font-bold text-clario-text tracking-tight flex items-center space-x-2">
-            <span>Multi-Persona Red Team Critique</span>
-          </h2>
-          <p className="text-xs text-clario-text-secondary">
-            Simulated adversarial scrutiny across Legal Counsel, CFO, and CISO perspectives
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
+      <PageHeader title="Red team critique" description="Examine a document from legal, financial, and security perspectives.">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             onClick={handleEvaluate}
@@ -110,7 +102,7 @@ export const CritiquePage: React.FC = () => {
             <span>{evaluating ? 'Simulating Review...' : 'Run Red Team Simulation'}</span>
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* KPI Stat Ribbon */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
