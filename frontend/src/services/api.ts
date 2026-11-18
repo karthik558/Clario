@@ -142,9 +142,9 @@ export const api = {
     const res = await fetch(`${API_BASE}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, document_ids, top_k, thinking_mode, local_model, llm_provider }),
+      body: JSON.stringify({ query, document_ids, top_k, thinking_mode, local_model, llm_provider, require_ai: true }),
     });
-    if (!res.ok) throw new Error('Ask Clario request failed');
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Ask Clario request failed');
     return res.json();
   },
 
@@ -166,7 +166,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/ask/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
+      body: JSON.stringify({ ...request, require_ai: true }),
     });
 
     if (!res.ok) throw new Error('Streaming failed');
@@ -191,6 +191,7 @@ export const api = {
         const event = eventMatch ? eventMatch[1] : 'token';
         const rawData = dataMatch ? dataMatch[1] : '';
 
+        if (event === 'error') throw new Error(JSON.parse(rawData).detail);
         try {
           const parsed = JSON.parse(rawData);
           if (event === 'citations') {

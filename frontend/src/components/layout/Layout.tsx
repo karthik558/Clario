@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAskSelection } from '../documents/AskSources';
 import { QuickAsk } from './QuickAsk';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -10,7 +11,16 @@ import { SearchResultItem } from '../../types';
 export const Layout: React.FC = () => {
   const navigate = useNavigate();
   const [askDraft, setAskDraft] = useState<string | null>(null);
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const selection = useAskSelection();
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const ids = params.getAll('document').filter(Boolean);
+    if (pathname !== '/ask' || !ids.length) return;
+    selection.select([...new Set(ids)]);
+    params.delete('document');
+    navigate({ pathname, search: params.toString() }, { replace: true });
+  }, [pathname, search, navigate]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
@@ -53,7 +63,7 @@ export const Layout: React.FC = () => {
         />
 
         <main className="mx-auto max-w-[100rem] flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
-          <Outlet context={{ askDraft, setAskDraft }} />
+          <Outlet context={{ askDraft, setAskDraft, selection }} />
         </main>
         <footer className="flex flex-wrap items-center justify-start gap-3 border-t border-clario-border px-4 py-4 text-xs text-clario-text-secondary sm:px-6 lg:px-8">
           <nav aria-label="Legal" className="flex gap-5">
@@ -63,7 +73,7 @@ export const Layout: React.FC = () => {
         {pathname.replace(/\/$/, '') !== '/ask' && <div className="h-12" aria-hidden="true" />}
       </div>
 
-      {pathname.replace(/\/$/, '') !== '/ask' && <QuickAsk
+      {pathname.replace(/\/$/, '') !== '/ask' && <QuickAsk selection={selection}
         onExpand={draft => { setAskDraft(draft); navigate('/ask'); }}
         onSearch={() => setSearchModalOpen(true)}
         onSource={setSelectedResult}

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
@@ -137,7 +138,14 @@ export const ComparePage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <PageHeader title="Compare versions" description="Choose two documents to review changes, additions, and potential contradictions." />
+      <PageHeader title="Compare versions" description="Choose two documents to review changes, additions, and potential contradictions.">
+        {docAId && docBId && docAId !== docBId && (
+          <Link className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
+            to={{ pathname: '/ask', search: new URLSearchParams([['document', docAId], ['document', docBId]]).toString() }}>
+            Ask AI about these files
+          </Link>
+        )}
+      </PageHeader>
 
       {/* Document Selector Card */}
       <Card className="p-5">

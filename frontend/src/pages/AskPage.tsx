@@ -1,4 +1,5 @@
 import { useOutletContext } from 'react-router-dom';
+import { AskSources, useAskDocuments, useAskSelection } from '../components/documents/AskSources';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -21,7 +22,7 @@ import {
   Radio
 } from 'lucide-react';
 import { api } from '../services/api';
-import { AskResponse, CitationItem, DocumentItem } from '../types';
+import { AskResponse, CitationItem } from '../types';
 import { Markdown } from '../components/ui/Markdown';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -29,7 +30,7 @@ import { Button } from '../components/ui/Button';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 
 export const AskPage: React.FC = () => {
-  const handoff = useOutletContext<{ askDraft: string | null; setAskDraft: (value: string | null) => void } | null>();
+  const handoff = useOutletContext<{ selection: ReturnType<typeof useAskSelection>; askDraft: string | null; setAskDraft: (value: string | null) => void } | null>();
   const [query, setQuery] = useState(handoff?.askDraft ?? '');
   const fromQuickAsk = useRef(handoff?.askDraft != null);
   const questionInput = useRef<HTMLTextAreaElement>(null);
@@ -41,8 +42,10 @@ export const AskPage: React.FC = () => {
   const [streamCitations, setStreamCitations] = useState<CitationItem[]>([]);
   const [response, setResponse] = useState<AskResponse | null>(null);
   const [history, setHistory] = useState<Array<{ query: string; response: AskResponse }>>([]);
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
+  const { documents, error: sourceError } = useAskDocuments(true);
+  const standaloneSelection = useAskSelection();
+  const selection = handoff?.selection ?? standaloneSelection;
+  const selectedDocIds = selection.ids;
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -103,7 +106,7 @@ export const AskPage: React.FC = () => {
     let cancelled = false;
     api.getSettings().then(config => {
       if (!cancelled) {
-        const prov = config.llm_provider || 'ollama';
+        const prov = config.llm_provider === 'extractive' ? 'ollama' : config.llm_provider || 'ollama';
         setLlmProvider(prov);
         setLocalModel((prov === 'ollama' ? config.ollama_model : config.local_ai_model) || '');
         setThinkingMode(config.thinking_mode ?? true);
@@ -116,15 +119,6 @@ export const AskPage: React.FC = () => {
       .catch(() => { if (!cancelled) setError('Saved answers could not be loaded. You can still ask a new question.'); })
       .finally(() => { if (!cancelled) setLoadingHistory(false); });
 
-    const loadDocs = async () => {
-      try {
-        const docs = await api.getDocuments();
-        if (!cancelled) setDocuments(docs);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    loadDocs();
     return () => { cancelled = true; };
   }, []);
 
@@ -195,9 +189,9 @@ export const AskPage: React.FC = () => {
 
         setResponse(result);
         setHistory(prev => [...prev, { query: q, response: result }]);
-      } catch {
+      } catch (err) {
         setQuery(q);
-        setError('The answer could not be generated or saved. Your question is kept below; please try again.');
+        setError(`The answer could not be generated or saved. ${err instanceof Error ? err.message : 'Please try again.'}`);
       } finally {
         setStreaming(false);
         setLoading(false);
@@ -214,9 +208,9 @@ export const AskPage: React.FC = () => {
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
-    } catch {
+    } catch (err) {
       setQuery(q);
-      setError('The answer could not be generated or saved. Your question is kept below; please try again.');
+      setError(`The answer could not be generated or saved. ${err instanceof Error ? err.message : 'Please try again.'}`);
     } finally {
       setLoading(false);
       setPendingQuery('');
@@ -275,7 +269,7 @@ export const AskPage: React.FC = () => {
   }, [documents, selectedDocIds]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="space-y-5">
       {/* Header */}
       <PageHeader title="Ask Clario" description="Ask questions across your documents and follow each answer back to its sources.">
         <div className="flex flex-wrap items-center gap-2">
@@ -330,17 +324,7 @@ export const AskPage: React.FC = () => {
             >
               LM Studio / vLLM
             </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchProvider('extractive')}
-              className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                llmProvider === 'extractive'
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              Document excerpts
-            </button>
+
           </div>
 
           {/* Thinking Mode & Streaming Toggles */}
@@ -424,48 +408,13 @@ export const AskPage: React.FC = () => {
       </details>
 
       {/* Scope Selector */}
-      {documents.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-md border border-slate-200 text-xs shadow-xs">
-          <span className="text-slate-700 font-semibold flex items-center gap-1.5 mr-1 shrink-0">
-            Sources
-          </span>
-          <button
-            aria-pressed={selectedDocIds.length === 0}
-            onClick={() => setSelectedDocIds([])}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 ${
-              selectedDocIds.length === 0
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-            }`}
-          >
-            Entire Workspace ({documents.length} Docs)
-          </button>
-          {documents.map((d) => {
-            const isSelected = selectedDocIds.includes(d.id);
-            return (
-              <button
-                key={d.id}
-                aria-pressed={isSelected}
-                onClick={() => {
-                  if (isSelected) {
-                    setSelectedDocIds(selectedDocIds.filter((id) => id !== d.id));
-                  } else {
-                    setSelectedDocIds([...selectedDocIds, d.id]);
-                  }
-                }}
-                className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 shrink-0 border ${
-                  isSelected
-                    ? 'bg-slate-900 text-white font-medium border-slate-900 shadow-xs'
-                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
-                }`}
-                title={d.title}
-              >
-                <span className="truncate min-w-0 block flex-1 text-left">{d.title}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      <div className="space-y-2 rounded-md border bg-white p-3">
+        <AskSources documents={documents} selection={selection} error={sourceError} disabled={loading} />
+          {selectedDocIds.length === 2 && <Button size="sm" disabled={loading || loadingHistory}
+            onClick={() => handleAsk('Compare the two selected documents and summarize the key differences.')}>
+            Compare these two files
+          </Button>}
+      </div>
 
       {/* Preset Starters */}
       {history.length === 0 && !loading && !loadingHistory && (
@@ -622,7 +571,7 @@ export const AskPage: React.FC = () => {
                             "{cit.snippet}"
                           </p>
                           <div className="mt-2 flex items-center justify-between text-[10px] text-clario-text-muted">
-                            <span className="font-mono">Relevance: {cit.relevance_score}</span>
+                            <span className="font-mono">{cit.relevance_score > 0 ? `Relevance: ${cit.relevance_score}` : 'Document overview'}</span>
                             <span className="text-clario-navy font-medium group-hover:underline flex items-center space-x-1">
                               <span>View Passage</span>
                               <ChevronRight className="w-3 h-3 text-clario-navy" />

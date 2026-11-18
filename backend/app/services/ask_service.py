@@ -1,4 +1,5 @@
 import json
+from itertools import zip_longest
 import re
 import time
 import httpx
@@ -7,16 +8,25 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.search.bm25_engine import tokenize
-from app.models.entities import AnswerRecord
+from app.models.entities import AnswerRecord, Document, DocumentChunk
 from app.schemas.dtos import AskRequest, AskResponse, CitationItem
 from app.services.search_service import search_service
 
+class ModelUnavailable(RuntimeError):
+    pass
+
+
 class AskService:
+    @staticmethod
+    def _provider(request):
+        provider = (request.llm_provider or settings.LLM_PROVIDER or "ollama").lower()
+        return "ollama" if request.require_ai and provider == "extractive" else provider
+
     @staticmethod
     def _is_comparative_query(query: str) -> bool:
         q = query.lower()
         patterns = [
-            r'\bdiffer(?:ence|ences|ent)?\b',
+            r'\b(?:diff|diffs|differ|differs|difference|differences|different)\b',
             r'\bcompar(?:e|ison|ative|ing)\b',
             r'\bbetween\s+(?:the\s+)?two\b',
             r'\bbetween\s+2023\s+(?:and|&)\s+2024\b',
@@ -31,8 +41,19 @@ class AskService:
         return any(re.search(pat, q) for pat in patterns)
 
     @staticmethod
+    def _greeting(request: AskRequest) -> Optional[AskResponse]:
+        words = " ".join(re.findall(r"[\w']+", request.query.lower()))
+        if not re.fullmatch(r"(?:(?:hi|hey|hello|bro|clario) )*(?:hi|hey|hello|how are you(?: doing)?)(?: (?:bro|clario|today))?", words):
+            return None
+        return AskResponse(query=request.query, answer="Hey! I'm doing well. What would you like to know about your documents?",
+                           mode="greeting", citations=[], retrieval_latency_ms=0, synthesis_latency_ms=0,
+                           has_conflicting_evidence=False)
+
+    @staticmethod
     def _retrieve_evidence(request: AskRequest, db: Session):
         query = request.query.lower().replace("’", "'")
+        # Question contractions are framing, not evidence terms (e.g. "whats the difference").
+        query = re.sub(r"\b(what|who|where|when|how|why|that|there|it)'?s\b", r"\1 is", query)
         refusal = "I can only answer questions about your uploaded documents. Ask about a passage, obligation, or difference between documents."
         unrelated = (
             r"\b(?:who are you|your (?:name|age)|what can you do|what is clario)\b|"
@@ -42,39 +63,72 @@ class AskService:
         if re.search(unrelated, query):
             return [], 0.0, refusal
 
-        # Rank within the selected documents, then require evidence for the original question.
-        results, latency = search_service.search(query=request.query, mode="hybrid",
-            top_k=max(request.top_k or settings.DEFAULT_TOP_K, 6 if AskService._is_comparative_query(query) else 5),
-            document_ids=request.document_ids, db=db)
-        generic = {"can", "please", "tell", "explain", "give", "say", "says", "according", "uploaded", "selected",
-                   "document", "documents", "policy", "policies", "file", "files", "contract", "contracts", "summarize",
-                   "summary", "compare", "differences", "difference", "key", "main", "two", "summarise"}
-        terms = set(tokenize(query)) - generic
-        overview = not terms and re.search(r"\b(?:document|file|polic(?:y|ies)|contract)s?\b", query)
-        if not overview:
-            # A filename may scope a question, but is not evidence for an unrelated subject.
-            for title in {item["document_title"].lower() for item in results}:
-                if title and title in query:
-                    terms.difference_update(tokenize(title))
-            if not terms and re.search(r"\b(?:compar\w*|summary|summari[sz]e|differences?)\b", query):
-                return results, latency, refusal
-            if not terms:
-                return [], latency, refusal
-            required = min(2, len(terms))
-            results = [item for item in results if len(terms.intersection(
-                tokenize(item["snippet"]))) >= required]
-        return results, latency, "I could not find supporting passages in the selected documents. Try a question about their contents."
+        ready = db.query(Document.id, Document.title).filter(Document.status == "READY")
+        if request.document_ids:
+            ready = ready.filter(Document.id.in_(request.document_ids))
+        documents = ready.order_by(Document.title, Document.id).all()
+        if not documents:
+            return [], 0.0, "There are no indexed documents in this selection."
+        named = [doc for doc in documents if doc.title and doc.title.lower() in query]
+        scope = named or documents
+        subject = query
+        for doc in sorted(named, key=lambda d: len(d.title), reverse=True):
+            subject = subject.replace(doc.title.lower(), " ")
+        generic = set("""can please tell explain give say says according uploaded selected these those both document
+                         documents policy policies file files contract contracts summarize summarise summary summaries
+                         compare comparing comparison differences difference different key main two them between vs versus
+                         provide comprehensive overview highlights highlight clauses clause points point contents content
+                         pdf pdfs give overview agreements agreement uploaded attached attachments
+                         describe briefly brief versions version identify potential there specific specified outlined
+                         contain contains discuss talking talk covers cover""".split())
+        comparative = AskService._is_comparative_query(query)
+        if comparative:
+            # Strip comparison instructions while retaining topical qualifiers such as "retention".
+            subject = re.sub(r"\bside[ -]by[ -]side\b", " ", subject)
+            generic.update({"diff", "diffs", "differ", "differs", "changed", "changes", "change", "contrast",
+                            "distinguish", "delta", "vs", "major", "biggest", "important", "primary", "they", "we"})
+        terms = set(tokenize(subject)) - generic
+        overview = not terms and (named or request.document_ids or comparative or re.search(
+            r"\b(?:summari[sz]e|summary|pdfs?|documents?|files?|polic(?:y|ies)|contracts?)\b", query))
+        missing = "I could not find supporting passages in the selected documents. Try a question about their contents."
+        if not terms and not overview:
+            return [], 0.0, refusal
+
+        count = max(request.top_k or settings.DEFAULT_TOP_K, 6 if comparative else 5)
+        start = time.perf_counter()
+        groups = []
+        if overview:
+            # Broad questions have no keyword target. Sample real passages across each document.
+            for doc in scope:
+                positions = db.query(DocumentChunk.id).filter(DocumentChunk.document_id == doc.id).order_by(
+                    DocumentChunk.chunk_index).all()
+                size = min(len(positions), count)
+                chosen_ids = [positions[i * len(positions) // size].id for i in range(size)]
+                chosen = db.query(DocumentChunk.id, DocumentChunk.page_number, DocumentChunk.content).filter(
+                    DocumentChunk.id.in_(chosen_ids)).order_by(DocumentChunk.chunk_index).all()
+                groups.append([dict(chunk_id=row.id, document_id=doc.id, document_title=doc.title,
+                                    page_number=row.page_number, snippet=row.content, score=0.0) for row in chosen])
+        else:
+            scopes = [[d.id] for d in scope] if comparative else [[d.id for d in scope]]
+            keywords = {word.rstrip("s") for word in terms}
+            for ids in scopes:
+                hits, _ = search_service.search(query=" ".join(sorted(terms)), mode="hybrid", top_k=count,
+                                               document_ids=ids, db=db)
+                groups.append([hit for hit in hits if keywords.intersection(
+                    word.rstrip("s") for word in tokenize(hit["snippet"]))])
+        balanced = [hit for row in zip_longest(*groups) for hit in row if hit]
+        return balanced[:count], round((time.perf_counter() - start) * 1000, 2), missing
 
     @staticmethod
     def answer_question(request: AskRequest, db: Session) -> AskResponse:
+        if greeting := AskService._greeting(request):
+            return greeting
         results, ret_latency_ms, message = AskService._retrieve_evidence(request, db)
         t_retrieved = time.perf_counter()
         if not results:
             return AskResponse(query=request.query, answer=message, mode="document_scope", citations=[],
                                retrieval_latency_ms=ret_latency_ms, synthesis_latency_ms=0, has_conflicting_evidence=False)
 
-        # Sort results by relevance score descending
-        results = sorted(results, key=lambda x: x.get("score", 0), reverse=True)
 
         citations: List[CitationItem] = []
         for i, item in enumerate(results, start=1):
@@ -116,50 +170,35 @@ class AskService:
                     conflict_notes = f"Discrepancy detected between '{doc_a}' ({', '.join(list(diff_a)[:3])}) and '{doc_b}' ({', '.join(list(diff_b)[:3])})."
 
         # Determine effective LLM Provider and Model
-        provider = (request.llm_provider or settings.LLM_PROVIDER or "ollama").lower()
+        provider = AskService._provider(request)
         thinking_process = None
 
-        if provider == "ollama":
-            try:
+        try:
+            if provider == "ollama":
                 raw_answer = AskService._generate_ollama_answer(request.query, citations, model_override=request.local_model)
-                answer, thinking = AskService._extract_thinking(raw_answer)
-                thinking_process = thinking
                 mode = f"ollama_local ({request.local_model or settings.OLLAMA_MODEL})"
-            except Exception as e:
-                answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-                mode = f"extractive_synthesis (Ollama offline fallback: {str(e)[:40]}...)"
-        elif provider in ("lm_studio", "vllm", "openai_compatible", "local_ai"):
-            try:
+            elif provider in ("lm_studio", "vllm", "openai_compatible", "local_ai"):
                 base_url = settings.LOCAL_AI_BASE_URL if provider != "lm_studio" else "http://localhost:1234/v1"
                 raw_answer = AskService._generate_local_openai_answer(
-                    request.query, citations,
-                    base_url=base_url,
-                    model=request.local_model or settings.LOCAL_AI_MODEL or "default",
-                    api_key=settings.LOCAL_AI_API_KEY
-                )
-                answer, thinking = AskService._extract_thinking(raw_answer)
-                thinking_process = thinking
+                    request.query, citations, base_url=base_url, model=request.local_model or settings.LOCAL_AI_MODEL or "default",
+                    api_key=settings.LOCAL_AI_API_KEY)
                 mode = f"{provider} ({request.local_model or settings.LOCAL_AI_MODEL})"
-            except Exception as e:
-                answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-                mode = f"extractive_synthesis ({provider} offline fallback: {str(e)[:40]}...)"
-        elif provider == "gemini" and settings.GEMINI_API_KEY:
-            try:
-                answer = AskService._generate_gemini_answer(request.query, citations)
+            elif provider == "gemini" and settings.GEMINI_API_KEY:
+                raw_answer = AskService._generate_gemini_answer(request.query, citations)
                 mode = "llm_generated (Gemini)"
-            except Exception as e:
-                answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-                mode = f"extractive_synthesis (Gemini fallback: {str(e)[:40]})"
-        elif provider == "openai" and settings.OPENAI_API_KEY:
-            try:
-                answer = AskService._generate_openai_answer(request.query, citations)
+            elif provider == "openai" and settings.OPENAI_API_KEY:
+                raw_answer = AskService._generate_openai_answer(request.query, citations)
                 mode = "llm_generated (OpenAI)"
-            except Exception as e:
-                answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-                mode = f"extractive_synthesis (OpenAI fallback: {str(e)[:40]})"
-        else:
+            else:
+                raise ValueError("No generative provider configured")
+            answer, thinking_process = AskService._extract_thinking(raw_answer)
+            if not answer.strip():
+                raise ValueError("Empty model response")
+        except Exception as exc:
+            if request.require_ai:
+                raise ModelUnavailable(f"{provider} could not generate an answer. Check the model connection in Settings and retry.") from exc
             answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-            mode = "extractive_synthesis (Verified document passages)"
+            mode = "extractive_synthesis" if provider == "extractive" else f"extractive_synthesis ({provider} unavailable)"
 
         show_thinking = request.thinking_mode if request.thinking_mode is not None else settings.THINKING_MODE
         # If thinking mode was requested but model did not output <think> tags, construct chain-of-evidence synthesis
@@ -320,14 +359,24 @@ Direct Cited Answer:"""
             AskService.save_answer(request, response, db)
             return f"event: done\ndata: {response.model_dump_json()}\n\n"
 
-        provider = (request.llm_provider or settings.LLM_PROVIDER or "ollama").lower()
+        provider = AskService._provider(request)
         if provider != "ollama":
-            response = AskService.answer_question(request, db)
+            try:
+                response = AskService.answer_question(request, db)
+            except ModelUnavailable as exc:
+                yield f"event: error\ndata: {json.dumps({'detail': str(exc)})}\n\n"
+                return
             yield f"event: citations\ndata: {json.dumps([c.model_dump() for c in response.citations])}\n\n"
             if response.thinking_process:
                 yield f"event: thinking\ndata: {json.dumps({'text': response.thinking_process})}\n\n"
             yield f"event: token\ndata: {json.dumps({'text': response.answer})}\n\n"
             yield finish(response)
+            return
+
+        if greeting := AskService._greeting(request):
+            yield "event: citations\ndata: []\n\n"
+            yield f"event: token\ndata: {json.dumps({'text': greeting.answer})}\n\n"
+            yield finish(greeting)
             return
 
         results, ret_latency_ms, msg = AskService._retrieve_evidence(request, db)
@@ -337,8 +386,6 @@ Direct Cited Answer:"""
             yield finish(AskResponse(query=request.query, answer=msg, citations=[], mode="document_scope",
                        retrieval_latency_ms=ret_latency_ms, synthesis_latency_ms=0, has_conflicting_evidence=False))
             return
-
-        results = sorted(results, key=lambda x: x.get("score", 0), reverse=True)
 
         citations: List[CitationItem] = []
         for i, item in enumerate(results, start=1):
@@ -396,6 +443,9 @@ Direct Cited Answer:"""
             if not full_text.strip():
                 raise ValueError("Model returned no answer")
         except Exception:
+            if request.require_ai:
+                yield 'event: error\ndata: {"detail":"Ollama could not finish the answer. Check the model connection and retry."}\n\n'
+                return
             provider = "extractive"
             # Fallback to extractive streaming
             full_text = AskService._extractive_synthesis(request.query, citations, False, None)

@@ -111,6 +111,7 @@ class BenchmarkSummaryResponse(BaseModel):
 # ---------------- Ask Clario / Q&A ----------------
 
 class AskRequest(BaseModel):
+    require_ai: bool = False
     query: QueryText
     document_ids: Optional[List[str]] = None
     collection: Optional[str] = None

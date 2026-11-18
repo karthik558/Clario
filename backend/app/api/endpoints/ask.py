@@ -1,17 +1,20 @@
 import json
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from app.models.entities import AnswerRecord
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.schemas.dtos import AskRequest, AskResponse
-from app.services.ask_service import AskService
+from app.services.ask_service import AskService, ModelUnavailable
 
 router = APIRouter()
 
 @router.post("/ask", response_model=AskResponse)
 def ask_clario(request: AskRequest, db: Session = Depends(get_db)):
-    response = AskService.answer_question(request, db)
+    try:
+        response = AskService.answer_question(request, db)
+    except ModelUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     AskService.save_answer(request, response, db)
     return response
 

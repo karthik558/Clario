@@ -141,3 +141,52 @@ def test_corrupt_upload_is_never_searchable(workspace, tmp_path, monkeypatch):
     with factory() as db:
         assert db.query(Document).one().status == "ERROR"
         assert db.query(DocumentChunk).count() == 0
+
+
+def test_ai_comparison_uses_both_selected_sources_or_reports_model_failure(workspace, monkeypatch):
+    client, factory = workspace
+    seed_report_data(factory)
+    monkeypatch.setattr(settings, "LLM_PROVIDER", "extractive")
+    captured = []
+    def generate(query, citations, model_override=None):
+        captured.extend(citations)
+        return "The comparison uses both selected sources [1] [2]."
+    monkeypatch.setattr(AskService, "_generate_ollama_answer", generate)
+    payload = {"query": "Compare the two selected documents and summarize the key differences.",
+               "document_ids": ["a", "b"], "require_ai": True}
+    response = client.post("/api/ask", json=payload)
+    assert response.status_code == 200
+    assert response.json()["mode"].startswith("ollama_local")
+    assert {item.document_id for item in captured} == {"a", "b"}
+
+    def offline(*args, **kwargs):
+        raise ConnectionError("offline")
+    monkeypatch.setattr(AskService, "_generate_ollama_answer", offline)
+    assert client.post("/api/ask", json=payload).status_code == 503
+    assert len(client.get("/api/ask/history").json()) == 1
+
+@pytest.mark.parametrize("query", [
+    "whats the difference between two",
+    "What's the biggest difference between the two PDFs?",
+    "How do they differ?",
+    "What changed?",
+    "Compare them side by side",
+])
+def test_informal_comparisons_use_workspace_documents(workspace, query):
+    client, factory = workspace
+    seed_report_data(factory)
+    response = client.post("/api/ask", json={"query": query, "llm_provider": "extractive"})
+    assert response.status_code == 200
+    assert {c["document_id"] for c in response.json()["citations"]} == {"a", "b", "outside"}
+
+@pytest.mark.parametrize('path', ['/api/ask', '/api/ask/stream'])
+def test_casual_greeting_is_saved_without_document_search(workspace, path):
+    client, _ = workspace
+    query = 'Bro, how are you?'
+    response = client.post(path, json={'query': query, 'require_ai': True, 'llm_provider': 'ollama'})
+    assert response.status_code == 200
+    saved, = client.get('/api/ask/history').json()
+    assert saved['query'] == query
+    assert saved['response']['mode'] == 'greeting'
+    assert saved['response']['citations'] == []
+    assert saved['response']['answer'] in response.text

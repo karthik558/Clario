@@ -24,7 +24,7 @@ const policies = {
     title: 'Cookies and browser storage',
     description: 'What Clario stores in your browser and on the workspace server.',
     sections: [
-      ['Browser behavior', 'The Clario interface does not set cookies or use local storage for advertising, analytics, or preferences. Interface state, such as an open sidebar or search dialog, is held in memory.'],
+      ['Browser behavior', 'Ask Clario saves selected document IDs in this browser so your source selection survives a refresh. Interface state, such as an open sidebar or search dialog, is held in memory.'],
       ['Workspace data', 'Documents and saved review records live on the workspace server. Clearing browser data leaves these records on the server.'],
       ['Deployment settings', 'A sign-in service or proxy added by your workspace operator may set its own cookies. Your browser’s site settings show the cookies in use for this deployment.'],
     ],
