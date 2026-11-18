@@ -24,6 +24,14 @@ export function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  const enterWorkspace = () => {
+    try {
+      sessionStorage.setItem('clario_workspace_entered', 'true');
+    } catch {
+      // Non-fatal
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white text-clario-text relative">
       {/* Home Page Preloader with smooth timing and zero workspace text */}
@@ -50,7 +58,7 @@ export function HomePage() {
           <div className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight">
             <img src="/clario.webp" alt="Clario" width="784" height="196" className="h-8 w-auto" />
           </div>
-          <Link to="/" className="flex items-center gap-2 text-sm font-medium text-slate-200 hover:text-white">
+          <Link to="/" onClick={enterWorkspace} className="flex items-center gap-2 text-sm font-medium text-slate-200 hover:text-white">
             Workspace <ArrowUpRight aria-hidden="true" size={16} />
           </Link>
         </div>
@@ -61,7 +69,7 @@ export function HomePage() {
             <p className="mb-5 text-xs font-semibold uppercase tracking-[.18em] text-slate-600">Document intelligence</p>
             <h1 className="max-w-xl text-5xl font-semibold leading-[1.05] tracking-[-.055em] sm:text-6xl xl:text-7xl">Your documents,<br />down to the clause.</h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-slate-600">Find answers in contracts and policies, see what changed, and keep track of what comes next.</p>
-            <Link to="/" className="mt-8 inline-flex items-center gap-4 rounded-md bg-clario-navy px-5 py-3 text-sm font-semibold text-white hover:bg-clario-navy-light">
+            <Link to="/" onClick={enterWorkspace} className="mt-8 inline-flex items-center gap-4 rounded-md bg-clario-navy px-5 py-3 text-sm font-semibold text-white hover:bg-clario-navy-light">
               Open workspace <ArrowRight aria-hidden="true" size={17} />
             </Link>
           </div>
@@ -89,7 +97,7 @@ export function HomePage() {
             <h2 className="text-3xl font-semibold tracking-tight">Explore the workspace</h2>
             <div className="mt-7 grid gap-4 md:grid-cols-3">
               {workflows.map(({ path, icon: Icon, title, detail }) => (
-                <Link key={path} to={path} className="group rounded-clario border border-clario-border bg-white p-6 transition-colors hover:border-slate-400">
+                <Link key={path} to={path} onClick={enterWorkspace} className="group rounded-clario border border-clario-border bg-white p-6 transition-colors hover:border-slate-400">
                   <div className="flex items-center justify-between"><Icon aria-hidden="true" size={23} strokeWidth={1.6} /><ArrowUpRight aria-hidden="true" size={17} className="text-slate-400 group-hover:text-slate-900" /></div>
                   <h3 className="mt-6 text-lg font-semibold tracking-tight">{title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">{detail}</p>

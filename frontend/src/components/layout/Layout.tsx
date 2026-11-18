@@ -25,6 +25,14 @@ export const Layout: React.FC = () => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('clario_workspace_entered', 'true');
+    } catch {
+      // Non-fatal if storage is unavailable
+    }
+  }, []);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);

@@ -1,5 +1,5 @@
 import { RenewalPlannerPage } from './pages/RenewalPlannerPage';
-import React from 'react';
+import React, { useState } from 'react';
 import { PolicyPage } from './pages/PolicyPage';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -30,15 +30,37 @@ const queryClient = new QueryClient({
   },
 });
 
+export const RootIndexRoute: React.FC = () => {
+  const [shouldRedirect] = useState(() => {
+    try {
+      return !sessionStorage.getItem('clario_workspace_entered');
+    } catch {
+      return false;
+    }
+  });
+
+  if (shouldRedirect) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return <OverviewPage />;
+};
+
 export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          {/* Public Website Routes (Styled like /home) */}
           <Route path="/home" element={<HomePage />} />
+          <Route path="/terms" element={<PolicyPage policy="terms" />} />
+          <Route path="/privacy" element={<PolicyPage policy="privacy" />} />
+          <Route path="/cookies" element={<PolicyPage policy="cookies" />} />
+
+          {/* Workspace Routes */}
           <Route path="/" element={<Layout />}>
+            <Route index element={<RootIndexRoute />} />
             <Route path="renewal-planner" element={<RenewalPlannerPage />} />
-            <Route index element={<OverviewPage />} />
             <Route path="documents" element={<DocumentsPage />} />
             <Route path="ask" element={<AskPage />} />
             <Route path="compare" element={<ComparePage />} />
@@ -53,9 +75,6 @@ export const App: React.FC = () => {
             <Route path="briefs" element={<BriefsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route path="terms" element={<PolicyPage policy="terms" />} />
-            <Route path="privacy" element={<PolicyPage policy="privacy" />} />
-            <Route path="cookies" element={<PolicyPage policy="cookies" />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
