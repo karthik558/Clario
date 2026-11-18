@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   Files,
@@ -78,18 +78,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-black/50 md:hidden" />}
       <aside ref={sidebarRef} id="workspace-navigation" aria-label="Workspace navigation" className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-open' : ''}`}>
         <div className={`flex h-20 shrink-0 items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-4 sm:px-5'} border-b border-white/10`}>
-          <a
-            href="https://karthiklal.in"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/"
+            onClick={onCloseMobile}
             className={`flex items-center gap-3 text-white hover:opacity-90 transition-opacity min-w-0 ${collapsed ? 'hidden md:hidden' : ''}`}
-            title="Clario"
+            title="Clario Overview"
           >
             <Layers className="w-7 h-7 text-white shrink-0" aria-hidden="true" />
             <div className="sidebar-label">
               <span className="text-xl font-semibold tracking-tight text-white">Clario</span>
             </div>
-          </a>
+          </Link>
 
           {/* Desktop Collapse / Expand Button near Clario */}
           <button

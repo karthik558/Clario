@@ -16,9 +16,13 @@ class GraphService:
             return GraphDataResponse(
                 nodes=[],
                 edges=[],
-                summary="No documents in workspace. Upload documents to generate the visual knowledge network.",
-                total_nodes=0,
-                total_edges=0
+                stats={
+                    "total_documents": 0,
+                    "total_findings": 0,
+                    "total_topics": 0,
+                    "total_nodes": 0,
+                    "total_edges": 0
+                }
             )
 
         active_doc_ids = {d.id for d in docs}
