@@ -209,14 +209,14 @@ export const FindingsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Critical & High</span>
-            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <AlertCircle className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
             {findings.filter(f => f.severity === 'critical' || f.severity === 'high').length}
           </span>
-          <span className="text-[10px] text-rose-500 font-medium mt-1">
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
             Immediate attention
           </span>
         </Card>
@@ -224,14 +224,14 @@ export const FindingsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Under Review</span>
-            <div className="p-1.5 rounded-md bg-amber-50 text-amber-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums text-amber-700 font-mono">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
             {findings.filter(f => f.status === 'under_review').length}
           </span>
-          <span className="text-[10px] text-amber-600 font-medium mt-1">
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
             Pending resolution
           </span>
         </Card>
@@ -239,14 +239,14 @@ export const FindingsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Resolved / Confirmed</span>
-            <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums text-emerald-700 font-mono">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
             {findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length}
           </span>
-          <span className="text-[10px] text-emerald-600 font-medium mt-1">
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
             Verified & addressed
           </span>
         </Card>

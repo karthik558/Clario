@@ -148,28 +148,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="relative p-2.5 rounded-md bg-slate-800 border border-emerald-500/40 text-emerald-400 mx-auto block hover:bg-slate-700 transition-all shadow-xs"
+                className="relative p-2.5 rounded-md bg-slate-800 border border-slate-700 text-slate-200 mx-auto block hover:bg-slate-700 transition-all shadow-xs"
                 title={`A Task is Running: ${activeTasks[0].title} (${activeTasks[0].progress}%)`}
                 aria-label="A task is running"
               >
-                <Cpu className="w-4 h-4 animate-spin text-emerald-400" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400" />
+                <Cpu className="w-4 h-4 animate-spin text-slate-300" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-400" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="w-full text-left p-2.5 rounded-md bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/30 hover:border-emerald-500/60 transition-all shadow-sm space-y-1.5 group"
+                className="w-full text-left p-2.5 rounded-md bg-slate-800/90 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 transition-all shadow-sm space-y-1.5 group"
                 title="Click to view live task progress or end task"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400 shrink-0" />
-                    <span className="text-[11px] font-bold text-emerald-300 tracking-wide uppercase font-mono">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300 shrink-0" />
+                    <span className="text-[11px] font-bold text-slate-200 tracking-wide uppercase font-mono">
                       A Task is Running
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-500/30 px-1.5 py-0.2 rounded-md font-bold">
+                  <span className="text-[10px] font-mono text-slate-200 bg-slate-900 border border-slate-700 px-1.5 py-0.2 rounded-md font-bold">
                     {activeTasks[0].progress}%
                   </span>
                 </div>
@@ -183,7 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-1">
                   <div
-                    className="h-full bg-emerald-400 rounded-full transition-all duration-300"
+                    className="h-full bg-slate-400 rounded-full transition-all duration-300"
                     style={{ width: `${Math.max(10, activeTasks[0].progress)}%` }}
                   />
                 </div>
@@ -194,11 +194,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="p-2 rounded-md hover:bg-white/10 text-emerald-400 mx-auto block"
+                className="p-2 rounded-md hover:bg-white/10 text-slate-300 mx-auto block"
                 title={`${tasks.length} task(s) ready`}
                 aria-label="Tasks"
               >
-                <CheckCircle2 className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4 text-slate-300" />
               </button>
             ) : (
               <button
@@ -208,7 +208,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title="View completed tasks"
               >
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-300" />
                   <span className="text-[11px] font-medium text-slate-200">Tasks Ready</span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded-md">

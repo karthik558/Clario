@@ -28,7 +28,8 @@ import {
   Sliders,
   CheckCircle2,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  Rows3
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackgroundTasks } from '../context/BackgroundTaskContext';
@@ -39,6 +40,8 @@ import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { FileUploadZone } from '../components/documents/FileUploadZone';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
+import { DocumentDrawer } from '../components/documents/DocumentDrawer';
+import { RiskRadarWidget } from '../components/analytics/RiskRadarWidget';
 
 interface ExposureVector {
   id: string;
@@ -75,6 +78,16 @@ export const OverviewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [modalDocId, setModalDocId] = useState<string | null>(null);
+  const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
+    return (localStorage.getItem('clario_table_density') as 'comfortable' | 'compact') || 'comfortable';
+  });
+
+  const toggleDensity = () => {
+    const next = density === 'comfortable' ? 'compact' : 'comfortable';
+    setDensity(next);
+    localStorage.setItem('clario_table_density', next);
+  };
 
   // Quick Compare State
   const [quickDocA, setQuickDocA] = useState<string>('');
@@ -82,6 +95,7 @@ export const OverviewPage: React.FC = () => {
   const [comparing, setComparing] = useState(false);
   const [quickCompareResult, setQuickCompareResult] = useState<any | null>(null);
   const [riskScorecard, setRiskScorecard] = useState<any | null>(null);
+  const [selectedRiskDocIndex, setSelectedRiskDocIndex] = useState<number>(0);
   const [selectedCell, setSelectedCell] = useState<CellDetail | null>(null);
 
   // Compute exposure data for each document and vector
@@ -472,52 +486,113 @@ export const OverviewPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Active Document Risk Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {riskScorecard.documents?.map((doc: any) => (
-              <div
-                key={doc.document_id}
-                className="p-3.5 rounded-md border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-2 shadow-xs"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-xs font-bold text-slate-900 truncate" title={doc.document_title}>
-                    {doc.document_title}
-                  </span>
-                  <Badge variant={doc.composite_score >= 80 ? 'navy' : 'gray'} size="sm">
-                    {doc.composite_score}/100
-                  </Badge>
-                </div>
-
-                <div className="space-y-1 text-xs">
-                  <div className="flex items-center justify-between text-slate-600">
-                    <span>Strongest Protection:</span>
-                    <span className="font-medium text-slate-800 truncate max-w-[140px] text-right">
-                      {doc.strongest_protection?.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-600">
-                    <span>Primary Exposure:</span>
-                    <span className="font-medium text-rose-700 truncate max-w-[140px] text-right">
-                      {doc.highest_risk_area?.name}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-slate-500 font-medium">
-                    Grade {doc.composite_grade}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/negotiate')}
-                    className="text-xs font-semibold text-slate-900 hover:text-slate-700 flex items-center gap-0.5"
+          {/* Active Document Risk Cards & Radar Visualization */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch pt-1">
+            {/* Document Cards List */}
+            <div className={`${riskScorecard.documents?.[0]?.pillars?.length >= 3 ? 'lg:col-span-6' : 'lg:col-span-12'} flex flex-col justify-between gap-3 h-full`}>
+              {riskScorecard.documents?.map((doc: any, dIdx: number) => {
+                const isSelected = selectedRiskDocIndex === dIdx;
+                return (
+                  <div
+                    key={doc.document_id}
+                    onClick={() => setSelectedRiskDocIndex(dIdx)}
+                    className={`flex-1 p-4 rounded-md border transition-all flex flex-col justify-between shadow-xs cursor-pointer ${
+                      isSelected
+                        ? 'border-clario-navy bg-clario-navy/5 ring-1 ring-clario-navy'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
                   >
-                    <span>Redline</span>
-                    <ArrowUpRight className="w-3 h-3" />
-                  </button>
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-slate-900 truncate block" title={doc.document_title}>
+                            {doc.document_title}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            {doc.document_title.endsWith('.pdf') ? doc.document_title : `${doc.document_title}.pdf`}
+                          </span>
+                        </div>
+                        <Badge variant={doc.composite_score >= 80 ? 'navy' : 'gray'} size="sm">
+                          {doc.composite_score}/100
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-1.5 text-xs py-1">
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span>Strongest Protection:</span>
+                          <span className="font-semibold text-slate-900 truncate max-w-[160px] text-right">
+                            {doc.strongest_protection?.name || 'Standard Terms'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span>Primary Exposure:</span>
+                          <span className="font-semibold text-slate-900 truncate max-w-[160px] text-right">
+                            {doc.highest_risk_area?.name || 'Standard Terms'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 mt-2 border-t border-slate-100 flex items-center justify-between text-xs" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          Grade {doc.composite_grade}
+                        </span>
+                        <span className="text-[10px] text-slate-400">&bull;</span>
+                        <span className="text-[11px] text-slate-500">
+                          {isSelected ? 'Active Topology' : 'Click to View'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/negotiate')}
+                        className="text-xs font-semibold text-slate-900 hover:text-slate-700 flex items-center gap-1 transition-colors"
+                      >
+                        <span>Redline</span>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Interactive 6-Pillar Risk Radar Widget */}
+            {riskScorecard.documents?.[selectedRiskDocIndex]?.pillars?.length >= 3 && (
+              <div className="lg:col-span-6 flex flex-col items-center justify-between p-4 rounded-md border border-slate-200 bg-slate-50/60 shadow-2xs h-full">
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    6-Pillar Risk Topology
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-700 font-semibold truncate max-w-[200px]">
+                    {riskScorecard.documents[selectedRiskDocIndex]?.document_title}
+                  </span>
+                </div>
+                <div className="flex-1 flex items-center justify-center my-auto">
+                  <RiskRadarWidget
+                    size={280}
+                    primarySeries={{
+                      label: riskScorecard.documents[selectedRiskDocIndex]?.document_title,
+                      pillars: riskScorecard.documents[selectedRiskDocIndex]?.pillars,
+                    }}
+                    comparisonSeries={
+                      riskScorecard.documents.length > 1
+                        ? {
+                            label:
+                              riskScorecard.documents[
+                                selectedRiskDocIndex === 0 ? 1 : 0
+                              ]?.document_title,
+                            pillars:
+                              riskScorecard.documents[
+                                selectedRiskDocIndex === 0 ? 1 : 0
+                              ]?.pillars,
+                          }
+                        : undefined
+                    }
+                  />
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </Card>
       )}
@@ -1046,22 +1121,37 @@ export const OverviewPage: React.FC = () => {
               <p className="text-xs text-clario-text-secondary mt-0.5">Open a document to inspect its text and source passages.</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate('/documents')} className="flex items-center gap-1.5 shrink-0">
-            <span>View All Documents</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleDensity}
+              className={`px-2.5 py-1.5 rounded-md border text-xs transition-colors flex items-center gap-1.5 shrink-0 ${
+                density === 'compact'
+                  ? 'bg-slate-100 text-slate-900 border-slate-300 font-semibold'
+                  : 'bg-white text-slate-600 border-slate-200 hover:text-slate-900'
+              }`}
+              title={density === 'compact' ? 'Switch to Comfortable density' : 'Switch to Compact density'}
+              aria-label="Table density"
+            >
+              <Rows3 className="w-3.5 h-3.5" />
+              <span className="capitalize">{density}</span>
+            </button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/documents')} className="flex items-center gap-1.5 shrink-0">
+              <span>View All Documents</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-clario-border text-clario-text-secondary font-semibold text-[11px] uppercase tracking-wider">
-                <th className="pb-3 px-3">Document Name</th>
-                <th className="pb-3 px-3">Format</th>
-                <th className="pb-3 px-3">Collection</th>
-                <th className="pb-3 px-3">Passages</th>
-                <th className="pb-3 px-3">Status</th>
-                <th className="pb-3 px-3 text-right">Actions</th>
+                <th className={`${density === 'compact' ? 'py-2 px-3' : 'pb-3 px-3'}`}>Document Name</th>
+                <th className={`${density === 'compact' ? 'py-2 px-2.5' : 'pb-3 px-3'}`}>Format</th>
+                <th className={`${density === 'compact' ? 'py-2 px-2.5' : 'pb-3 px-3'}`}>Collection</th>
+                <th className={`${density === 'compact' ? 'py-2 px-2.5' : 'pb-3 px-3'}`}>Passages</th>
+                <th className={`${density === 'compact' ? 'py-2 px-2.5' : 'pb-3 px-3'}`}>Status</th>
+                <th className={`${density === 'compact' ? 'py-2 px-3' : 'pb-3 px-3'} text-right`}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-clario-border/60">
@@ -1072,30 +1162,30 @@ export const OverviewPage: React.FC = () => {
                   onClick={() => setSelectedDocId(doc.id)}
                   className="hover:bg-slate-50 cursor-pointer transition-colors group"
                 >
-                  <td className="py-3 px-3 font-semibold text-clario-navy flex items-center space-x-2.5">
+                  <td className={`${density === 'compact' ? 'py-1.5 px-3' : 'py-3 px-3'} font-semibold text-clario-navy flex items-center space-x-2.5`}>
                     <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
                       <FileText className="w-3.5 h-3.5" />
                     </div>
                     <span className="truncate max-w-sm">{doc.title}</span>
                   </td>
-                  <td className="py-3 px-3">
+                  <td className={`${density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'}`}>
                     <Badge variant="navy" size="sm">
                       {doc.file_type.toUpperCase()}
                     </Badge>
                   </td>
-                  <td className="py-3 px-3 text-clario-text-secondary font-medium">
+                  <td className={`${density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'} text-clario-text-secondary font-medium`}>
                     <div className="flex items-center gap-1.5">
                       <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{doc.collection}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-3 font-mono text-slate-900 font-medium">
+                  <td className={`${density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'} font-mono text-slate-900 font-medium`}>
                     <div className="flex items-center gap-1.5">
                       <FileCheck2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{doc.chunk_count} chunks</span>
                     </div>
                   </td>
-                  <td className="py-3 px-3">
+                  <td className={`${density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'}`}>
                     <div className="flex items-center gap-1.5">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${doc.status === 'READY' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                       <Badge variant={doc.status === 'READY' ? 'sage' : 'gold'} size="sm">
@@ -1103,11 +1193,11 @@ export const OverviewPage: React.FC = () => {
                       </Badge>
                     </div>
                   </td>
-                  <td className="py-3 px-3 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
+                  <td className={`${density === 'compact' ? 'py-1.5 px-3' : 'py-3 px-3'} text-right space-x-2`} onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setSelectedDocId(doc.id)}
                       className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                      title="Inspect chunks"
+                      title="Inspect chunks in side drawer"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
@@ -1126,10 +1216,20 @@ export const OverviewPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* Document Viewer Modal */}
-      <DocumentViewerModal
+      {/* Split-Screen Document Source Drawer */}
+      <DocumentDrawer
         documentId={selectedDocId}
         onClose={() => setSelectedDocId(null)}
+        onExpandToModal={() => {
+          setModalDocId(selectedDocId);
+          setSelectedDocId(null);
+        }}
+      />
+
+      {/* Full-Screen Document Inspector Modal */}
+      <DocumentViewerModal
+        documentId={modalDocId}
+        onClose={() => setModalDocId(null)}
       />
     </div>
   );

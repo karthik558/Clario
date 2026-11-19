@@ -17,7 +17,12 @@ import {
   LayoutGrid,
   List,
   X,
-  HardDrive
+  HardDrive,
+  CheckSquare,
+  Square,
+  FileSpreadsheet,
+  FileCode,
+  Rows3
 } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { workspaceDate } from '../utils/date';
@@ -29,6 +34,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { FileUploadZone } from '../components/documents/FileUploadZone';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
+import { DocumentDrawer } from '../components/documents/DocumentDrawer';
 
 export const DocumentsPage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -38,9 +44,20 @@ export const DocumentsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [collectionFilter, setCollectionFilter] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
+    return (localStorage.getItem('clario_table_density') as 'comfortable' | 'compact') || 'comfortable';
+  });
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [showUploadZone, setShowUploadZone] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [modalDocId, setModalDocId] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+
+  const toggleDensity = () => {
+    const next = density === 'comfortable' ? 'compact' : 'comfortable';
+    setDensity(next);
+    localStorage.setItem('clario_table_density', next);
+  };
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -82,6 +99,62 @@ export const DocumentsPage: React.FC = () => {
       } catch {
         setError('Could not delete the document. Please retry.');
       }
+    }
+  };
+
+  const handleExportJSON = () => {
+    const selected = documents.filter((d) => selectedDocIds.includes(d.id));
+    const blob = new Blob([JSON.stringify(selected, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clario-documents-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportCSV = () => {
+    const selected = documents.filter((d) => selectedDocIds.includes(d.id));
+    const headers = ['ID', 'Title', 'Filename', 'Format', 'Collection', 'Chunks', 'Word Count', 'Status', 'Created At'];
+    const rows = selected.map((d) => [
+      d.id,
+      `"${(d.title || '').replace(/"/g, '""')}"`,
+      `"${(d.filename || '').replace(/"/g, '""')}"`,
+      d.file_type,
+      `"${(d.collection || '').replace(/"/g, '""')}"`,
+      d.chunk_count || 0,
+      d.word_count || 0,
+      d.status,
+      d.created_at || ''
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clario-documents-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedDocIds.length === filteredDocuments.length) {
+      setSelectedDocIds([]);
+    } else {
+      setSelectedDocIds(filteredDocuments.map((d) => d.id));
+    }
+  };
+
+  const toggleSelectDoc = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedDocIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkCompare = () => {
+    if (selectedDocIds.length === 2) {
+      window.location.href = `/compare?docA=${selectedDocIds[0]}&docB=${selectedDocIds[1]}`;
     }
   };
 
@@ -171,7 +244,7 @@ export const DocumentsPage: React.FC = () => {
         </div>
       </PageHeader>
 
-      {/* Metric Summary Cards - Matched directly to / Overview Page design */}
+      {/* Metric Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
@@ -222,7 +295,7 @@ export const DocumentsPage: React.FC = () => {
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Indexing Health</span>
             <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-slate-700" />
             </div>
           </div>
           <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
@@ -329,6 +402,21 @@ export const DocumentsPage: React.FC = () => {
               </button>
             )}
 
+            {/* Density Switcher */}
+            <button
+              onClick={toggleDensity}
+              className={`px-2.5 py-1.5 rounded-md border text-xs transition-colors flex items-center gap-1.5 shrink-0 ${
+                density === 'compact'
+                  ? 'bg-slate-100 text-slate-900 border-slate-300 font-semibold'
+                  : 'bg-white text-slate-600 border-slate-200 hover:text-slate-900'
+              }`}
+              title={density === 'compact' ? 'Switch to Comfortable density' : 'Switch to Compact density'}
+              aria-label="Table density"
+            >
+              <Rows3 className="w-3.5 h-3.5" />
+              <span className="capitalize hidden sm:inline">{density}</span>
+            </button>
+
             {/* View Mode Toggle */}
             <div className="flex items-center border border-slate-200 rounded-md p-0.5 bg-slate-50 shrink-0">
               <button
@@ -395,104 +483,141 @@ export const DocumentsPage: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold text-[11px] uppercase tracking-wider">
-                  <th className="py-3 px-4">Document</th>
-                  <th className="py-3 px-3">Format</th>
-                  <th className="py-3 px-3">Collection</th>
-                  <th className="py-3 px-3">Passages</th>
-                  <th className="py-3 px-3">Word Count</th>
-                  <th className="py-3 px-3">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className={`${density === 'compact' ? 'py-2 px-3' : 'py-3 px-3'} w-8`}>
+                    <button
+                      type="button"
+                      onClick={toggleSelectAll}
+                      className="text-slate-400 hover:text-slate-700 flex items-center transition-colors"
+                      title={selectedDocIds.length === filteredDocuments.length ? 'Deselect all' : 'Select all'}
+                      aria-label="Toggle select all documents"
+                    >
+                      {filteredDocuments.length > 0 && selectedDocIds.length === filteredDocuments.length ? (
+                        <CheckSquare className="w-4 h-4 text-clario-navy" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-300" />
+                      )}
+                    </button>
+                  </th>
+                  <th className={density === 'compact' ? 'py-2 px-3' : 'py-3 px-4'}>Document</th>
+                  <th className={density === 'compact' ? 'py-2 px-2.5' : 'py-3 px-3'}>Format</th>
+                  <th className={density === 'compact' ? 'py-2 px-2.5' : 'py-3 px-3'}>Collection</th>
+                  <th className={density === 'compact' ? 'py-2 px-2.5' : 'py-3 px-3'}>Passages</th>
+                  <th className={density === 'compact' ? 'py-2 px-2.5' : 'py-3 px-3'}>Word Count</th>
+                  <th className={density === 'compact' ? 'py-2 px-2.5' : 'py-3 px-3'}>Status</th>
+                  <th className={`${density === 'compact' ? 'py-2 px-3' : 'py-3 px-4'} text-right`}>Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredDocuments.map((doc) => (
-                  <tr
-                    key={doc.id}
-                    onClick={() => setSelectedDocId(doc.id)}
-                    className="hover:bg-slate-50 cursor-pointer transition-colors group"
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 rounded-md bg-clario-navy/5 text-clario-navy shrink-0 group-hover:bg-clario-navy/10 transition-colors">
-                          <FileText className="w-4 h-4" />
+                {filteredDocuments.map((doc) => {
+                  const isSelected = selectedDocIds.includes(doc.id);
+                  return (
+                    <tr
+                      key={doc.id}
+                      onClick={() => setSelectedDocId(doc.id)}
+                      className={`cursor-pointer transition-colors group ${
+                        isSelected ? 'bg-clario-navy/5 hover:bg-clario-navy/10' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <td
+                        className={`${density === 'compact' ? 'py-1.5 px-3' : 'py-3 px-3'} w-8`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => toggleSelectDoc(doc.id, e)}
+                          className="text-slate-400 hover:text-slate-700 flex items-center transition-colors"
+                          aria-label={`Select ${doc.title}`}
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="w-4 h-4 text-clario-navy" />
+                          ) : (
+                            <Square className="w-4 h-4 text-slate-300 group-hover:text-slate-400" />
+                          )}
+                        </button>
+                      </td>
+                      <td className={density === 'compact' ? 'py-1.5 px-3' : 'py-3 px-4'}>
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 rounded-md bg-clario-navy/5 text-clario-navy shrink-0 group-hover:bg-clario-navy/10 transition-colors">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900 group-hover:text-clario-navy transition-colors truncate max-w-md">
+                              {doc.title}
+                            </p>
+                            <p className="text-[11px] text-slate-400 font-mono truncate max-w-xs">
+                              {doc.filename}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-900 group-hover:text-clario-navy transition-colors truncate max-w-md">
-                            {doc.title}
-                          </p>
-                          <p className="text-[11px] text-slate-400 font-mono truncate max-w-xs">
-                            {doc.filename}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <Badge variant="navy" size="sm">
-                        {doc.file_type.toUpperCase()}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-3">
-                      {doc.collection ? (
-                        <Badge variant="gray" size="sm">
-                          {doc.collection}
+                      </td>
+                      <td className={density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'}>
+                        <Badge variant="navy" size="sm">
+                          {doc.file_type.toUpperCase()}
                         </Badge>
-                      ) : (
-                        <span className="text-slate-400 text-[11px]">—</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 font-mono font-bold text-slate-900">
-                      {doc.chunk_count} chunks
-                    </td>
-                    <td className="py-3 px-3 text-slate-600 font-mono">
-                      {doc.word_count?.toLocaleString() ?? 0} words
-                    </td>
-                    <td className="py-3 px-3">
-                      <Badge variant={doc.status === 'READY' ? 'sage' : doc.status === 'ERROR' ? 'red' : 'gold'} size="sm">
-                        {doc.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end space-x-1">
-                        <a
-                          href={`/ask?document=${doc.id}`}
-                          className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
-                          title="Ask Clario about this document"
-                        >
-                          <MessageSquareQuote className="w-3.5 h-3.5" />
-                        </a>
-                        <a
-                          href={`/compare?docA=${doc.id}`}
-                          className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
-                          title="Compare with another document"
-                        >
-                          <GitCompare className="w-3.5 h-3.5" />
-                        </a>
-                        <a
-                          href={api.getDocumentFileUrl(doc.id)}
-                          download={doc.filename}
-                          className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
-                          title="Download original file"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                        </a>
-                        <button
-                          onClick={() => setSelectedDocId(doc.id)}
-                          className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                          title="Inspect chunks and passages"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => handleDelete(doc.id, doc.title, e)}
-                          className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                          title="Delete document"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className={density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'}>
+                        {doc.collection ? (
+                          <Badge variant="gray" size="sm">
+                            {doc.collection}
+                          </Badge>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">—</span>
+                        )}
+                      </td>
+                      <td className={`${density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'} font-mono font-bold text-slate-900`}>
+                        {doc.chunk_count} chunks
+                      </td>
+                      <td className={`${density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'} text-slate-600 font-mono`}>
+                        {doc.word_count?.toLocaleString() ?? 0} words
+                      </td>
+                      <td className={density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'}>
+                        <Badge variant={doc.status === 'READY' ? 'sage' : doc.status === 'ERROR' ? 'red' : 'gold'} size="sm">
+                          {doc.status}
+                        </Badge>
+                      </td>
+                      <td className={`${density === 'compact' ? 'py-1.5 px-3' : 'py-3 px-4'} text-right`} onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end space-x-1">
+                          <a
+                            href={`/ask?document=${doc.id}`}
+                            className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
+                            title="Ask Clario about this document"
+                          >
+                            <MessageSquareQuote className="w-3.5 h-3.5" />
+                          </a>
+                          <a
+                            href={`/compare?docA=${doc.id}`}
+                            className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
+                            title="Compare with another document"
+                          >
+                            <GitCompare className="w-3.5 h-3.5" />
+                          </a>
+                          <a
+                            href={api.getDocumentFileUrl(doc.id)}
+                            download={doc.filename}
+                            className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
+                            title="Download original file"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </a>
+                          <button
+                            onClick={() => setSelectedDocId(doc.id)}
+                            className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                            title="Inspect passages in side drawer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(doc.id, doc.title, e)}
+                            className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            title="Delete document"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -500,128 +625,205 @@ export const DocumentsPage: React.FC = () => {
       ) : (
         /* Modernized Card Grid View (Refined typography & clean metric strips) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredDocuments.map((doc) => (
-            <Card
-              key={doc.id}
-              hoverEffect
-              onClick={() => setSelectedDocId(doc.id)}
-              className="flex flex-col justify-between p-5 border border-slate-200 bg-white hover:border-slate-300 shadow-subtle group transition-all"
-            >
-              <div>
-                {/* Card Header: Type Badge, Collection, Status */}
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="navy" size="sm">
-                      {doc.file_type.toUpperCase()}
-                    </Badge>
-                    {doc.collection && (
-                      <Badge variant="gray" size="sm">
-                        {doc.collection}
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge variant={doc.status === 'READY' ? 'sage' : doc.status === 'ERROR' ? 'red' : 'gold'} size="sm">
-                    {doc.status}
-                  </Badge>
-                </div>
-
-                {/* Title & Filename */}
-                <h3 className="font-semibold text-sm text-slate-900 group-hover:text-clario-navy tracking-tight mb-1 line-clamp-1 transition-colors">
-                  {doc.title}
-                </h3>
-                <p className="text-[11px] text-slate-400 font-mono truncate mb-4">
-                  {doc.filename}
-                </p>
-
-                {/* Clean Metrics Strip */}
-                <div className="grid grid-cols-4 gap-1 p-2.5 rounded-md bg-slate-50 border border-slate-100 text-center mb-4">
-                  <div>
-                    <span className="block font-mono font-bold text-slate-900 text-xs">{doc.chunk_count}</span>
-                    <span className="text-[10px] text-slate-500 font-medium">chunks</span>
-                  </div>
-                  <div>
-                    <span className="block font-mono font-bold text-slate-900 text-xs">{doc.page_count}</span>
-                    <span className="text-[10px] text-slate-500 font-medium">pages</span>
-                  </div>
-                  <div>
-                    <span className="block font-mono font-bold text-slate-900 text-xs">{doc.word_count.toLocaleString()}</span>
-                    <span className="text-[10px] text-slate-500 font-medium">words</span>
-                  </div>
-                  <div>
-                    <span className="block font-mono font-bold text-slate-900 text-xs">{(doc.file_size / 1024).toFixed(0)} KB</span>
-                    <span className="text-[10px] text-slate-500 font-medium">size</span>
-                  </div>
-                </div>
-
-                {/* Optional Tags */}
-                {doc.tags && doc.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {doc.tags.map((t, idx) => (
-                      <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom Card Actions */}
-              <div
-                className="pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs"
-                onClick={(e) => e.stopPropagation()}
+          {filteredDocuments.map((doc) => {
+            const isSelected = selectedDocIds.includes(doc.id);
+            return (
+              <Card
+                key={doc.id}
+                hoverEffect
+                onClick={() => setSelectedDocId(doc.id)}
+                className={`flex flex-col justify-between p-5 border bg-white shadow-subtle group transition-all cursor-pointer ${
+                  isSelected ? 'border-clario-navy ring-1 ring-clario-navy/30' : 'border-slate-200 hover:border-slate-300'
+                }`}
               >
-                <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                  <Calendar className="w-3 h-3" />
-                  <span>{workspaceDate(doc.created_at).toLocaleDateString()}</span>
+                <div>
+                  {/* Card Header: Checkbox, Type Badge, Collection, Status */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => toggleSelectDoc(doc.id, e)}
+                        className="p-1 -ml-1 text-slate-400 hover:text-slate-700 transition-colors"
+                        title={isSelected ? 'Deselect document' : 'Select document'}
+                        aria-label={`Select ${doc.title}`}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-clario-navy" />
+                        ) : (
+                          <Square className="w-4 h-4 text-slate-300 group-hover:text-slate-400" />
+                        )}
+                      </button>
+                      <Badge variant="navy" size="sm">
+                        {doc.file_type.toUpperCase()}
+                      </Badge>
+                      {doc.collection && (
+                        <Badge variant="gray" size="sm">
+                          {doc.collection}
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge variant={doc.status === 'READY' ? 'sage' : doc.status === 'ERROR' ? 'red' : 'gold'} size="sm">
+                      {doc.status}
+                    </Badge>
+                  </div>
+
+                  {/* Title & Filename */}
+                  <h3 className="font-semibold text-sm text-slate-900 group-hover:text-clario-navy tracking-tight mb-1 line-clamp-1 transition-colors">
+                    {doc.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-mono truncate mb-4">
+                    {doc.filename}
+                  </p>
+
+                  {/* Clean Metrics Strip */}
+                  <div className="grid grid-cols-4 gap-1 p-2.5 rounded-md bg-slate-50 border border-slate-100 text-center mb-4">
+                    <div>
+                      <span className="block font-mono font-bold text-slate-900 text-xs">{doc.chunk_count}</span>
+                      <span className="text-[10px] text-slate-500 font-medium">chunks</span>
+                    </div>
+                    <div>
+                      <span className="block font-mono font-bold text-slate-900 text-xs">{doc.page_count}</span>
+                      <span className="text-[10px] text-slate-500 font-medium">pages</span>
+                    </div>
+                    <div>
+                      <span className="block font-mono font-bold text-slate-900 text-xs">{doc.word_count.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-500 font-medium">words</span>
+                    </div>
+                    <div>
+                      <span className="block font-mono font-bold text-slate-900 text-xs">{(doc.file_size / 1024).toFixed(0)} KB</span>
+                      <span className="text-[10px] text-slate-500 font-medium">size</span>
+                    </div>
+                  </div>
+
+                  {/* Optional Tags */}
+                  {doc.tags && doc.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {doc.tags.map((t, idx) => (
+                        <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center space-x-1">
-                  <a
-                    href={`/ask?document=${doc.id}`}
-                    className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
-                    title="Ask Clario about this document"
-                  >
-                    <MessageSquareQuote className="w-3.5 h-3.5" />
-                  </a>
-                  <a
-                    href={`/compare?docA=${doc.id}`}
-                    className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
-                    title="Compare with another document"
-                  >
-                    <GitCompare className="w-3.5 h-3.5" />
-                  </a>
-                  <a
-                    href={api.getDocumentFileUrl(doc.id)}
-                    download={doc.filename}
-                    className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
-                    title="Download original file"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                  </a>
-                  <button
-                    onClick={() => setSelectedDocId(doc.id)}
-                    className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                    title="Inspect passages"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => handleDelete(doc.id, doc.title, e)}
-                    className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                    title="Delete document"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+
+                {/* Bottom Card Actions */}
+                <div
+                  className="pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                    <Calendar className="w-3 h-3" />
+                    <span>{workspaceDate(doc.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <a
+                      href={`/ask?document=${doc.id}`}
+                      className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
+                      title="Ask Clario about this document"
+                    >
+                      <MessageSquareQuote className="w-3.5 h-3.5" />
+                    </a>
+                    <a
+                      href={`/compare?docA=${doc.id}`}
+                      className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
+                      title="Compare with another document"
+                    >
+                      <GitCompare className="w-3.5 h-3.5" />
+                    </a>
+                    <a
+                      href={api.getDocumentFileUrl(doc.id)}
+                      download={doc.filename}
+                      className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors inline-block"
+                      title="Download original file"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      onClick={() => setSelectedDocId(doc.id)}
+                      className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                      title="Inspect passages in side drawer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(doc.id, doc.title, e)}
+                      className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      title="Delete document"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* Document Inspector Modal */}
-      <DocumentViewerModal
+      {/* Floating Bottom Bulk Action Toolbar */}
+      {selectedDocIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white rounded-md shadow-2xl px-4 py-2.5 flex items-center gap-3 border border-slate-700 animate-in slide-in-from-bottom-4 text-xs font-sans">
+          <div className="flex items-center gap-2 pr-3 border-r border-slate-700">
+            <span className="w-5 h-5 rounded-md bg-clario-navy flex items-center justify-center font-bold text-[11px] text-white">
+              {selectedDocIds.length}
+            </span>
+            <span className="font-medium text-slate-200">
+              {selectedDocIds.length === 1 ? '1 document selected' : `${selectedDocIds.length} documents selected`}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleExportJSON}
+              className="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-colors flex items-center gap-1.5 font-medium"
+              title="Export selected metadata as JSON"
+            >
+              <FileCode className="w-3.5 h-3.5 text-slate-300" />
+              <span>Export JSON</span>
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-colors flex items-center gap-1.5 font-medium"
+              title="Export selected rows as CSV"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-slate-300" />
+              <span>Export CSV</span>
+            </button>
+            {selectedDocIds.length === 2 && (
+              <button
+                onClick={handleBulkCompare}
+                className="px-2.5 py-1.5 rounded-md bg-clario-navy hover:bg-slate-800 text-white transition-colors flex items-center gap-1.5 font-semibold border border-slate-600"
+                title="Compare the 2 selected documents side by side"
+              >
+                <GitCompare className="w-3.5 h-3.5 text-slate-200" />
+                <span>Compare Side-by-Side</span>
+              </button>
+            )}
+            <button
+              onClick={() => setSelectedDocIds([])}
+              className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors ml-1"
+              title="Clear selection"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Split-Screen Document Source Drawer */}
+      <DocumentDrawer
         documentId={selectedDocId}
         onClose={() => setSelectedDocId(null)}
+        onExpandToModal={() => {
+          setModalDocId(selectedDocId);
+          setSelectedDocId(null);
+        }}
+      />
+
+      {/* Full-Screen Document Inspector Modal */}
+      <DocumentViewerModal
+        documentId={modalDocId}
+        onClose={() => setModalDocId(null)}
       />
     </div>
   );

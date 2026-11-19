@@ -199,14 +199,14 @@ export const PolicyCheckerPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Compliant Rules
             </span>
-            <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums text-emerald-700 font-mono">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
             {audit ? `${audit.passed_count}/${audit.total_rules}` : '—'}
           </span>
-          <span className="text-[10px] text-emerald-600 font-medium mt-1">
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
             Fully satisfied covenants
           </span>
         </Card>
@@ -216,14 +216,14 @@ export const PolicyCheckerPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Flagged Gaps
             </span>
-            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
             {audit ? audit.violation_count : '—'}
           </span>
-          <span className="text-[10px] text-rose-500 font-medium mt-1">
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
             {audit && audit.warning_count > 0 ? `+${audit.warning_count} advisory review` : 'Immediate attention'}
           </span>
         </Card>

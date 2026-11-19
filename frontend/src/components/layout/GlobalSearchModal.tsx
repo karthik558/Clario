@@ -1,5 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, FileText, ArrowRight, Clock, SearchCheck, Layers } from 'lucide-react';
+import {
+  Search,
+  X,
+  FileText,
+  ArrowRight,
+  Clock,
+  SearchCheck,
+  Layers,
+  Upload,
+  MessageSquareQuote,
+  GitCompare,
+  Rows3,
+  Keyboard,
+  ShieldCheck,
+  Sliders
+} from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { api } from '../../services/api';
 import { SearchResultItem, DocumentItem } from '../../types';
@@ -259,29 +274,83 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         )}
 
         {!query && documents.length > 0 && (
-          <div className="py-6 text-center">
-            <SearchCheck className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-            <p className="text-xs font-semibold text-slate-800">Quick Document & Passage Search</p>
-            <p className="text-[11px] text-slate-500 max-w-sm mx-auto mt-1 mb-3">
-              Search by topic, clause, or select a keyword below:
-            </p>
-            <div className="flex flex-wrap justify-center gap-1.5 max-w-md mx-auto">
-              {[
-                'data retention',
-                'limitation of liability',
-                'breach notification',
-                'governing law',
-                'audit compliance'
-              ].map((kw) => (
+          <div className="py-2 space-y-4">
+            {/* Quick Actions Grid */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-1">
+                Quick Actions
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
-                  key={kw}
                   type="button"
-                  onClick={() => handleSearch(kw)}
-                  className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-200 text-slate-700 text-[11px] font-medium transition-colors cursor-pointer outline-none focus:outline-none focus:ring-1 focus:ring-slate-300"
+                  onClick={() => { window.location.href = '/ask'; onClose(); }}
+                  className="p-2.5 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300 text-left transition-colors flex flex-col justify-between group"
                 >
-                  {kw}
+                  <MessageSquareQuote className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
+                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Ask Clario</span>
+                  <span className="text-[10px] text-slate-500">Query sources</span>
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = '/compare'; onClose(); }}
+                  className="p-2.5 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300 text-left transition-colors flex flex-col justify-between group"
+                >
+                  <GitCompare className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
+                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Compare</span>
+                  <span className="text-[10px] text-slate-500">Side-by-side diff</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = '/negotiate'; onClose(); }}
+                  className="p-2.5 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300 text-left transition-colors flex flex-col justify-between group"
+                >
+                  <ShieldCheck className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
+                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Redline</span>
+                  <span className="text-[10px] text-slate-500">Bargaining playbooks</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = localStorage.getItem('clario_table_density') || 'comfortable';
+                    const next = current === 'comfortable' ? 'compact' : 'comfortable';
+                    localStorage.setItem('clario_table_density', next);
+                    window.dispatchEvent(new Event('storage'));
+                    onClose();
+                  }}
+                  className="p-2.5 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300 text-left transition-colors flex flex-col justify-between group"
+                >
+                  <Rows3 className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
+                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Table Density</span>
+                  <span className="text-[10px] text-slate-500">Compact / Standard</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Keyword Jump List */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-1">
+                Popular Provision Searches
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'limitation of liability',
+                  'indemnification',
+                  'data retention',
+                  'breach notification',
+                  'termination for convenience',
+                  'governing law',
+                  'service level credits'
+                ].map((kw) => (
+                  <button
+                    key={kw}
+                    type="button"
+                    onClick={() => handleSearch(kw)}
+                    className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-200 text-slate-700 text-[11px] font-medium transition-colors cursor-pointer outline-none focus:outline-none focus:ring-1 focus:ring-slate-300"
+                  >
+                    {kw}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -289,8 +358,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
       {/* Footer */}
       <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-        <div className="flex items-center space-x-2 text-[11px] text-slate-400">
+        <div className="flex items-center space-x-3 text-[11px] text-slate-400">
           <span>Press <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded-md font-mono text-slate-500 shadow-2xs">ESC</kbd> to close</span>
+          <span>&bull;</span>
+          <span>Press <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded-md font-mono text-slate-500 shadow-2xs">?</kbd> for HUD</span>
         </div>
 
         {/* Retrieval Mode Toggle */}

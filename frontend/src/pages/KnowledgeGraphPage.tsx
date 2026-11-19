@@ -486,14 +486,14 @@ export const KnowledgeGraphPage: React.FC = () => {
           <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
             <div className="flex items-center justify-between text-clario-text-secondary mb-3">
               <span className="text-[10.5px] font-bold uppercase tracking-wider">Flagged Findings</span>
-              <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
+              <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                 <AlertTriangle className="w-3.5 h-3.5" />
               </div>
             </div>
-            <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
               {data.stats.total_findings}
             </span>
-            <span className="text-[10px] text-rose-500 font-medium mt-1">Contradictions</span>
+            <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Contradictions</span>
           </Card>
 
           <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">

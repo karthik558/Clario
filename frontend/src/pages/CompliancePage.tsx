@@ -154,14 +154,14 @@ export const CompliancePage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Compliance Gaps
             </span>
-            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
             {data ? data.gaps_count : 0}
           </span>
-          <span className="text-[10px] text-rose-500 font-medium mt-1">
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
             Missing covenants
           </span>
         </Card>
@@ -331,9 +331,9 @@ export const CompliancePage: React.FC = () => {
                           <div className="space-y-1 max-w-2xl">
                             <div className="flex items-center gap-2">
                               {c.status === 'compliant' ? (
-                                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <Check className="w-4 h-4 text-slate-700 shrink-0" />
                               ) : (
-                                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                <AlertCircle className="w-4 h-4 text-slate-500 shrink-0" />
                               )}
                               <span className="text-xs font-bold text-slate-900">{c.title}</span>
                               <span className="text-[11px] text-slate-500 font-mono">
@@ -404,7 +404,7 @@ export const CompliancePage: React.FC = () => {
                     >
                       {copiedGapId === gap.id ? (
                         <>
-                          <Check className="w-3 h-3 text-emerald-600" />
+                          <Check className="w-3 h-3 text-slate-700" />
                           <span>Copied</span>
                         </>
                       ) : (

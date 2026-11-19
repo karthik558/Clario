@@ -238,7 +238,7 @@ export const RedactionStudioPage: React.FC = () => {
           {processedText && (
             <>
               <Button variant="outline" size="sm" onClick={handleCopy} className="text-xs">
-                {copied ? <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                {copied ? <Check className="w-3.5 h-3.5 mr-1 text-slate-700" /> : <Copy className="w-3.5 h-3.5 mr-1 text-slate-500" />}
                 {copied ? 'Copied' : 'Copy Sanitized'}
               </Button>
               <Button size="sm" onClick={handleDownload} className="text-xs">

@@ -28,6 +28,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { ClauseNegotiatorModal } from '../components/negotiate/ClauseNegotiatorModal';
+import { RiskRadarWidget } from '../components/analytics/RiskRadarWidget';
 
 const getSearchParam = (key: string): string => {
   if (typeof window === 'undefined') return '';
@@ -313,40 +314,40 @@ export const ComparePage: React.FC = () => {
             <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
               <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider">Removed Segments</span>
-                <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
+                <div className="p-1.5 rounded-md bg-rose-50 text-rose-700">
                   <AlertCircle className="w-3.5 h-3.5" />
                 </div>
               </div>
-              <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+              <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-700 font-mono">
                 -{comparison.removed_tokens_count}
               </span>
-              <span className="text-[10px] text-rose-500 font-medium mt-1">Omitted in revised version</span>
+              <span className="text-[10px] text-rose-600 font-medium mt-1">Omitted in revised version</span>
             </Card>
 
             <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
               <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider">Modified Passages</span>
-                <div className="p-1.5 rounded-md bg-amber-50 text-amber-700">
+                <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                   <FileText className="w-3.5 h-3.5" />
                 </div>
               </div>
-              <span className="text-2xl font-semibold tracking-tight tabular-nums text-amber-700 font-mono">
+              <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
                 {comparison.changed_sections_count}
               </span>
-              <span className="text-[10px] text-amber-600 font-medium mt-1">Edited paragraphs</span>
+              <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Edited paragraphs</span>
             </Card>
 
             <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
               <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider">Contradictions</span>
-                <div className="p-1.5 rounded-md bg-amber-50 text-amber-700">
+                <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                   <AlertTriangle className="w-3.5 h-3.5" />
                 </div>
               </div>
-              <span className="text-2xl font-semibold tracking-tight tabular-nums text-amber-800 font-mono">
+              <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
                 {comparison.contradiction_candidates.length}
               </span>
-              <span className="text-[10px] text-amber-600 font-medium mt-1">Flagged for review</span>
+              <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Flagged for review</span>
             </Card>
           </div>
 
@@ -385,7 +386,7 @@ export const ComparePage: React.FC = () => {
 
                 {/* Overall Winner Callout */}
                 <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-md">
-                  <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                  <Award className="w-4 h-4 text-slate-700 shrink-0" />
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-semibold text-slate-500 block">
                       Protective Stance Advantage
@@ -412,90 +413,99 @@ export const ComparePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 6-Pillar Benchmark Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
-                {riskBenchmark.pillar_comparisons?.map((p: any) => (
-                  <div
-                    key={p.pillar_id}
-                    className="p-3.5 rounded-md border border-slate-200 bg-slate-50/50 hover:bg-white transition-colors space-y-2.5"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-slate-900">
-                        {p.pillar_name}
-                      </span>
-                      <Badge
-                        variant={p.winner === 'Parity / Equivalent' ? 'gray' : 'navy'}
-                        size="sm"
-                      >
-                        {p.winner === 'Parity / Equivalent' ? 'Parity' : `Advantage: ${p.winner}`}
-                      </Badge>
-                    </div>
-
-                    {/* Dual Score Progress Comparison */}
-                    <div className="space-y-1.5">
-                      {/* Doc A Bar */}
-                      <div>
-                        <div className="flex justify-between text-[11px] font-medium text-slate-700 mb-0.5">
-                          <span className="truncate max-w-[200px]">{riskBenchmark.doc_a?.document_title}</span>
-                          <span className="font-mono font-bold text-slate-900">{p.doc_a_score}/100</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-slate-900 rounded-full transition-all duration-300"
-                            style={{ width: `${Math.min(100, p.doc_a_score)}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Doc B Bar */}
-                      <div>
-                        <div className="flex justify-between text-[11px] font-medium text-slate-700 mb-0.5">
-                          <span className="truncate max-w-[200px]">{riskBenchmark.doc_b?.document_title}</span>
-                          <span className="font-mono font-bold text-slate-900">{p.doc_b_score}/100</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-slate-600 rounded-full transition-all duration-300"
-                            style={{ width: `${Math.min(100, p.doc_b_score)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-[11px] text-slate-600 leading-snug">
-                      {p.advantage}
-                    </p>
-
-                    {/* Quick Indicator Tags */}
-                    {p.doc_a_findings?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-0.5">
-                        {p.doc_a_findings.slice(0, 2).map((f: any, i: number) => (
-                          <span
-                            key={i}
-                            className="text-[10px] px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-medium truncate max-w-full"
-                          >
-                            • {f.text}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+              {/* 6-Pillar Benchmark Grid with Multi-Vector Radar */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center pt-1">
+                {/* Visual SVG Radar Canvas */}
+                {riskBenchmark.doc_a?.pillars?.length >= 3 && (
+                  <div className="lg:col-span-5 flex flex-col items-center justify-center p-4 rounded-md border border-slate-200 bg-slate-50/60 shadow-2xs">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Comparative Risk Topology
+                    </span>
+                    <RiskRadarWidget
+                      size={320}
+                      primarySeries={{
+                        label: riskBenchmark.doc_a?.document_title,
+                        pillars: riskBenchmark.doc_a?.pillars,
+                      }}
+                      comparisonSeries={{
+                        label: riskBenchmark.doc_b?.document_title,
+                        pillars: riskBenchmark.doc_b?.pillars,
+                      }}
+                    />
                   </div>
-                ))}
+                )}
+
+                {/* 6-Pillar Benchmark Cards */}
+                <div className={`${riskBenchmark.doc_a?.pillars?.length >= 3 ? 'lg:col-span-7' : 'lg:col-span-12'} grid grid-cols-1 sm:grid-cols-2 gap-3`}>
+                  {riskBenchmark.pillar_comparisons?.map((p: any) => (
+                    <div
+                      key={p.pillar_id}
+                      className="p-3 rounded-md border border-slate-200 bg-white hover:border-slate-300 transition-colors space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-slate-900 truncate">
+                          {p.pillar_name}
+                        </span>
+                        <Badge
+                          variant={p.winner === 'Parity / Equivalent' ? 'gray' : 'navy'}
+                          size="sm"
+                        >
+                          {p.winner === 'Parity / Equivalent' ? 'Parity' : p.winner}
+                        </Badge>
+                      </div>
+
+                      {/* Dual Score Progress Comparison */}
+                      <div className="space-y-1.5">
+                        {/* Doc A Bar */}
+                        <div>
+                          <div className="flex justify-between text-[10.5px] font-medium text-slate-700 mb-0.5">
+                            <span className="truncate max-w-[140px]">{riskBenchmark.doc_a?.document_title}</span>
+                            <span className="font-mono font-bold text-slate-900">{p.doc_a_score}/100</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-slate-900 rounded-full transition-all duration-300"
+                              style={{ width: `${Math.min(100, p.doc_a_score)}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Doc B Bar */}
+                        <div>
+                          <div className="flex justify-between text-[10.5px] font-medium text-slate-700 mb-0.5">
+                            <span className="truncate max-w-[140px]">{riskBenchmark.doc_b?.document_title}</span>
+                            <span className="font-mono font-bold text-slate-900">{p.doc_b_score}/100</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-amber-600 rounded-full transition-all duration-300"
+                              style={{ width: `${Math.min(100, p.doc_b_score)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
+                        {p.advantage}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </Card>
           )}
 
           {/* Contradiction Candidates Section */}
           {comparison.contradiction_candidates.length > 0 && (
-            <Card className="p-5 border-amber-200 bg-amber-50/15">
-              <div className="flex items-center justify-between mb-4 pb-2 border-b border-amber-200">
+            <Card className="p-5 border-slate-200 bg-white shadow-subtle">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200">
                 <div className="flex items-center space-x-2">
-                  <AlertTriangle className="w-5 h-5 text-clario-navy" />
-                  <h3 className="font-semibold text-sm text-clario-navy">
+                  <AlertTriangle className="w-4 h-4 text-slate-700" />
+                  <h3 className="font-semibold text-sm text-slate-900">
                     Substantive Discrepancy Candidates ({comparison.contradiction_candidates.length})
                   </h3>
                 </div>
-                <span className="text-[11px] text-clario-text-secondary">
+                <span className="text-[11px] text-slate-500">
                   Subject to human review & confirmation
                 </span>
               </div>
@@ -504,12 +514,12 @@ export const ComparePage: React.FC = () => {
                 {comparison.contradiction_candidates.map((cand, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-md bg-white border border-amber-200 shadow-xs space-y-3"
+                    className="p-4 rounded-md bg-white border border-slate-200 shadow-xs space-y-3"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <span className="font-semibold text-xs text-clario-navy">{cand.topic}</span>
-                        <Badge variant="gold" size="sm">Confidence: {cand.confidence}</Badge>
+                        <Badge variant="navy" size="sm">Confidence: {cand.confidence}</Badge>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button
@@ -529,7 +539,7 @@ export const ComparePage: React.FC = () => {
                         >
                           {promotedIndices.includes(idx) ? (
                             <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-clario-navy mr-1" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-slate-700 mr-1" />
                               <span>Promoted to Findings</span>
                             </>
                           ) : (
@@ -547,20 +557,20 @@ export const ComparePage: React.FC = () => {
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                      <div className="p-3 rounded-md bg-rose-50/60 border border-rose-200">
-                        <span className="text-[10px] font-semibold text-rose-800 uppercase block mb-1">
+                      <div className="p-3 rounded-md bg-slate-50 border border-slate-200">
+                        <span className="text-[10px] font-semibold text-slate-700 uppercase block mb-1">
                           {comparison.doc_a.title} (Page {cand.page_a})
                         </span>
-                        <p className="text-[11px] text-rose-950 italic">
+                        <p className="text-[11px] text-slate-800 italic">
                           "{cand.statement_a}"
                         </p>
                       </div>
 
-                      <div className="p-3 rounded-md bg-emerald-50/60 border border-emerald-200">
-                        <span className="text-[10px] font-semibold text-emerald-800 uppercase block mb-1">
+                      <div className="p-3 rounded-md bg-slate-50 border border-slate-200">
+                        <span className="text-[10px] font-semibold text-slate-700 uppercase block mb-1">
                           {comparison.doc_b.title} (Page {cand.page_b})
                         </span>
-                        <p className="text-[11px] text-emerald-950 italic">
+                        <p className="text-[11px] text-slate-800 italic">
                           "{cand.statement_b}"
                         </p>
                       </div>
@@ -578,17 +588,17 @@ export const ComparePage: React.FC = () => {
                 Side-by-Side Textual Diff View
               </h3>
               <div className="flex items-center space-x-3 text-[11px] text-clario-text-secondary">
-                <span className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded-md bg-emerald-400 inline-block" />
-                  <span>Added Text</span>
+                <span className="flex items-center space-x-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-emerald-600 inline-block" />
+                  <span className="font-medium text-emerald-800">Added Text</span>
                 </span>
-                <span className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded-md bg-rose-400 inline-block" />
-                  <span>Removed Text</span>
+                <span className="flex items-center space-x-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-rose-600 inline-block" />
+                  <span className="font-medium text-rose-800">Removed Text</span>
                 </span>
-                <span className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded-md bg-amber-300 inline-block" />
-                  <span>Modified Text</span>
+                <span className="flex items-center space-x-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block" />
+                  <span className="font-medium text-amber-800">Modified Text</span>
                 </span>
               </div>
             </div>
@@ -599,22 +609,22 @@ export const ComparePage: React.FC = () => {
               <div className="border border-clario-border rounded-md bg-white overflow-hidden shadow-subtle flex flex-col">
                 <div className="p-3 bg-clario-navy text-white text-xs font-semibold flex items-center justify-between">
                   <span className="truncate max-w-xs">{comparison.doc_a.title}</span>
-                  <Badge variant="sage" size="sm">{comparison.doc_a.file_type.toUpperCase()}</Badge>
+                  <Badge variant="navy" size="sm">{comparison.doc_a.file_type.toUpperCase()}</Badge>
                 </div>
                 <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto text-xs leading-relaxed font-sans text-clario-text">
                   {comparison.diff_blocks.map((block, idx) => {
                     if (block.type === 'delete') {
                       return (
-                        <div key={idx} className="p-2 rounded-md bg-rose-50 border border-rose-200 text-rose-900">
-                          <span className="text-[10px] text-rose-600 font-mono block mb-0.5">Removed in Doc B:</span>
+                        <div key={idx} className="p-2.5 rounded-md bg-rose-50 border border-rose-200 text-rose-950">
+                          <span className="text-[10px] text-rose-700 font-mono block mb-0.5 font-bold">Removed in Doc B:</span>
                           {block.text_a}
                         </div>
                       );
                     }
                     if (block.type === 'replace') {
                       return (
-                        <div key={idx} className="p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-900">
-                          <span className="text-[10px] text-amber-600 font-mono block mb-0.5">Modified:</span>
+                        <div key={idx} className="p-2.5 rounded-md bg-amber-50 border border-amber-200 text-amber-950">
+                          <span className="text-[10px] text-amber-700 font-mono block mb-0.5 font-bold">Modified:</span>
                           {block.text_a}
                         </div>
                       );
@@ -641,16 +651,16 @@ export const ComparePage: React.FC = () => {
                   {comparison.diff_blocks.map((block, idx) => {
                     if (block.type === 'insert') {
                       return (
-                        <div key={idx} className="p-2 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-900">
-                          <span className="text-[10px] text-emerald-600 font-mono block mb-0.5">Added in Doc B:</span>
+                        <div key={idx} className="p-2.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-950">
+                          <span className="text-[10px] text-emerald-700 font-mono block mb-0.5 font-bold">Added in Doc B:</span>
                           {block.text_b}
                         </div>
                       );
                     }
                     if (block.type === 'replace') {
                       return (
-                        <div key={idx} className="p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-900">
-                          <span className="text-[10px] text-amber-600 font-mono block mb-0.5">Modified (New Version):</span>
+                        <div key={idx} className="p-2.5 rounded-md bg-amber-50 border border-amber-200 text-amber-950">
+                          <span className="text-[10px] text-amber-700 font-mono block mb-0.5 font-bold">Modified (New Version):</span>
                           {block.text_b}
                         </div>
                       );

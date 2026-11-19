@@ -323,14 +323,14 @@ export const CritiquePage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider">
               Composite Risk
             </span>
-            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <ShieldAlert className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
             {data ? `${data.composite_risk_score}/100` : '—'}
           </span>
-          <span className="text-[10px] text-rose-500 font-medium mt-1">
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
             Overall exposure index
           </span>
         </Card>
@@ -571,7 +571,7 @@ export const CritiquePage: React.FC = () => {
                       >
                         {copiedId === `${activePersona.persona_id}-${idx}` ? (
                           <>
-                            <Check className="w-3 h-3 text-emerald-600" />
+                            <Check className="w-3 h-3 text-slate-700" />
                             <span>Copied</span>
                           </>
                         ) : (

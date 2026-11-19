@@ -140,14 +140,14 @@ export const ObligationsPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               High Risk / Deadlines
             </span>
-            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
             {criticalCount}
           </span>
-          <span className="text-[10px] text-rose-500 font-medium mt-1">
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
             Action required
           </span>
         </Card>

@@ -5,9 +5,11 @@ import { QuickAsk } from './QuickAsk';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { GlobalSearchModal } from './GlobalSearchModal';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { BackgroundTaskDrawer } from './BackgroundTaskDrawer';
 import { DocumentViewerModal } from '../documents/DocumentViewerModal';
 import { SearchResultItem } from '../../types';
+import { Keyboard } from 'lucide-react';
 
 export const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -37,18 +39,68 @@ export const Layout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<Pick<SearchResultItem, 'document_id' | 'chunk_id' | 'page_number'> | null>(null);
 
   useEffect(() => {
+    let pendingG = false;
+    let timeoutId: any = null;
+
     const handler = (event: KeyboardEvent) => {
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isInput =
+        activeEl?.tagName === 'INPUT' ||
+        activeEl?.tagName === 'TEXTAREA' ||
+        activeEl?.tagName === 'SELECT' ||
+        activeEl?.isContentEditable;
+
+      // Command + K for Search Modal
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setSearchModalOpen(open => !open);
+        setSearchModalOpen((open) => !open);
+        return;
+      }
+
+      // If user is inside an input, don't trigger single-key or sequence shortcuts
+      if (isInput) return;
+
+      // ? for Keyboard Shortcuts HUD
+      if (event.key === '?' || (event.shiftKey && event.key === '/')) {
+        event.preventDefault();
+        setShortcutsModalOpen((open) => !open);
+        return;
+      }
+
+      // G sequence navigation: G then O, D, A, C, N, M, S
+      if (event.key.toLowerCase() === 'g' && !pendingG) {
+        pendingG = true;
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          pendingG = false;
+        }, 1200);
+        return;
+      }
+
+      if (pendingG) {
+        pendingG = false;
+        clearTimeout(timeoutId);
+        const k = event.key.toLowerCase();
+        if (k === 'o') navigate('/');
+        else if (k === 'd') navigate('/documents');
+        else if (k === 'a') navigate('/ask');
+        else if (k === 'c') navigate('/compare');
+        else if (k === 'n') navigate('/negotiate');
+        else if (k === 'm') navigate('/compliance');
+        else if (k === 's') navigate('/settings');
       }
     };
+
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
+    return () => {
+      window.removeEventListener('keydown', handler);
+      clearTimeout(timeoutId);
+    };
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col lg:flex-row">
@@ -74,11 +126,22 @@ export const Layout: React.FC = () => {
         <main className="mx-auto max-w-[100rem] flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
           <Outlet context={{ askDraft, setAskDraft, selection }} />
         </main>
-        <footer className="flex flex-wrap items-center justify-start gap-3 border-t border-clario-border px-4 py-4 text-xs text-clario-text-secondary sm:px-6 lg:px-8">
-          <Link to="/home">About Clario</Link>
-          <nav aria-label="Legal" className="flex gap-5">
-            <Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/cookies">Cookies</Link>
-          </nav>
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-clario-border px-4 py-4 text-xs text-clario-text-secondary sm:px-6 lg:px-8">
+          <div className="flex items-center gap-5">
+            <Link to="/home">About Clario</Link>
+            <nav aria-label="Legal" className="flex gap-5">
+              <Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/cookies">Cookies</Link>
+            </nav>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShortcutsModalOpen(true)}
+            className="flex items-center gap-1.5 text-slate-400 hover:text-slate-700 transition-colors font-medium cursor-pointer"
+            title="Keyboard shortcuts HUD (?)"
+          >
+            <Keyboard className="w-3.5 h-3.5" />
+            <span>Shortcuts <kbd className="px-1.5 py-0.2 bg-slate-100 rounded-md border text-[10px] text-slate-500 font-mono">?</kbd></span>
+          </button>
         </footer>
         {pathname.replace(/\/$/, '') !== '/ask' && <div className="h-12" aria-hidden="true" />}
       </div>
@@ -94,6 +157,12 @@ export const Layout: React.FC = () => {
         isOpen={searchModalOpen}
         onClose={() => setSearchModalOpen(false)}
         onSelectResult={setSelectedResult}
+      />
+
+      {/* Keyboard Shortcuts HUD (?) */}
+      <KeyboardShortcutsModal
+        isOpen={shortcutsModalOpen}
+        onClose={() => setShortcutsModalOpen(false)}
       />
 
       <DocumentViewerModal

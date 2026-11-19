@@ -100,14 +100,14 @@ export function RenewalPlannerPage() {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Notice Cut-Off Deadline
             </span>
-            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
-          <span className="text-xl font-semibold tracking-tight text-rose-600 font-mono">
+          <span className="text-xl font-semibold tracking-tight text-clario-navy font-mono">
             {valid ? due.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '—'}
           </span>
-          <span className="text-[10px] text-rose-500 font-medium mt-1">
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
             Latest dispatch deadline
           </span>
         </Card>

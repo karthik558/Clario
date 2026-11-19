@@ -280,7 +280,7 @@ export const AudioBriefingPlayer: React.FC<AudioBriefingPlayerProps> = ({
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <Check className="w-3.5 h-3.5 text-slate-700" />
                 <span>Copied</span>
               </>
             ) : (
