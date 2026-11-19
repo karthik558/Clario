@@ -8,7 +8,6 @@ import {
   ArrowRight,
   Trash2,
   Layers,
-  Cpu,
   Loader2
 } from 'lucide-react';
 import { useBackgroundTasks, BackgroundTask } from '../../context/BackgroundTaskContext';
@@ -72,24 +71,19 @@ export const BackgroundTaskDrawer: React.FC = () => {
         <div className="w-screen max-w-md bg-white border-l border-slate-200 shadow-xl flex flex-col justify-between">
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-white">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-md bg-slate-900 text-white flex items-center justify-center">
-                <Cpu className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <span>Background Tasks</span>
-                  {activeTasks.length > 0 && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
-                      <Loader2 className="w-2.5 h-2.5 animate-spin text-amber-700" />
-                      {activeTasks.length} editing
-                    </span>
-                  )}
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Completed tasks clear automatically after 5 minutes
-                </p>
-              </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <span>Background Tasks</span>
+                {activeTasks.length > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin text-amber-700" />
+                    {activeTasks.length} editing
+                  </span>
+                )}
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                Completed tasks clear automatically after 5 minutes
+              </p>
             </div>
 
             <button
