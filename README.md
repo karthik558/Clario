@@ -95,6 +95,8 @@ cd Clario
   initialize\init_windows.bat
   ```
 
+> **Note:** To set an administrator or workspace password during setup, pass `--password <your_password>` (e.g. `bash initialize/init_mac.sh --password my_password`) or set the `PASSWORD` environment variable.
+
 ---
 
 ### Launching the Application
