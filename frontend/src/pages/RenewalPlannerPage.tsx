@@ -181,7 +181,7 @@ export function RenewalPlannerPage() {
                     key={preset}
                     type="button"
                     onClick={() => setNotice(preset)}
-                    className={`px-2 py-0.5 rounded text-[11px] font-mono border transition-colors ${
+                    className={`px-2 py-0.5 rounded-md text-[11px] font-mono border transition-colors ${
                       notice === preset
                         ? 'bg-slate-900 text-white border-slate-900'
                         : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'

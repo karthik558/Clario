@@ -22,7 +22,8 @@ import {
   FileCheck,
   ClipboardCheck,
   Cpu,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -150,8 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 aria-label="Active Editing"
               >
                 <Cpu className="w-4 h-4 animate-spin text-emerald-400" />
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400" />
               </button>
             ) : (
               <button
@@ -162,10 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400 shrink-0" />
                     <span className="text-[11px] font-bold text-emerald-300 tracking-wide uppercase font-mono">
                       Editing
                     </span>
@@ -184,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-1">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-400 to-teal-300 rounded-full transition-all duration-300 animate-pulse"
+                    className="h-full bg-emerald-400 rounded-full transition-all duration-300"
                     style={{ width: `${Math.max(10, activeTasks[0].progress)}%` }}
                   />
                 </div>

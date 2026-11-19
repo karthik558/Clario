@@ -11,7 +11,8 @@ import {
   FileText,
   TrendingUp,
   Percent,
-  Sliders
+  Sliders,
+  Info
 } from 'lucide-react';
 import { WordAnalysisResponse, KeywordAnalysisItem } from '../../types';
 import { Card } from '../ui/Card';
@@ -55,6 +56,17 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
+      {/* Overview Context Banner */}
+      <div className="p-4 rounded-md bg-white border border-slate-200 text-xs text-slate-600 flex items-start gap-3 shadow-xs">
+        <Info className="w-4 h-4 text-clario-navy shrink-0 mt-0.5" />
+        <div>
+          <span className="font-semibold text-slate-900">What is Contract Word Analysis? </span>
+          <span>
+            This tool visualizes vocabulary diversity, keyword distributions, and contract complexity across your workspace documents to highlight key legal concepts and term density.
+          </span>
+        </div>
+      </div>
+
       {/* Top Metric Cards - Matching Overview and Documents design */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
@@ -87,7 +99,7 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
             {data.unique_words.toLocaleString()}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            {data.lexical_density_pct}% lexical richness ratio
+            {data.lexical_density_pct}% unique vocabulary ratio
           </span>
         </Card>
 
@@ -326,7 +338,7 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                Per-Document Lexical & Volume Breakdown
+                Per-Document Word & Vocabulary Breakdown
               </h3>
               <p className="text-[11px] text-slate-500 mt-0.5">
                 Comparison of word counts, vocabulary density, and readability index per file.
@@ -341,7 +353,7 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
                   <th className="py-3 px-4">Document Title</th>
                   <th className="py-3 px-3">Word Volume</th>
                   <th className="py-3 px-3">Unique Words</th>
-                  <th className="py-3 px-3">Lexical Richness</th>
+                  <th className="py-3 px-3">Vocabulary Diversity</th>
                   <th className="py-3 px-3">Readability Ease</th>
                   <th className="py-3 px-4">Dominant Keyword</th>
                 </tr>

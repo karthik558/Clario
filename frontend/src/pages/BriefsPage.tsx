@@ -167,23 +167,20 @@ export const BriefsPage: React.FC = () => {
             )}
           </Button>
 
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant={useAi ? 'secondary' : 'outline'}
             onClick={() => {
               const nextAi = !useAi;
               setUseAi(nextAi);
               handleGenerate(selectedTemplate, nextAi);
             }}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-colors shadow-xs ${
-              useAi
-                ? 'bg-slate-900 text-white border-slate-900'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-            }`}
             title="Toggle between deep generative AI brief synthesis and instant heuristic template compilation"
+            className="flex items-center gap-1.5"
           >
             <Cpu className="w-3.5 h-3.5" />
             <span>Generate with AI: {useAi ? 'ON' : 'OFF'}</span>
-          </button>
+          </Button>
 
           <Button
             size="sm"

@@ -16,9 +16,11 @@ import {
   BarChart2,
   BookOpen,
   FileCheck,
-  Cpu
+  Cpu,
+  Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useBackgroundTasks } from '../context/BackgroundTaskContext';
 import { ReportItem, DocumentItem, WordAnalysisResponse } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -28,6 +30,7 @@ import { Modal } from '../components/ui/Modal';
 import { WordAnalysisVisualizer } from '../components/analytics/WordAnalysisVisualizer';
 
 export const ReportsPage: React.FC = () => {
+  const { startTask, activeTasks, setIsDrawerOpen } = useBackgroundTasks();
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [wordAnalysis, setWordAnalysis] = useState<WordAnalysisResponse | null>(null);
@@ -37,6 +40,8 @@ export const ReportsPage: React.FC = () => {
   const [clearing, setClearing] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
+
+  const activeReportTask = activeTasks.find((t) => t.category === 'report');
 
   const [error, setError] = useState('');
 
@@ -106,22 +111,46 @@ export const ReportsPage: React.FC = () => {
     if (!title.trim()) return;
 
     setError('');
+    const reportTitle = title.trim();
+    const docScope = selectedDocIds.length > 0 ? `${selectedDocIds.length} Document(s)` : 'Entire Workspace';
+
+    // Close modal immediately so the user is never locked in while compiling
+    setShowGenerateModal(false);
     setGenerating(true);
+
     try {
-      const report = await api.createReport({
-        title,
-        report_type: reportType,
-        document_ids: selectedDocIds,
-        custom_notes: customNotes,
-        use_ai: useAi
+      await startTask<ReportItem>({
+        title: `PDF Dossier: ${reportTitle}`,
+        category: 'report',
+        targetScope: docScope,
+        route: '/reports#dossiers-grid',
+        initialStage: 'Compiling cross-document telemetry and PDF...',
+        executor: async (updateProgress) => {
+          updateProgress(20, 'Aggregating cross-document findings and risk matrices...', `Analyzing ${docScope}`);
+          if (useAi) {
+            updateProgress(55, 'Synthesizing executive summary and strategic recommendations with AI...', 'Running executive intelligence synthesis');
+          }
+          updateProgress(80, 'Compiling and certifying PDF document dossier...', 'Formatting printable PDF layout');
+          const report = await api.createReport({
+            title: reportTitle,
+            report_type: reportType,
+            document_ids: selectedDocIds,
+            custom_notes: customNotes,
+            use_ai: useAi
+          });
+          updateProgress(100, 'PDF Dossier generated', 'Report ready for download');
+          return report;
+        }
+      }).then((report) => {
+        setSelectedReport(report);
+        setTitle('');
+        setCustomNotes('');
+        fetchReports();
       });
-      setShowGenerateModal(false);
-      setSelectedReport(report);
-      setTitle('');
-      setCustomNotes('');
-      fetchReports();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'The report could not be loaded.');
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        setError(err instanceof Error ? err.message : 'The report could not be generated.');
+      }
     } finally {
       setGenerating(false);
     }
@@ -197,7 +226,7 @@ export const ReportsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
-              Vocabulary Richness
+              Vocabulary Diversity
             </span>
             <div className="p-1.5 rounded bg-slate-100 text-slate-700">
               <BookOpen className="w-3.5 h-3.5" />
@@ -207,7 +236,7 @@ export const ReportsPage: React.FC = () => {
             {wordAnalysis ? `${wordAnalysis.lexical_density_pct}%` : '—'}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            {wordAnalysis ? `${wordAnalysis.unique_words.toLocaleString()} unique terms` : 'Lexical diversity'}
+            {wordAnalysis ? `${wordAnalysis.unique_words.toLocaleString()} unique terms` : 'Vocabulary variety'}
           </span>
         </Card>
 
@@ -258,7 +287,7 @@ export const ReportsPage: React.FC = () => {
             }`}
           >
             <BarChart2 className="w-3.5 h-3.5" />
-            <span>Word & Lexical Analysis</span>
+            <span>Contract Word Analysis</span>
             <Badge variant={activeTab === 'word_analysis' ? 'navy' : 'gray'} size="sm">
               Visual Studio
             </Badge>
@@ -268,11 +297,42 @@ export const ReportsPage: React.FC = () => {
 
       {error && !showGenerateModal && <p role="alert" className="rounded-md p-3 text-sm text-rose-800 bg-rose-50">{error}</p>}
 
+      {/* Active Background PDF Compilation Banner */}
+      {activeReportTask && (
+        <Card className="p-3.5 bg-amber-50/80 border border-amber-200/80 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700 shrink-0" />
+              <span className="font-bold text-amber-950 uppercase tracking-wider text-[11px]">
+                PDF Dossier Compilation In Progress
+              </span>
+              <span className="text-amber-800 font-medium">— {activeReportTask.stage}</span>
+            </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="font-mono font-bold text-amber-900">{activeReportTask.progress}%</span>
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="text-[11px] underline text-amber-900 font-semibold hover:text-amber-950 ml-2"
+              >
+                View Live Status
+              </button>
+            </div>
+          </div>
+          <div className="w-full h-1 bg-amber-200/60 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-amber-700 rounded-full transition-all duration-300"
+              style={{ width: `${Math.max(8, activeReportTask.progress)}%` }}
+            />
+          </div>
+        </Card>
+      )}
+
       {activeTab === 'word_analysis' && wordAnalysis ? (
         <WordAnalysisVisualizer data={wordAnalysis} onRefresh={fetchReports} />
       ) : (
         /* Reports Grid */
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div id="dossiers-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 scroll-mt-6 transition-all duration-300">
         {loading ? (
           <div className="col-span-full text-center py-12 text-xs text-clario-text-secondary">
             Loading generated dossiers...
@@ -328,7 +388,7 @@ export const ReportsPage: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setSelectedReport(rep)}
-                    className="p-1.5 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                    className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     title="View Interactive Preview"
                   >
                     <Eye className="w-4 h-4" />
@@ -338,7 +398,7 @@ export const ReportsPage: React.FC = () => {
                     <a
                       href={api.getReportDownloadUrl(rep.id)}
                       download={`Clario_${rep.title}.pdf`}
-                      className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-clario-navy text-white hover:bg-clario-navy-light text-[11px] font-medium transition-colors shadow-xs"
+                      className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-clario-navy text-white hover:bg-clario-navy-light text-[11px] font-medium transition-colors shadow-xs"
                       title="Download PDF"
                     >
                       <Download className="w-3 h-3" />
@@ -348,7 +408,7 @@ export const ReportsPage: React.FC = () => {
 
                   <button
                     onClick={(e) => handleDeleteReport(rep.id, e)}
-                    className="p-1.5 rounded text-clario-text-secondary hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    className="p-1.5 rounded-md text-clario-text-secondary hover:text-rose-600 hover:bg-rose-50 transition-colors"
                     title="Delete Report"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -364,7 +424,7 @@ export const ReportsPage: React.FC = () => {
       {/* Generation Modal */}
       <Modal
         isOpen={showGenerateModal}
-        onClose={() => { if (!generating) setShowGenerateModal(false); }}
+        onClose={() => setShowGenerateModal(false)}
         title="Generate Official Intelligence Report"
         maxWidth="lg"
       >
@@ -452,11 +512,11 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           <div className="pt-3 border-t border-clario-border flex justify-end space-x-2">
-            <Button variant="outline" size="sm" type="button" disabled={generating} onClick={() => setShowGenerateModal(false)}>
+            <Button variant="outline" size="sm" type="button" onClick={() => setShowGenerateModal(false)}>
               Cancel
             </Button>
             <Button variant="primary" size="sm" type="submit" loading={generating}>
-              {generating ? 'Compiling PDF...' : 'Compile Report & PDF'}
+              {generating ? 'Compiling in Background...' : 'Compile Report & PDF'}
             </Button>
           </div>
         </form>

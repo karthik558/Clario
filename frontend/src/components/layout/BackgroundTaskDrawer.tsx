@@ -8,7 +8,8 @@ import {
   ArrowRight,
   Trash2,
   Layers,
-  Cpu
+  Cpu,
+  Loader2
 } from 'lucide-react';
 import { useBackgroundTasks, BackgroundTask } from '../../context/BackgroundTaskContext';
 import { Badge } from '../ui/Badge';
@@ -79,7 +80,8 @@ export const BackgroundTaskDrawer: React.FC = () => {
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <span>Background Tasks</span>
                   {activeTasks.length > 0 && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 animate-pulse">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">
+                      <Loader2 className="w-2.5 h-2.5 animate-spin text-amber-700" />
                       {activeTasks.length} editing
                     </span>
                   )}
@@ -130,7 +132,7 @@ export const BackgroundTaskDrawer: React.FC = () => {
 
                       {isRunning ? (
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                          <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
                           Editing ({task.progress}%)
                         </span>
                       ) : task.status === 'completed' ? (

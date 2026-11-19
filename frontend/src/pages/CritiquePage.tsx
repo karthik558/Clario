@@ -14,7 +14,8 @@ import {
   FileText,
   UserCheck,
   RefreshCw,
-  Cpu
+  Cpu,
+  Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackgroundTasks } from '../context/BackgroundTaskContext';
@@ -222,19 +223,16 @@ export const CritiquePage: React.FC = () => {
       >
         <div className="flex flex-wrap items-center gap-2">
           {/* AI Generation Toggle */}
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant={useAi ? 'secondary' : 'outline'}
             onClick={handleToggleAi}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-colors shadow-xs ${
-              useAi
-                ? 'bg-slate-900 text-white border-slate-900'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-            }`}
             title="Toggle between deep generative AI synthesis and instant heuristic pattern matching"
+            className="flex items-center gap-1.5"
           >
             <Cpu className="w-3.5 h-3.5" />
             <span>Generate with AI: {useAi ? 'ON' : 'OFF'}</span>
-          </button>
+          </Button>
 
           <Button
             size="sm"
@@ -253,7 +251,7 @@ export const CritiquePage: React.FC = () => {
         <Card className="p-3.5 bg-amber-50/80 border border-amber-200/80 shadow-xs space-y-2">
           <div className="flex items-center justify-between text-xs flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700 shrink-0" />
               <span className="font-bold text-amber-950 uppercase tracking-wider text-[11px]">
                 AI Adversarial Audit In Progress
               </span>
@@ -288,7 +286,7 @@ export const CritiquePage: React.FC = () => {
             </span>
             <button
               onClick={() => handleSelectDoc(null)}
-              className={`px-2.5 py-1 rounded text-xs transition-colors shrink-0 ${
+              className={`px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 ${
                 selectedDocIds.length === 0
                   ? 'bg-slate-900 text-white font-medium'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -302,7 +300,7 @@ export const CritiquePage: React.FC = () => {
                 <button
                   key={d.id}
                   onClick={() => handleSelectDoc(d.id)}
-                  className={`px-2.5 py-1 rounded text-xs transition-colors shrink-0 flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 flex items-center gap-1.5 ${
                     isSelected
                       ? 'bg-slate-900 text-white font-medium'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -560,7 +558,7 @@ export const CritiquePage: React.FC = () => {
                         type="button"
                         disabled={draftingOptionKey === `${activePersona.persona_id}-${idx}`}
                         onClick={() => handleDraftOptionWithAi(activePersona.persona_id, flag.point, flag.detail, idx)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2 py-1 rounded bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-xs"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-xs"
                         title="Generate or rewrite an AI defense counter-clause specifically for this risk"
                       >
                         <Cpu className="w-3 h-3 text-slate-500" />
@@ -569,7 +567,7 @@ export const CritiquePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleCopyClause(flag.counter_clause, `${activePersona.persona_id}-${idx}`)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2 py-1 rounded bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
                       >
                         {copiedId === `${activePersona.persona_id}-${idx}` ? (
                           <>
