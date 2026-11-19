@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.entities import Finding, Document
 from app.schemas.dtos import NegotiateRequest, NegotiateResponse
 from app.core.config import settings
+from app.services.ai_generator import AIGenerator
 
 class NegotiateService:
     @staticmethod
@@ -28,6 +29,58 @@ class NegotiateService:
                 page_b = finding.doc_b_page or page_b
 
         stance = req.stance
+
+        # AI-Powered Redline Drafting
+        if req.use_ai and (statement_a or statement_b or topic):
+            ai_prompt = f"""You are an elite corporate legal counsel and contract negotiation specialist.
+Draft an amended compromise clause for a contract negotiation.
+
+Topic / Provision: {topic}
+Bargaining Stance: {stance.replace('_', ' ').title()}
+Document A ({doc_a_title}) Language: \"{statement_a}\"
+Document B ({doc_b_title}) Language: \"{statement_b}\"
+Custom Instructions: {req.custom_instructions or "None"}
+
+Generate a JSON object matching this schema:
+{{
+  "proposed_clause": "<Modernized, enforceable contract clause drafting>",
+  "rationale": "<Strategic legal explanation of how this amendment protects commercial interests and resolves conflicting positions>",
+  "risk_level": "<e.g. Low (Balanced Consensus) | Minimal (Customer Protected) | Moderate (Vendor Favorable)>",
+  "key_concessions": [
+    "<Bullet point 1 detailing concession or protective safeguard>",
+    "<Bullet point 2 detailing operational compromise or notice requirement>"
+  ]
+}}"""
+            ai_data = AIGenerator.generate_json(
+                prompt=ai_prompt,
+                system_prompt="You are Clario's Contract Redline Synthesis Engine. Return only valid JSON.",
+                max_tokens=900,
+                temperature=0.15,
+                timeout=30.0
+            )
+            if ai_data and isinstance(ai_data, dict) and ai_data.get("proposed_clause"):
+                return NegotiateResponse(
+                    topic=topic,
+                    stance=stance,
+                    original_a={
+                        "doc_title": doc_a_title,
+                        "page": page_a,
+                        "quote": statement_a
+                    },
+                    original_b={
+                        "doc_title": doc_b_title,
+                        "page": page_b,
+                        "quote": statement_b
+                    },
+                    proposed_clause=str(ai_data.get("proposed_clause")),
+                    rationale=str(ai_data.get("rationale", f"AI-synthesized redline clause adhering to {stance} stance.")),
+                    risk_level=str(ai_data.get("risk_level", "Low (Balanced Consensus)")),
+                    key_concessions=ai_data.get("key_concessions", [
+                        "Bilateral operational standard adopted.",
+                        "Mutual commercial notice period instituted."
+                    ]),
+                    mode="ai_llm_harmonization"
+                )
 
         # Synthesize dynamic, grounded compromise redline
         topic_lower = topic.lower()

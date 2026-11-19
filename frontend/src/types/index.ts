@@ -239,6 +239,7 @@ export interface NegotiateRequest {
   page_b?: number;
   stance: 'balanced' | 'customer_protective' | 'vendor_favorable' | 'strict_compliance';
   custom_instructions?: string;
+  use_ai?: boolean;
 }
 
 export interface NegotiateResponse {
@@ -375,6 +376,7 @@ export interface CritiqueResponse {
   composite_risk_score: number;
   overall_assessment: string;
   leverage_summary: string;
+  mode?: string;
   personas: CritiquePersona[];
 }
 
@@ -435,6 +437,7 @@ export interface BriefResponse {
   key_recommendation: string;
   action_items: string[];
   custom_notes: string;
+  mode?: string;
 }
 
 // --- Audio Briefing Types ---

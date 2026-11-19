@@ -86,7 +86,15 @@ export const ObligationsPage: React.FC = () => {
       {/* Page Header */}
       <PageHeader title="Obligations timeline" description="Track commitments, renewal dates, and notice periods across documents.">
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate('/renewal-planner')}><Calendar size={16} />Renewal planner</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/renewal-planner')}
+            className="flex items-center gap-1.5"
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Renewal Planner</span>
+          </Button>
           <a
             href="/api/obligations/export-calendar"
             download="clario-contract-obligations.ics"

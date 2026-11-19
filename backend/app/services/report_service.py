@@ -19,6 +19,7 @@ from reportlab.lib.units import inch
 from app.core.config import settings
 from app.models.entities import Report, Document, Finding, DocumentChunk, Comparison, SearchQuery
 from app.schemas.dtos import ReportCreate, ReportResponse
+from app.services.ai_generator import AIGenerator
 
 class ReportService:
     @staticmethod
@@ -72,6 +73,29 @@ class ReportService:
             f"{len(excerpts)} source excerpt(s), and {len(retrievals)} recorded retrieval run(s), as applicable to this template. "
             "It does not run a new contradiction scan or certify the evidence."
         )
+
+        # AI-Powered Executive Overview Synthesis
+        if getattr(data, 'use_ai', False) and docs:
+            findings_bullets = "\n".join([f"- [{f.severity.upper()}] {f.title}: {f.description[:140]}" for f in findings[:8]])
+            ai_prompt = f"""You are Clario's senior intelligence auditor synthesizing an official PDF dossier report.
+Report Title: {data.title}
+Report Type: {data.report_type}
+Audited Documents: {", ".join(doc_titles)}
+Custom Reviewer Notes: {data.custom_notes or "None"}
+
+Findings Context:
+{findings_bullets or "No critical contradictions flagged."}
+
+Draft an authoritative 2-3 paragraph executive overview highlighting key risk exposures, governance conclusions, and operational recommendations."""
+            ai_summary = AIGenerator.generate_text(
+                prompt=ai_prompt,
+                system_prompt="You are Clario's Executive Dossier Synthesis Engine.",
+                max_tokens=600,
+                temperature=0.2,
+                timeout=30.0
+            )
+            if ai_summary and len(ai_summary.strip()) > 50:
+                exec_summary = ai_summary.strip()
         content = {
             "title": data.title,
             "report_type": data.report_type,

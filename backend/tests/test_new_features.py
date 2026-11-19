@@ -47,7 +47,14 @@ def test_critique_endpoints():
     data = r.json()
     assert "composite_risk_score" in data
     assert "personas" in data
-    assert len(data["personas"]) in (0, 3)
+    assert len(data["personas"]) in (0, 3, 5)
+    if len(data["personas"]) == 5:
+        persona_ids = [p["persona_id"] for p in data["personas"]]
+        assert "general_counsel" in persona_ids
+        assert "cfo" in persona_ids
+        assert "ciso" in persona_ids
+        assert "cco" in persona_ids
+        assert "coo" in persona_ids
 
     # Test with custom clause
     r2 = client.post(

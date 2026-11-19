@@ -13,9 +13,11 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Cpu
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useBackgroundTasks } from '../context/BackgroundTaskContext';
 import { BriefResponse, DocumentItem, AudioSummaryResponse } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -24,10 +26,12 @@ import { AudioBriefingPlayer } from '../components/audio/AudioBriefingPlayer';
 
 export const BriefsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { startTask, getLatestTask } = useBackgroundTasks();
   const [brief, setBrief] = useState<BriefResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('board_executive');
   const [templates, setTemplates] = useState<Array<{ id: string; name: string; description: string }>>([]);
+  const [useAi, setUseAi] = useState(false);
   const [audioSummary, setAudioSummary] = useState<AudioSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,8 +51,12 @@ export const BriefsPage: React.FC = () => {
     try {
       setLoading(true);
       setError('');
+      const cached = getLatestTask('brief');
+      if (cached && cached.status === 'completed' && cached.result) {
+        setBrief(cached.result);
+      }
       const [briefRes, docs, availableTemplates, audioRes] = await Promise.all([
-        api.generateBrief('board_executive'),
+        cached?.result ? Promise.resolve(cached.result) : api.generateBrief('board_executive', undefined, undefined, false),
         api.getDocuments(),
         api.getBriefTemplates(),
         api.getAudioSummary().catch(() => null)
@@ -68,18 +76,38 @@ export const BriefsPage: React.FC = () => {
     fetchInitialBrief();
   }, []);
 
-  const handleGenerate = async (templateId?: string) => {
+  const handleGenerate = async (templateId?: string, aiMode?: boolean) => {
     const tId = templateId || selectedTemplate;
+    const effectiveAi = typeof aiMode === 'boolean' ? aiMode : useAi;
+    const templateName = templates.find(t => t.id === tId)?.name || 'Executive Brief';
     try {
       setGenerating(true);
       setError('');
-      const res = await api.generateBrief(tId);
+      const res = await startTask<BriefResponse>({
+        title: effectiveAi ? `AI ${templateName} Synthesis` : `${templateName} Compilation`,
+        category: 'brief',
+        targetScope: 'Workspace Documents',
+        route: '/briefs',
+        initialStage: 'Compiling executive portfolio & contract telemetry...',
+        executor: async (updateProgress) => {
+          updateProgress(25, 'Aggregating financial exposures and liability caps...', `Analyzing exposure across ${documents.length || 'workspace'} active contracts`);
+          if (effectiveAi) {
+            updateProgress(60, 'Synthesizing strategic recommendations with AI...', 'Running executive risk assessment and board talking points');
+          }
+          const briefRes = await api.generateBrief(tId, undefined, undefined, effectiveAi);
+          updateProgress(95, 'Finalizing action items & legal compliance audit...', 'Formatting executive briefing summary');
+          return briefRes;
+        }
+      });
       setBrief(res);
       setSelectedTemplate(tId);
-    } catch (err) {
-      setError('Could not generate the requested briefing.');
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        setError('Could not generate the requested briefing.');
+      }
     } finally {
       setGenerating(false);
+      setLoading(false);
     }
   };
 
@@ -115,6 +143,24 @@ export const BriefsPage: React.FC = () => {
               </>
             )}
           </Button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const nextAi = !useAi;
+              setUseAi(nextAi);
+              handleGenerate(selectedTemplate, nextAi);
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-colors shadow-xs ${
+              useAi
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+            }`}
+            title="Toggle between deep generative AI brief synthesis and instant heuristic template compilation"
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Generate with AI: {useAi ? 'ON' : 'OFF'}</span>
+          </button>
 
           <Button
             size="sm"
@@ -183,7 +229,7 @@ export const BriefsPage: React.FC = () => {
             Go to Document Library
           </Button>
         </Card>
-      ) : loading ? (
+      ) : loading && !brief ? (
         <div className="py-16 text-center text-xs text-slate-500">
           Compiling executive intelligence memorandum...
         </div>

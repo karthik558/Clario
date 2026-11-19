@@ -233,6 +233,7 @@ class ReportCreate(BaseModel):
     document_ids: List[str] = []
     include_methodology: bool = True
     custom_notes: Optional[str] = None
+    use_ai: Optional[bool] = False
 
 class ReportResponse(BaseModel):
     id: str
@@ -271,6 +272,7 @@ class NegotiateRequest(BaseModel):
     page_b: Optional[int] = 1
     stance: Literal["balanced", "customer_protective", "vendor_favorable", "strict_compliance"] = "balanced"
     custom_instructions: Optional[str] = None
+    use_ai: Optional[bool] = False
 
 class NegotiateResponse(BaseModel):
     topic: str

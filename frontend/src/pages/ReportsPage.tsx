@@ -15,7 +15,8 @@ import {
   Trash2,
   BarChart2,
   BookOpen,
-  FileCheck
+  FileCheck,
+  Cpu
 } from 'lucide-react';
 import { api } from '../services/api';
 import { ReportItem, DocumentItem, WordAnalysisResponse } from '../types';
@@ -44,6 +45,7 @@ export const ReportsPage: React.FC = () => {
   const [reportType, setReportType] = useState('comparative');
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [customNotes, setCustomNotes] = useState('');
+  const [useAi, setUseAi] = useState(false);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -110,7 +112,8 @@ export const ReportsPage: React.FC = () => {
         title,
         report_type: reportType,
         document_ids: selectedDocIds,
-        custom_notes: customNotes
+        custom_notes: customNotes,
+        use_ai: useAi
       });
       setShowGenerateModal(false);
       setSelectedReport(report);
@@ -433,6 +436,19 @@ export const ReportsPage: React.FC = () => {
               placeholder="e.g. Conducted ahead of 2024 compliance audit review."
               className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
             />
+          </div>
+
+          <div className="pt-1">
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-800 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useAi}
+                onChange={(e) => setUseAi(e.target.checked)}
+                className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+              />
+              <Cpu className="w-3.5 h-3.5 text-slate-600" />
+              <span>Synthesize Executive Overview with AI (LLM Analysis)</span>
+            </label>
           </div>
 
           <div className="pt-3 border-t border-clario-border flex justify-end space-x-2">

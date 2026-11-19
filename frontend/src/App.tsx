@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { PolicyPage } from './pages/PolicyPage';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BackgroundTaskProvider } from './context/BackgroundTaskContext';
 import { Layout } from './components/layout/Layout';
 import { HomePage } from './pages/HomePage';
 import { OverviewPage } from './pages/OverviewPage';
@@ -50,39 +51,41 @@ export const RootIndexRoute: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Website Routes (Styled like /home) */}
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/terms" element={<PolicyPage policy="terms" />} />
-          <Route path="/privacy" element={<PolicyPage policy="privacy" />} />
-          <Route path="/cookies" element={<PolicyPage policy="cookies" />} />
+      <BackgroundTaskProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Website Routes (Styled like /home) */}
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/terms" element={<PolicyPage policy="terms" />} />
+            <Route path="/privacy" element={<PolicyPage policy="privacy" />} />
+            <Route path="/cookies" element={<PolicyPage policy="cookies" />} />
 
-          {/* Workspace Routes */}
-          <Route path="/" element={<Layout />}>
-            <Route index element={<RootIndexRoute />} />
-            <Route path="renewal-planner" element={<RenewalPlannerPage />} />
-            <Route path="documents" element={<DocumentsPage />} />
-            <Route path="docs" element={<Navigate to="/documents" replace />} />
-            <Route path="ask" element={<AskPage />} />
-            <Route path="compare" element={<ComparePage />} />
-            <Route path="graph" element={<KnowledgeGraphPage />} />
-            <Route path="search-lab" element={<SearchLabPage />} />
-            <Route path="findings" element={<FindingsPage />} />
-            <Route path="negotiate" element={<NegotiatePage />} />
-            <Route path="compliance" element={<CompliancePage />} />
-            <Route path="policy-checker" element={<PolicyCheckerPage />} />
-            <Route path="policy-audit" element={<Navigate to="/policy-checker" replace />} />
-            <Route path="obligations" element={<ObligationsPage />} />
-            <Route path="critique" element={<CritiquePage />} />
-            <Route path="clauses" element={<ClauseLibraryPage />} />
-            <Route path="briefs" element={<BriefsPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+            {/* Workspace Routes */}
+            <Route path="/" element={<Layout />}>
+              <Route index element={<RootIndexRoute />} />
+              <Route path="renewal-planner" element={<RenewalPlannerPage />} />
+              <Route path="documents" element={<DocumentsPage />} />
+              <Route path="docs" element={<Navigate to="/documents" replace />} />
+              <Route path="ask" element={<AskPage />} />
+              <Route path="compare" element={<ComparePage />} />
+              <Route path="graph" element={<KnowledgeGraphPage />} />
+              <Route path="search-lab" element={<SearchLabPage />} />
+              <Route path="findings" element={<FindingsPage />} />
+              <Route path="negotiate" element={<NegotiatePage />} />
+              <Route path="compliance" element={<CompliancePage />} />
+              <Route path="policy-checker" element={<PolicyCheckerPage />} />
+              <Route path="policy-audit" element={<Navigate to="/policy-checker" replace />} />
+              <Route path="obligations" element={<ObligationsPage />} />
+              <Route path="critique" element={<CritiquePage />} />
+              <Route path="clauses" element={<ClauseLibraryPage />} />
+              <Route path="briefs" element={<BriefsPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </BackgroundTaskProvider>
     </QueryClientProvider>
   );
 };

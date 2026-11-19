@@ -2,10 +2,16 @@ import re
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from app.models.entities import Document, DocumentChunk, Finding
+from app.services.ai_generator import AIGenerator
 
 class CritiqueService:
     @staticmethod
-    def evaluate_corpus(db: Session, document_ids: Optional[List[str]] = None, custom_clause: Optional[str] = None) -> Dict[str, Any]:
+    def evaluate_corpus(
+        db: Session,
+        document_ids: Optional[List[str]] = None,
+        custom_clause: Optional[str] = None,
+        use_ai: bool = False
+    ) -> Dict[str, Any]:
         query = db.query(Document).filter(Document.status == "READY")
         if document_ids:
             query = query.filter(Document.id.in_(document_ids))
@@ -23,13 +29,14 @@ class CritiqueService:
             chunks_query = chunks_query.filter(DocumentChunk.document_id.in_(document_ids))
         chunks = chunks_query.all()
 
-        if not chunks and not custom_clause:
+        if not chunks and not custom_clause and not docs:
             return {
                 "evaluated_documents": 0,
                 "findings_referenced": 0,
                 "composite_risk_score": 0,
                 "overall_assessment": "No documents uploaded in workspace. Upload documents to simulate red team review.",
                 "leverage_summary": "Upload documents to begin adversarial review.",
+                "mode": "standard",
                 "personas": []
             }
 
@@ -38,10 +45,172 @@ class CritiqueService:
             corpus_text += " " + custom_clause
 
         corpus_lower = corpus_text.lower()
+        doc_names = [d.title or d.filename for d in docs]
+        doc_label = ", ".join(doc_names[:3]) if doc_names else ("Custom Clause" if custom_clause else "Active Scope")
 
-        # Legal Persona Evaluation
+        # ---------------- AI-Powered Deep Multi-Persona Synthesis ----------------
+        if use_ai and (corpus_text.strip() or findings):
+            ai_result = CritiqueService._evaluate_with_ai(
+                corpus_text=corpus_text,
+                findings=findings,
+                doc_label=doc_label,
+                docs_count=len(docs)
+            )
+            if ai_result:
+                return ai_result
+
+        # ---------------- High-Precision Deterministic Multi-Persona Synthesis ----------------
+        return CritiqueService._evaluate_heuristic(
+            docs=docs,
+            findings=findings,
+            corpus_lower=corpus_lower,
+            corpus_text=corpus_text
+        )
+
+    @staticmethod
+    def _evaluate_with_ai(
+        corpus_text: str,
+        findings: List[Finding],
+        doc_label: str,
+        docs_count: int
+    ) -> Optional[Dict[str, Any]]:
+        sample_text = corpus_text[:2500] if len(corpus_text) > 2500 else corpus_text
+        findings_bullets = "\n".join([f"- [{f.severity.upper()}] {f.title}: {f.description[:120]}" for f in findings[:4]])
+
+        prompt = f"""You are the Red Team Audit Council reviewing '{doc_label}'.
+Conduct an adversarial audit representing 5 executive roles:
+1. general_counsel: General Legal Counsel (Liability caps, mutual indemnities)
+2. cfo: Chief Financial Officer (Auto-renewals, price escalators)
+3. ciso: Chief Information Security Officer (Data residency, 48h breach notice)
+4. cco: Chief Compliance Officer (Regulatory compliance, GDPR/HIPAA audits)
+5. coo: Chief Operating Officer (Uptime SLAs, exit transition)
+
+Context:
+\"\"\"
+{sample_text}
+\"\"\"
+Known Prior Findings: {findings_bullets or "None pre-indexed"}
+
+Respond strictly with a concise JSON object:
+{{
+  "composite_risk_score": <number 0-100>,
+  "overall_assessment": "<2 sentence executive risk assessment>",
+  "leverage_summary": "<1 sentence commercial leverage summary>",
+  "personas": [
+    {{
+      "persona_id": "general_counsel",
+      "role_title": "General Legal Counsel",
+      "avatar_color": "navy",
+      "focus": "Liability Super-Caps & Indemnification",
+      "verdict": "<short verdict>",
+      "risk_score": <number 0-100>,
+      "red_flags": [
+        {{
+          "severity": "<Critical | High>",
+          "point": "<Vulnerability Title>",
+          "detail": "<Specific risk grounded in the text>",
+          "counter_clause": "<Concrete replacement defense clause>"
+        }}
+      ]
+    }},
+    {{
+      "persona_id": "cfo",
+      "role_title": "Chief Financial Officer (CFO)",
+      "avatar_color": "amber",
+      "focus": "Auto-Renewal & Price Escalators",
+      "verdict": "<short verdict>",
+      "risk_score": <number 0-100>,
+      "red_flags": [{{ "severity": "High", "point": "<Vulnerability>", "detail": "<Detail>", "counter_clause": "<Counter>" }}]
+    }},
+    {{
+      "persona_id": "ciso",
+      "role_title": "Chief Information Security Officer (CISO)",
+      "avatar_color": "rose",
+      "focus": "Data Residency & 48h Breach SLA",
+      "verdict": "<short verdict>",
+      "risk_score": <number 0-100>,
+      "red_flags": [{{ "severity": "Critical", "point": "<Vulnerability>", "detail": "<Detail>", "counter_clause": "<Counter>" }}]
+    }},
+    {{
+      "persona_id": "cco",
+      "role_title": "Chief Compliance Officer (CCO)",
+      "avatar_color": "emerald",
+      "focus": "Regulatory Audits & Statutory DPA",
+      "verdict": "<short verdict>",
+      "risk_score": <number 0-100>,
+      "red_flags": [{{ "severity": "High", "point": "<Vulnerability>", "detail": "<Detail>", "counter_clause": "<Counter>" }}]
+    }},
+    {{
+      "persona_id": "coo",
+      "role_title": "Chief Operating Officer (COO)",
+      "avatar_color": "indigo",
+      "focus": "Uptime SLAs & Exit Transition",
+      "verdict": "<short verdict>",
+      "risk_score": <number 0-100>,
+      "red_flags": [{{ "severity": "High", "point": "<Vulnerability>", "detail": "<Detail>", "counter_clause": "<Counter>" }}]
+    }}
+  ]
+}}"""
+
+        data = AIGenerator.generate_json(
+            prompt=prompt,
+            system_prompt="You are Clario's Red Team Council Engine. Deliver rigorous, legally grounded adversarial contract analysis in strictly valid JSON.",
+            max_tokens=950,
+            temperature=0.15,
+            timeout=18.0
+        )
+
+        if not data or not isinstance(data, dict) or "personas" not in data or not isinstance(data["personas"], list):
+            return None
+
+        # Validate that personas list has valid items
+        personas = data.get("personas", [])
+        if len(personas) < 3:
+            return None
+
+        # Ensure all required persona fields are intact
+        valid_personas = []
+        for p in personas:
+            if isinstance(p, dict) and p.get("persona_id") and p.get("role_title"):
+                flags = p.get("red_flags", [])
+                clean_flags = []
+                for f in flags:
+                    if isinstance(f, dict) and f.get("point"):
+                        clean_flags.append({
+                            "severity": f.get("severity", "High"),
+                            "point": f.get("point", "Identified Contractual Risk"),
+                            "detail": f.get("detail", "Contractual exposure detected upon deep AI analysis."),
+                            "counter_clause": f.get("counter_clause", "Parties shall adopt standard mutual covenants.")
+                        })
+                valid_personas.append({
+                    "persona_id": p.get("persona_id"),
+                    "role_title": p.get("role_title"),
+                    "avatar_color": p.get("avatar_color", "navy"),
+                    "focus": p.get("focus", "Governance Scrutiny"),
+                    "verdict": p.get("verdict", "Caution Advised"),
+                    "risk_score": int(p.get("risk_score", 50)),
+                    "red_flags": clean_flags
+                })
+
+        return {
+            "evaluated_documents": docs_count,
+            "findings_referenced": len(findings),
+            "composite_risk_score": int(data.get("composite_risk_score", 55)),
+            "overall_assessment": data.get("overall_assessment", "Deep AI adversarial evaluation identified critical terms warranting redlines."),
+            "leverage_summary": data.get("leverage_summary", "Counterparty terms contain unilateral restrictions; request mutual baseline amendments."),
+            "mode": "ai_multi_persona_synthesis",
+            "personas": valid_personas
+        }
+
+    @staticmethod
+    def _evaluate_heuristic(
+        docs: List[Document],
+        findings: List[Finding],
+        corpus_lower: str,
+        corpus_text: str
+    ) -> Dict[str, Any]:
+        # 1. Legal Persona Evaluation (General Legal Counsel)
         legal_red_flags = []
-        # Check actual findings first
         for f in findings:
             if any(k in f.title.lower() for k in ["liability", "indemn", "jurisdiction", "copyright", "defense"]):
                 legal_red_flags.append({
@@ -51,7 +220,6 @@ class CritiqueService:
                     "counter_clause": "Add mutual liability super-cap and bilateral indemnification covenants."
                 })
 
-        # Check domain patterns with regex
         if not legal_red_flags:
             if re.search(r'(?:aggregate|cumulative)\s+liability\s+(?:is\s+)?(?:capped|limited)|sole\s+remedy|waive[sd]?\s+(?:all\s+)?consequential\s+damages|capped\s+at\s+(?:fifty|\$100|nominal)', corpus_lower):
                 legal_red_flags.append({
@@ -75,7 +243,7 @@ class CritiqueService:
                     "counter_clause": "Require 30 days prior written notice and express customer termination right without penalty."
                 })
 
-        # Financial Persona Evaluation
+        # 2. Financial Persona Evaluation (CFO)
         finance_red_flags = []
         for f in findings:
             if any(k in f.title.lower() for k in ["renewal", "fee", "price", "financial", "payment"]):
@@ -109,7 +277,7 @@ class CritiqueService:
                     "counter_clause": "Require 15-day formal cure notice prior to late interest accrual or service suspension."
                 })
 
-        # CISO Persona Evaluation
+        # 3. CISO Persona Evaluation
         ciso_red_flags = []
         for f in findings:
             if any(k in f.title.lower() for k in ["retention", "breach", "telemetry", "incident", "security", "subprocessor"]):
@@ -143,10 +311,80 @@ class CritiqueService:
                     "counter_clause": "Strict contractual requirement for notice within 48 to 72 hours of confirmed security incident."
                 })
 
+        # 4. Chief Compliance Officer (CCO) Persona Evaluation
+        cco_red_flags = []
+        for f in findings:
+            if any(k in f.title.lower() for k in ["gdpr", "compliance", "regulatory", "audit", "sanctions", "statutory", "dpa"]):
+                cco_red_flags.append({
+                    "severity": f.severity.title(),
+                    "point": f.title,
+                    "detail": f.description[:220],
+                    "counter_clause": "Incorporate standardized Data Protection Addendum (DPA) with explicit annual third-party audit verification."
+                })
+
+        if not cco_red_flags:
+            if re.search(r'no\s+audit\s+rights|sole\s+expense\s+of\s+customer\s+audit|audit\s+limited\s+to\s+once\s+every\s+(?:two|three)\s+years', corpus_lower):
+                cco_red_flags.append({
+                    "severity": "High",
+                    "point": "Restricted Regulatory Audit Rights",
+                    "detail": "Customer or supervisory authority inspection rights are unduly constrained or shifted fully to customer expense.",
+                    "counter_clause": "Grant customer and regulatory authorities annual inspection rights with SOC 2 Type II audit report delivery."
+                })
+            elif re.search(r'cross-?border\s+transfer|transfer\s+of\s+personal\s+data\s+outside|international\s+data\s+transfer', corpus_lower):
+                cco_red_flags.append({
+                    "severity": "Critical",
+                    "point": "Unregulated Cross-Border Data Flows",
+                    "detail": "Customer personal data transferred across borders without incorporated Standard Contractual Clauses (SCCs).",
+                    "counter_clause": "Incorporate EU Standard Contractual Clauses (SCCs) and UK International Data Transfer Addendum."
+                })
+            else:
+                cco_red_flags.append({
+                    "severity": "Medium",
+                    "point": "Absence of Express Statutory Indemnity",
+                    "detail": "Agreement lacks dedicated indemnity protecting customer against supervisory regulatory fines arising from vendor defaults.",
+                    "counter_clause": "Vendor shall defend and indemnify customer against all administrative fines and civil penalties resulting from vendor data breaches."
+                })
+
+        # 5. Chief Operating Officer (COO) Persona Evaluation
+        coo_red_flags = []
+        for f in findings:
+            if any(k in f.title.lower() for k in ["sla", "uptime", "availability", "service level", "disaster", "transition", "continuity"]):
+                coo_red_flags.append({
+                    "severity": f.severity.title(),
+                    "point": f.title,
+                    "detail": f.description[:220],
+                    "counter_clause": "Institute 99.9% availability SLA with tiered financial service credits and termination rights for chronic outages."
+                })
+
+        if not coo_red_flags:
+            if re.search(r'as\s+is|as\s+available|no\s+(?:warranty\s+of\s+)?uninterrupted|best\s+efforts\s+availability', corpus_lower):
+                coo_red_flags.append({
+                    "severity": "High",
+                    "point": "Disclaimed Operational Availability",
+                    "detail": "Services provided without formal Service Level Agreement (SLA) or enforceable uptime commitments.",
+                    "counter_clause": "Provide 99.9% monthly uptime guarantee backed by tiered service fee credits for non-compliance."
+                })
+            if re.search(r'no\s+transition\s+assistance|immediate\s+cessation\s+upon\s+termination|data\s+destroyed\s+(?:within\s+)?(?:\d+\s+days\s+of|immediately\s+upon)\s+termination', corpus_lower):
+                coo_red_flags.append({
+                    "severity": "Critical",
+                    "point": "Abrupt Termination & Zero Exit Assistance",
+                    "detail": "Lack of disengagement assistance or orderly transition period creates severe vendor operational lock-in.",
+                    "counter_clause": "Vendor must provide 60-day post-termination transition support at standard rates and export all customer data in structured formats."
+                })
+            else:
+                coo_red_flags.append({
+                    "severity": "Medium",
+                    "point": "Unspecified Disaster Recovery / RTO SLAs",
+                    "detail": "Recovery Time Objective (RTO) and Recovery Point Objective (RPO) SLAs are absent from contractual exhibits.",
+                    "counter_clause": "Contractually commit to a 4-hour RTO and 1-hour RPO with annual disaster recovery drill validation."
+                })
+
         legal_score = min(100, len(legal_red_flags) * 32)
         finance_score = min(100, len(finance_red_flags) * 32)
         ciso_score = min(100, len(ciso_red_flags) * 32)
-        composite_risk = round((legal_score + finance_score + ciso_score) / 3)
+        cco_score = min(100, len(cco_red_flags) * 32)
+        coo_score = min(100, len(coo_red_flags) * 32)
+        composite_risk = round((legal_score + finance_score + ciso_score + cco_score + coo_score) / 5)
 
         def get_verdict(score: int, high_label: str) -> str:
             if score >= 60:
@@ -174,6 +412,7 @@ class CritiqueService:
             "composite_risk_score": composite_risk,
             "overall_assessment": overall_assessment,
             "leverage_summary": leverage_summary,
+            "mode": "heuristic_synthesis",
             "personas": [
                 {
                     "persona_id": "general_counsel",
@@ -181,7 +420,7 @@ class CritiqueService:
                     "avatar_color": "navy",
                     "verdict": get_verdict(legal_score, "Veto Without Protective Covenants"),
                     "risk_score": legal_score,
-                    "focus": "Liability Exposure & Indemnification Asymmetry",
+                    "focus": "Liability Super-Caps, Indemnification Asymmetry & Governing Law",
                     "red_flags": legal_red_flags
                 },
                 {
@@ -190,7 +429,7 @@ class CritiqueService:
                     "avatar_color": "amber",
                     "verdict": get_verdict(finance_score, "Budget Risk: Escalator Cap Required"),
                     "risk_score": finance_score,
-                    "focus": "Auto-Renewal Traps & Hidden Price Hikes",
+                    "focus": "Auto-Renewal Lock-in, Uncapped Price Escalation & Hidden Fees",
                     "red_flags": finance_red_flags
                 },
                 {
@@ -199,8 +438,92 @@ class CritiqueService:
                     "avatar_color": "rose",
                     "verdict": get_verdict(ciso_score, "Security Exception: Subprocessor Notice Insufficient"),
                     "risk_score": ciso_score,
-                    "focus": "Data Residency, Subprocessors & 48h Breach SLA",
+                    "focus": "Data Residency, Subprocessor Veto & 48h Breach Notification SLA",
                     "red_flags": ciso_red_flags
+                },
+                {
+                    "persona_id": "cco",
+                    "role_title": "Chief Compliance Officer (CCO)",
+                    "avatar_color": "emerald",
+                    "verdict": get_verdict(cco_score, "Regulatory Gap: DPA & Audit Rights Deficient"),
+                    "risk_score": cco_score,
+                    "focus": "Regulatory Governance, Audit Rights, GDPR / Statutory Mandates",
+                    "red_flags": cco_red_flags
+                },
+                {
+                    "persona_id": "coo",
+                    "role_title": "Chief Operating Officer (COO)",
+                    "avatar_color": "indigo",
+                    "verdict": get_verdict(coo_score, "Operational Risk: Uncommitted SLAs & Lock-in"),
+                    "risk_score": coo_score,
+                    "focus": "Service Level Commitments (SLAs), Business Continuity & Transition Exit",
+                    "red_flags": coo_red_flags
                 }
             ]
+        }
+
+    @staticmethod
+    def draft_counter_clause(
+        point: str,
+        detail: str,
+        persona_id: str = "general_counsel",
+        document_title: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Drafts a tailored counter-clause for a specific council vulnerability option using AI.
+        """
+        role_map = {
+            "general_counsel": "General Legal Counsel (focus on liability super-caps, mutual indemnification, and dispute venue)",
+            "cfo": "Chief Financial Officer (focus on eliminating auto-renewal traps, capping price escalators at CPI/3%, and cure periods for billing)",
+            "ciso": "Chief Information Security Officer (focus on 48h emergency breach notice, zero data retention, and subprocessor veto rights)",
+            "cco": "Chief Compliance Officer (focus on statutory audit rights, EU SCCs, and indemnification against regulatory fines)",
+            "coo": "Chief Operating Officer (focus on 99.9% uptime SLA service credits, disaster recovery RTO/RPO, and 60-day exit transition support)"
+        }
+        role_desc = role_map.get(persona_id, "Senior Enterprise Corporate Counsel")
+
+        ai_prompt = f"""You are the {role_desc}.
+Vulnerability Identified: {point}
+Contract Risk Detail: {detail}
+Document Context: {document_title or "Commercial Agreement"}
+
+Draft a precise, enforceable, protective counter-clause that senior counsel can insert directly into a redline to neutralize this risk.
+Return a valid JSON object:
+{{
+  "counter_clause": "<Direct, ready-to-use contractual clause text in quotes>",
+  "rationale": "<1-2 sentence strategic reason why this counter-clause protects the client>"
+}}"""
+
+        ai_data = AIGenerator.generate_json(
+            prompt=ai_prompt,
+            system_prompt="You are Clario's Red Team Counter-Clause Drafting Engine. Respond strictly in JSON.",
+            max_tokens=600,
+            temperature=0.15,
+            timeout=25.0
+        )
+
+        if ai_data and isinstance(ai_data, dict) and ai_data.get("counter_clause"):
+            return {
+                "point": point,
+                "counter_clause": str(ai_data.get("counter_clause")).strip().strip('"'),
+                "rationale": str(ai_data.get("rationale", "AI-synthesized protective amendment.")),
+                "mode": "ai_generated"
+            }
+
+        # High-quality fallback counter-clauses if LLM is unavailable
+        fallback_map = {
+            "general_counsel": "Notwithstanding any provision to the contrary, each party's aggregate liability under this Agreement shall be subject to a mutual ceiling of twelve (12) months of fees paid, with uncapped liability strictly preserved for breaches of confidentiality and third-party IP indemnification.",
+            "cfo": "This Agreement shall not renew automatically without affirmative written consent delivered at least thirty (30) days prior to term expiration. In no event shall renewal pricing increase by more than the lesser of three percent (3%) or the annual Consumer Price Index (CPI).",
+            "ciso": "Vendor shall maintain verifiable Zero Data Retention (ZDR) architecture and covenants to deliver formal written notice of any confirmed or suspected Security Incident within forty-eight (48) hours of discovery, together with forensic mitigation logs.",
+            "cco": "Vendor warrants compliance with all applicable statutory and regulatory mandates (including GDPR and HIPAA) and grants Customer and supervisory authorities the right to conduct annual third-party audits with delivery of certified SOC 2 Type II reports.",
+            "coo": "Vendor commits to a 99.9% monthly Service Level Agreement (SLA). In the event of chronic unexcused downtime exceeding 0.5% in any calendar quarter, Customer may terminate without penalty and receive full unearned prepaid refunds."
+        }
+        fallback_clause = fallback_map.get(
+            persona_id,
+            "The parties agree to bilateral good-faith commercial remedies and thirty (30) days prior notice for material operational modifications."
+        )
+        return {
+            "point": point,
+            "counter_clause": fallback_clause,
+            "rationale": f"Standardized institutional safeguard formulated for {role_desc.split('(')[0].strip()}.",
+            "mode": "standard_safeguard"
         }

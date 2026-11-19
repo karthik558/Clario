@@ -31,16 +31,31 @@ export const Button: React.FC<ButtonProps> = ({
     lg: 'text-base px-5 py-2.5 space-x-2.5',
   };
 
+  // When loading, rotate the existing leading icon directly rather than rendering a duplicate spinner
+  const childrenArray = React.Children.toArray(children);
+  const firstChild = childrenArray[0];
+  const hasLeadingElement = React.isValidElement(firstChild);
+
+  const renderedChildren = childrenArray.map((child, index) => {
+    if (loading && index === 0 && React.isValidElement(child)) {
+      const existingClass = (child.props as any)?.className || '';
+      return React.cloneElement(child as React.ReactElement<any>, {
+        className: `${existingClass} animate-spin`.trim(),
+      });
+    }
+    return child;
+  });
+
   return (
     <button
       disabled={disabled || loading}
       className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
-      {loading && (
+      {loading && !hasLeadingElement && (
         <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
       )}
-      {children}
+      {renderedChildren}
     </button>
   );
 };

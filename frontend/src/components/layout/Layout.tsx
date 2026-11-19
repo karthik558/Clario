@@ -5,6 +5,7 @@ import { QuickAsk } from './QuickAsk';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { GlobalSearchModal } from './GlobalSearchModal';
+import { BackgroundTaskDrawer } from './BackgroundTaskDrawer';
 import { DocumentViewerModal } from '../documents/DocumentViewerModal';
 import { SearchResultItem } from '../../types';
 
@@ -101,6 +102,9 @@ export const Layout: React.FC = () => {
         highlightPage={selectedResult?.page_number}
         onClose={() => setSelectedResult(null)}
       />
+
+      {/* Global Background Tasks & Activity Log Drawer */}
+      <BackgroundTaskDrawer />
     </div>
   );
 };

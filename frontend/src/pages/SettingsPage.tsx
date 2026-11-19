@@ -83,10 +83,8 @@ export const SettingsPage: React.FC = () => {
     try {
       const status = await api.getOllamaStatus();
       setOllamaStatus(status);
-      if (status.running && status.models && status.models.length > 0) {
-        if (!status.models.includes(ollamaModel) || ollamaModel === 'llama3.2') {
-          setOllamaModel(status.active_model && status.models.includes(status.active_model) ? status.active_model : status.models[0]);
-        }
+      if (status.active_model) {
+        setOllamaModel(status.active_model);
       }
     } catch (err) {
       setOllamaStatus({

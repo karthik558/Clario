@@ -282,7 +282,7 @@ export const api = {
     return res.json();
   },
 
-  createReport: async (data: { title: string; report_type: string; document_ids: string[]; custom_notes?: string }): Promise<ReportItem> => {
+  createReport: async (data: { title: string; report_type: string; document_ids: string[]; custom_notes?: string; use_ai?: boolean }): Promise<ReportItem> => {
     const res = await fetch(`${API_BASE}/reports`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -431,13 +431,23 @@ export const api = {
   },
 
   // Multi-Persona Critique
-  evaluateCritique: async (documentIds?: string[], customClause?: string): Promise<CritiqueResponse> => {
+  evaluateCritique: async (documentIds?: string[], customClause?: string, useAi?: boolean): Promise<CritiqueResponse> => {
     const res = await fetch(`${API_BASE}/critique/evaluate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ document_ids: documentIds, custom_clause: customClause }),
+      body: JSON.stringify({ document_ids: documentIds, custom_clause: customClause, use_ai: useAi }),
     });
     if (!res.ok) throw new Error('Critique evaluation failed');
+    return res.json();
+  },
+
+  draftCounterClause: async (point: string, detail: string, personaId?: string, documentTitle?: string): Promise<{ point: string; counter_clause: string; rationale: string; mode: string }> => {
+    const res = await fetch(`${API_BASE}/critique/draft-counter`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ point, detail, persona_id: personaId, document_title: documentTitle }),
+    });
+    if (!res.ok) throw new Error('Counter clause drafting failed');
     return res.json();
   },
 
@@ -475,14 +485,15 @@ export const api = {
     return res.json();
   },
 
-  generateBrief: async (templateId?: string, documentIds?: string[], customNotes?: string): Promise<BriefResponse> => {
+  generateBrief: async (templateId?: string, documentIds?: string[], customNotes?: string, useAi?: boolean): Promise<BriefResponse> => {
     const res = await fetch(`${API_BASE}/briefs/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         template_id: templateId || 'board_executive',
         document_ids: documentIds,
-        custom_notes: customNotes
+        custom_notes: customNotes,
+        use_ai: useAi
       }),
     });
     if (!res.ok) throw new Error('Failed to generate executive brief');

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { NavLink, Link } from 'react-router-dom';
+import { useBackgroundTasks } from '../../context/BackgroundTaskContext';
 import {
   LayoutDashboard,
   Files,
@@ -19,7 +20,8 @@ import {
   ShieldAlert,
   BookOpen,
   FileCheck,
-  ClipboardCheck
+  ClipboardCheck,
+  Cpu
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -36,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile = () => { }
 }) => {
   const sidebarRef = useRef<HTMLElement>(null);
+  const { activeTasks, tasks, setIsDrawerOpen } = useBackgroundTasks();
   useEffect(() => {
     if (!mobileOpen) return;
     const previous = document.activeElement as HTMLElement | null;
@@ -133,6 +136,67 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </React.Fragment>
           ))}
         </nav>
+
+        {/* Real-time Background Tasks Pill / Trigger */}
+        <div className={`shrink-0 border-t border-white/10 ${collapsed ? 'py-2 px-1 text-center' : 'p-2.5'}`}>
+          {activeTasks.length > 0 ? (
+            collapsed ? (
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="relative p-2 rounded-md hover:bg-white/10 text-amber-300 mx-auto block"
+                title={`${activeTasks.length} background task(s) active. Click to view logs or end task.`}
+                aria-label="Active background tasks"
+              >
+                <Cpu className="w-5 h-5 animate-spin" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-all shadow-xs group"
+                title="Click to view live logs or end running tasks"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+                  <span className="truncate text-[11px] font-semibold text-slate-200">
+                    {activeTasks[0].stage || 'AI Task running...'}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono bg-amber-500/30 px-1.5 py-0.5 rounded text-amber-200 shrink-0 font-bold ml-1">
+                  {activeTasks.length} active
+                </span>
+              </button>
+            )
+          ) : collapsed ? (
+            <button
+              type="button"
+              onClick={() => setIsDrawerOpen(true)}
+              className="p-2 rounded-md hover:bg-white/10 text-slate-400 mx-auto block"
+              title="Background Tasks & AI Logs"
+              aria-label="Background Tasks"
+            >
+              <Cpu className="w-4 h-4 opacity-70 hover:opacity-100 transition-opacity" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsDrawerOpen(true)}
+              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors"
+              title="View recent background tasks and AI execution history"
+            >
+              <div className="flex items-center gap-2">
+                <Cpu className="w-3.5 h-3.5" />
+                <span>Background Tasks</span>
+              </div>
+              <span className="font-mono text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">
+                {tasks.length}
+              </span>
+            </button>
+          )}
+        </div>
+
         <div className={`shrink-0 border-t border-white/10 ${collapsed ? 'py-4 px-2 flex justify-center items-center' : 'px-4 py-3.5'} text-xs text-slate-400`}>
           {collapsed ? (
             <Link

@@ -9,6 +9,7 @@ import datetime
 from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.orm import Session
 from app.models.entities import Document, DocumentChunk, Finding
+from app.services.ai_generator import AIGenerator
 
 class BriefService:
     @staticmethod
@@ -39,7 +40,8 @@ class BriefService:
         db: Session,
         template_id: str = "board_executive",
         document_ids: Optional[List[str]] = None,
-        custom_notes: Optional[str] = None
+        custom_notes: Optional[str] = None,
+        use_ai: bool = False
     ) -> Dict[str, Any]:
         query = db.query(Document).filter(Document.status == "READY")
         if document_ids:
@@ -77,6 +79,61 @@ class BriefService:
         chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id.in_(doc_ids)).order_by(DocumentChunk.chunk_index).all()
         corpus_text = "\n".join([c.content for c in chunks])
         corpus_lower = corpus_text.lower()
+
+        # AI-Powered Executive Brief Synthesis
+        if use_ai and corpus_text.strip():
+            ai_prompt = f"""You are an elite corporate strategy advisor preparing an executive brief.
+Template: {template_id}
+Documents Audited: {", ".join(doc_titles)}
+Critical Findings: {len(critical_findings)} detected
+Custom Auditor Notes: {custom_notes or "None"}
+
+Document Excerpt:
+\"\"\"
+{corpus_text[:4000]}
+\"\"\"
+
+Synthesize an executive intelligence brief in valid JSON matching this schema:
+{{
+  "title": "<Concise memo title, e.g. Executive Risk Memorandum — {doc_titles[0] if doc_titles else 'Workspace'}>",
+  "executive_summary": "<Comprehensive 2-3 paragraph executive summary of key terms, obligations, and commercial posture>",
+  "key_recommendation": "<High-priority strategic decision recommendation for senior leadership>",
+  "financial_exposure": [
+    {{"label": "<e.g. Aggregate Liability Ceiling>", "detail": "<Detailed analysis of exposure with exact figures or terms>"}},
+    {{"label": "<e.g. Price Escalation / Renewals>", "detail": "<Detailed exposure analysis>"}}
+  ],
+  "legal_risks": [
+    {{"item": "<Risk topic e.g. Governing Forum & Arbitration>", "status": "<Critical | High | Moderate>", "assessment": "<Risk analysis>"}},
+    {{"item": "<Risk topic e.g. Data Protection & Breach SLA>", "status": "<Critical | High | Moderate>", "assessment": "<Risk analysis>"}}
+  ],
+  "action_items": [
+    "<Immediate action item 1>",
+    "<Immediate action item 2>",
+    "<Immediate action item 3>"
+  ]
+}}"""
+            ai_data = AIGenerator.generate_json(
+                prompt=ai_prompt,
+                system_prompt="You are Clario's Executive Brief Synthesis Engine. Produce authoritative, grounded commercial analysis in valid JSON.",
+                max_tokens=1800,
+                temperature=0.15,
+                timeout=45.0
+            )
+            if ai_data and isinstance(ai_data, dict) and ai_data.get("executive_summary"):
+                return {
+                    "title": ai_data.get("title", f"Executive Intelligence Brief — {doc_titles[0]}"),
+                    "template_id": template_id,
+                    "generated_date": now_str,
+                    "audited_documents": doc_titles,
+                    "critical_findings_count": len(critical_findings),
+                    "executive_summary": ai_data.get("executive_summary"),
+                    "key_recommendation": ai_data.get("key_recommendation", "Review identified critical provisions before execution."),
+                    "financial_exposure": ai_data.get("financial_exposure", []),
+                    "legal_risks": ai_data.get("legal_risks", []),
+                    "action_items": ai_data.get("action_items", ["Review flagged covenants with legal counsel."]),
+                    "custom_notes": custom_notes,
+                    "mode": "ai_llm_synthesis"
+                }
 
         # Detect domain characteristics
         is_financial = any(w in corpus_lower for w in [

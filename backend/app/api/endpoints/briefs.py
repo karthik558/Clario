@@ -12,6 +12,7 @@ class BriefGenerateRequest(BaseModel):
     template_id: str = "board_executive"
     document_ids: Optional[List[str]] = None
     custom_notes: Optional[str] = None
+    use_ai: Optional[bool] = False
 
 class AudioSummaryRequest(BaseModel):
     document_ids: Optional[List[str]] = None
@@ -27,7 +28,8 @@ def generate_brief(req: BriefGenerateRequest, db: Session = Depends(get_db)):
         db,
         template_id=req.template_id,
         document_ids=req.document_ids,
-        custom_notes=req.custom_notes
+        custom_notes=req.custom_notes,
+        use_ai=bool(req.use_ai)
     )
 
 @router.get("/audio-summary")
