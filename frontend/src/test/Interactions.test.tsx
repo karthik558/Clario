@@ -45,6 +45,19 @@ describe('Workspace interactions', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Policy A/ }));
     expect(select).toHaveBeenCalledWith(result);
   });
+  it('opens passages while lexical analysis is still loading', async () => {
+    vi.spyOn(api, 'getDocuments').mockResolvedValue(documents);
+    vi.spyOn(api, 'getDocument').mockResolvedValue({
+      ...documents[0],
+      chunks: [{ id: 'chunk-a', chunk_index: 0, page_number: 1, start_char: 0, end_char: 7, content: 'Passage', token_count: 1 }],
+    });
+    vi.spyOn(api, 'getWordAnalysis').mockImplementation(() => new Promise(() => {}));
+    render(<DocumentsPage />);
+    fireEvent.click(await screen.findByText('Policy A'));
+    expect(await screen.findByText('Passage')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Lexical Analysis' }));
+    expect(screen.getByText('Loading lexical analysis…')).toBeVisible();
+  });
   it('keeps collection options when filters yield no documents', async () => {
     vi.spyOn(api, 'getDocuments').mockResolvedValue(documents);
     render(<DocumentsPage />);

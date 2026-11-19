@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Maximize2,
@@ -15,58 +16,47 @@ import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Markdown } from '../ui/Markdown';
 import { api } from '../../services/api';
-import { DocumentDetail, WordAnalysisResponse } from '../../types';
+import { DocumentDetail, DocumentItem, WordAnalysisResponse } from '../../types';
 import { WordAnalysisVisualizer } from '../analytics/WordAnalysisVisualizer';
+
+const PassageMarkdown = React.memo(Markdown);
 
 interface DocumentDrawerProps {
   documentId: string | null;
+  summary?: DocumentItem;
   onClose: () => void;
   onExpandToModal?: () => void;
 }
 
 export const DocumentDrawer: React.FC<DocumentDrawerProps> = ({
   documentId,
+  summary,
   onClose,
   onExpandToModal,
 }) => {
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
-  const [wordAnalysis, setWordAnalysis] = useState<WordAnalysisResponse | null>(null);
+  const [wordAnalysis, setWordAnalysis] = useState<WordAnalysisResponse | null>();
   const [activeTab, setActiveTab] = useState<'passages' | 'analysis'>('passages');
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedChunkId, setCopiedChunkId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!documentId) {
-      setDoc(null);
-      setWordAnalysis(null);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
+    setDoc(null);
+    setWordAnalysis(undefined);
     setError(null);
     setSearchQuery('');
+    if (!documentId) return;
 
-    const fetchDetail = async () => {
-      try {
-        const [docData, analysisData] = await Promise.all([
-          api.getDocument(documentId),
-          api.getWordAnalysis([documentId]).catch(() => null),
-        ]);
-        if (!cancelled) {
-          setDoc(docData);
-          setWordAnalysis(analysisData);
-        }
-      } catch (err: any) {
-        if (!cancelled) setError(err.message || 'Failed to load document');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
+    let cancelled = false;
+    api.getDocument(documentId)
+      .then(detail => { if (!cancelled) React.startTransition(() => setDoc(detail)); })
+      .catch(err => { if (!cancelled) setError(err.message || 'Failed to load document'); });
 
-    fetchDetail();
+    api.getWordAnalysis([documentId])
+      .then(analysis => { if (!cancelled) setWordAnalysis(analysis); })
+      .catch(() => { if (!cancelled) setWordAnalysis(null); });
+
     return () => {
       cancelled = true;
     };
@@ -98,20 +88,21 @@ export const DocumentDrawer: React.FC<DocumentDrawerProps> = ({
 
   if (!documentId) return null;
 
-  return (
+  const metadata = doc?.id === documentId ? doc : summary;
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/20 z-40 transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/20 z-40 side-drawer-backdrop"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Slide-out Drawer */}
       <div
-        className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-xl md:max-w-2xl bg-white border-l border-slate-200 shadow-2xl flex flex-col animate-in slide-in-from-right duration-250 ease-out"
+        className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-xl md:max-w-2xl bg-white border-l border-slate-200 shadow-2xl flex flex-col side-drawer-panel"
         role="dialog"
-        aria-label={doc?.title || 'Document Source Drawer'}
+        aria-label={metadata?.title || 'Document Source Drawer'}
       >
         {/* Single Unified Drawer Header */}
         <div className="p-4 border-b border-slate-200 bg-white shrink-0 space-y-3">
@@ -119,35 +110,35 @@ export const DocumentDrawer: React.FC<DocumentDrawerProps> = ({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-slate-900 truncate tracking-tight">
-                  {doc?.title ? doc.title.replace(/_/g, ' ') : 'Loading document...'}
+                  {metadata?.title ? metadata.title.replace(/_/g, ' ') : error ? 'Document preview' : 'Loading document…'}
                 </h2>
-                {doc && (
+                {metadata && (
                   <Badge variant="navy" size="sm">
-                    {doc.file_type.toUpperCase()}
+                    {metadata.file_type.toUpperCase()}
                   </Badge>
                 )}
               </div>
-              {doc && (
+              {metadata && (
                 <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
-                  {doc.page_count} pages &bull; {doc.word_count.toLocaleString()} words &bull; {doc.chunk_count} passages
+                  {metadata.page_count} pages &bull; {metadata.word_count.toLocaleString()} words &bull; {metadata.chunk_count} passages
                 </p>
               )}
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              {doc && (
+              {metadata && (
                 <a
-                  href={`/ask?document=${doc.id}`}
+                  href={`/ask?document=${metadata.id}`}
                   className="p-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                   title="Ask Clario about this document"
                 >
                   <MessageSquareQuote className="w-4 h-4" />
                 </a>
               )}
-              {doc && (
+              {metadata && (
                 <a
-                  href={api.getDocumentFileUrl(doc.id)}
-                  download={doc.filename}
+                  href={api.getDocumentFileUrl(metadata.id)}
+                  download={metadata.filename}
                   className="p-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                   title="Download original file"
                 >
@@ -185,7 +176,7 @@ export const DocumentDrawer: React.FC<DocumentDrawerProps> = ({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5 text-slate-500" />
-                <span>Passages ({doc?.chunk_count || 0})</span>
+                <span>Passages{metadata && ` (${metadata.chunk_count})`}</span>
               </button>
               <button
                 onClick={() => setActiveTab('analysis')}
@@ -216,21 +207,14 @@ export const DocumentDrawer: React.FC<DocumentDrawerProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {loading && (
-            <div className="py-20 text-center">
-              <div className="w-7 h-7 border-2 border-clario-navy border-t-transparent rounded-full animate-spin mx-auto mb-2.5" />
-              <p className="text-xs text-slate-500">Retrieving document passages & vectors…</p>
-            </div>
-          )}
-
+        <div className="flex-1 overflow-y-auto p-4 space-y-4" aria-busy={!doc && !error}>
           {error && (
             <div className="p-4 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs">
               {error}
             </div>
           )}
 
-          {doc && !loading && activeTab === 'passages' && (
+          {doc && activeTab === 'passages' && (
             <div className="space-y-3">
 
               {filteredChunks.length === 0 ? (
@@ -271,7 +255,7 @@ export const DocumentDrawer: React.FC<DocumentDrawerProps> = ({
                       </button>
                     </div>
                     <div className="text-slate-700 leading-relaxed font-sans text-xs select-text">
-                      <Markdown>{chunk.content}</Markdown>
+                      <PassageMarkdown>{chunk.content}</PassageMarkdown>
                     </div>
                   </div>
                 ))
@@ -279,9 +263,11 @@ export const DocumentDrawer: React.FC<DocumentDrawerProps> = ({
             </div>
           )}
 
-          {doc && !loading && activeTab === 'analysis' && (
+          {doc && activeTab === 'analysis' && (
             <div className="space-y-4">
-              {wordAnalysis ? (
+              {wordAnalysis === undefined ? (
+                <p role="status" className="text-xs text-slate-500">Loading lexical analysis…</p>
+              ) : wordAnalysis ? (
                 <WordAnalysisVisualizer
                   data={wordAnalysis}
                 />
@@ -294,6 +280,7 @@ export const DocumentDrawer: React.FC<DocumentDrawerProps> = ({
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 };

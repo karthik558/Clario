@@ -119,6 +119,10 @@ footer a:hover { color: theme('colors.clario.text'); text-decoration: underline;
 .quick-ask { right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); }
 .quick-panel { width: min(24rem, calc(100vw - 2rem)); max-height: min(33rem, calc(100dvh - 6rem)); transform-origin: bottom right; }
 @media (prefers-reduced-motion: no-preference) {
+  .side-drawer-panel { animation: side-drawer-slide 280ms cubic-bezier(.22, 1, .36, 1); }
+  .side-drawer-backdrop { animation: side-drawer-fade 200ms ease-out; }
+  @keyframes side-drawer-slide { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  @keyframes side-drawer-fade { from { opacity: 0; } to { opacity: 1; } }
   .quick-pill, .quick-panel { animation: quick-ask-enter 180ms ease-out; }
   .quick-pill { transition: transform 160ms ease, background-color 160ms ease; }
   .quick-pill:hover { transform: translateY(-2px); background-color: #23334a; }

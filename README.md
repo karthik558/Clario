@@ -1,58 +1,99 @@
-# Clario — Enterprise Document Intelligence & Policy Analysis Workspace
+<div align="center">
 
-> **Every document. A clearer answer.**  
-> Local-first enterprise document intelligence workspace for contract comparison, clause negotiation, compliance tracking, and source-grounded policy verification.
+  <img src="docs/clario.webp" alt="Clario" width="200" />
 
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
-[![React 18](https://img.shields.io/badge/React-18.3+-61DAFB.svg)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-3178C6.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4+-646CFF.svg)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4+-38B2AC.svg)](https://tailwindcss.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  <p>Local-first document analysis workspace for contracts, policies, and agreements.</p>
 
----
+[![Python](https://img.shields.io/badge/Python-3.12+-0F172A?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-0F172A?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18.3+-0F172A?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-0F172A?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4+-0F172A?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-334155)](LICENSE)
 
-## 1. Overview
-
-Clario is a local-first document intelligence platform engineered for legal auditors, procurement leads, compliance officers, and contract analysts. It enables multi-document analysis, side-by-side agreement diffing, autonomous clause redlining, and compliance matrix verification across PDF, DOCX, TXT, Excel, and Markdown files.
-
-### Key Capabilities
-- **Source-Grounded Question Answering:** Query documents with verbatim, bracketed citations (`[1]`, `[2]`) that open directly to exact pages and highlighted passages in the integrated source viewer.
-- **Split-Screen Version Comparison:** Detect subtle covenant shifts, numerical variance (liability caps, notice windows, fee escalations), and textual additions/deletions between draft revisions.
-- **Autonomous Clause Negotiation:** Generate compromise provisions across four standard commercial stances (*Balanced*, *Customer Protective*, *Vendor Favorable*, *Strict Compliance*) and export tracked redlines directly to `.docx`.
-- **Compliance Matrix & Audit Findings:** Cross-examine agreements against regulatory standards (EU AI Act, GDPR, HIPAA, SOC 2) with human-in-the-loop review statuses.
-- **Obligations & Renewal Tracker:** Extract notice deadlines, renewal windows, and service commitments, with one-click export to standard calendar events (`.ics`).
-- **Complete Local Privacy:** Operates entirely on your infrastructure with local SQLite storage, vector embeddings, and optional local LLM runtime (Ollama, LM Studio, vLLM). No confidential client documents leave your system.
+</div>
 
 ---
 
-## 2. Quick Start
+## Workspace Previews
 
-Clario provides automated environment initializers for macOS, Linux, and Windows. The setup script validates Python and Node.js environments, sets up dependencies, initializes the local database, and prepares sample policy documents.
+<div align="center">
+  <img src="docs/screenshots/overview.webp" alt="Clario Overview Dashboard" width="100%" />
+  <p><em>Overview Dashboard — Portfolio metrics, recent documents, and 6-pillar risk topology</em></p>
+</div>
 
-### Setup
+<br />
 
-#### macOS
+<div align="center">
+  <img src="docs/screenshots/compare.webp" alt="Version Comparison" width="100%" />
+  <p><em>Side-by-Side Version Comparison — Real-time diffs with added, removed, and modified passage tracking</em></p>
+</div>
+
+<br />
+
+<div align="center">
+  <img src="docs/screenshots/documents.webp" alt="Document Library & Source Drawer" width="100%" />
+  <p><em>Document Library & Source Drawer — Instant passage inspection, word analysis, and source verification</em></p>
+</div>
+
+---
+
+## Core Modules
+
+| Module | Purpose | Key Features |
+| :--- | :--- | :--- |
+| **Document Library** | File ingestion & passage index | Drag-and-drop PDF/DOCX/TXT/Excel parsing, passage extraction, source drawer inspection. |
+| **Ask Clario** | Grounded question answering | Direct answers with bracketed verbatim citations (`[1]`, `[2]`) linked to source passages. |
+| **Compare Versions** | Multi-version diffing | Automated similarity scoring, added/removed/modified text highlighting, and risk comparison. |
+| **Clause Redline** | Negotiation & playbooks | 4 commercial stances (*Balanced*, *Customer Protective*, *Vendor Favorable*, *Strict Compliance*). |
+| **Obligations Timeline** | Expiration & notice radar | Active covenants, renewal windows, notice deadlines, and one-click `.ics` calendar sync. |
+| **Compliance Matrix** | Regulatory audits | EU AI Act, GDPR, HIPAA, and SOC 2 covenant alignment with automated findings promotion. |
+| **Knowledge Graph** | Semantic topic discovery | Entity relationship mapping, contradiction detection, and interconnected corpus nodes. |
+
+---
+
+## Tech Stack
+
+### Backend (Python & FastAPI)
+- **Runtime:** Python 3.12+
+- **Framework:** FastAPI with Uvicorn
+- **Database & ORM:** SQLite with SQLAlchemy ORM (automatic creation and migration)
+- **Parsers:** PyMuPDF (`fitz`), `python-docx`, `openpyxl`
+- **Retrieval:** Hybrid search with Okapi BM25, Sentence Transformers embeddings, and Reciprocal Rank Fusion (RRF)
+- **Local AI:** Seamless integration with Ollama, LM Studio, vLLM, and zero-latency extractive fallback
+
+### Frontend (React & TypeScript)
+- **Framework:** React 18 with TypeScript
+- **Build Tool:** Vite 5
+- **Styling:** Tailwind CSS with Clario design system (Navy `#0F172A`, Slate `#334155`, Ivory `#F8FAFC`, Border `#E2E8F0`)
+- **Icons:** Lucide React (monochrome slate/navy theme)
+- **State Management:** TanStack Query v5 + React Router v6
+- **Testing:** Vitest + React Testing Library
+
+---
+
+## Quick Start
+
+### Automated Setup
+Clone the repository and run the setup script for your platform:
+
 ```bash
 git clone https://github.com/karthik558/Clario.git
 cd Clario
-bash initialize/init_mac.sh
 ```
 
-#### Linux (Ubuntu / Debian / Fedora / Arch)
-```bash
-git clone https://github.com/karthik558/Clario.git
-cd Clario
-bash initialize/init_linux.sh
-```
-
-#### Windows
-```cmd
-git clone https://github.com/karthik558/Clario.git
-cd Clario
-initialize\init_windows.bat
-```
+- **macOS:**
+  ```bash
+  bash initialize/init_mac.sh
+  ```
+- **Linux (Ubuntu / Debian / Fedora / Arch):**
+  ```bash
+  bash initialize/init_linux.sh
+  ```
+- **Windows:**
+  ```cmd
+  initialize\init_windows.bat
+  ```
 
 ---
 
@@ -69,49 +110,14 @@ Start both the backend API and frontend workspace with a single command:
   start.bat
   ```
 
-Once running, access the services:
+Once running, access the workspace:
 - **Frontend Workspace:** [http://localhost:5173](http://localhost:5173)
 - **Backend API:** [http://localhost:8000](http://localhost:8000)
 - **API Documentation (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
-## 3. Technology Stack
-
-### Frontend
-- **Framework:** React 18 with TypeScript
-- **Tooling:** Vite 5
-- **Styling:** Tailwind CSS with enterprise palette (Deep Navy `#0F172A`, Slate `#334155`, Ivory `#F8FAFC`)
-- **Icons:** Lucide React
-- **State & Caching:** TanStack Query v5 + React Router v6
-- **Testing:** Vitest + React Testing Library
-
-### Backend
-- **Framework:** FastAPI with Python 3.12+
-- **Database:** SQLAlchemy ORM with SQLite (automatic creation and migration)
-- **Parsers:** PyMuPDF (`fitz`) for PDF page boundary preservation, `python-docx` for Word files, `openpyxl` for Excel spreadsheets, and Markdown parsers
-- **Search & Retrieval:** Okapi BM25, Sentence Transformers embeddings, and Reciprocal Rank Fusion (RRF)
-- **Document Generation:** ReportLab (PDF dossiers), `python-docx` (Word redlines)
-- **Testing:** pytest + httpx
-
----
-
-## 4. Local Model Integration (Optional)
-
-Clario runs in two generation modes:
-1. **Extractive Synthesis (Default):** Zero-latency factual extraction that pulls verified text and citations directly from indexed documents without external dependencies.
-2. **Local AI Model (Ollama / LM Studio):** Connect a local model for conversational synthesis and automated drafting.
-
-### Connecting Ollama
-1. Install and start Ollama:
-   ```bash
-   ollama pull gemma3:latest
-   ```
-2. In Clario, navigate to **Settings** (`/settings`) or toggle **Answer Settings** in **Ask Clario** to select your active local model.
-
----
-
-## 5. Manual Setup & Testing
+## Manual Setup & Testing
 
 ### Backend
 ```bash
@@ -122,7 +128,7 @@ pip install -r requirements.txt
 PYTHONPATH=. uvicorn app.main:app --port 8000 --reload
 ```
 
-Run backend tests:
+Run backend test suite:
 ```bash
 PYTHONPATH=backend backend/venv/bin/pytest backend/tests
 ```
@@ -134,7 +140,7 @@ npm install
 npm run dev
 ```
 
-Run frontend tests:
+Run frontend test suite:
 ```bash
 npm test -- --run
 ```
@@ -146,6 +152,19 @@ npm run build
 
 ---
 
-## 6. License
+## Local AI Integration (Optional)
+
+Clario defaults to **Extractive Synthesis** (zero-latency, source-exact answers with zero network calls).  
+If you want generative synthesis using a local LLM:
+
+1. Install and start [Ollama](https://ollama.ai/):
+   ```bash
+   ollama pull gemma3:latest
+   ```
+2. In Clario, navigate to **Settings** (`/settings`) or toggle **Answer Settings** in **Ask Clario** to select your active local model.
+
+---
+
+## License
 
 Licensed under the MIT License. See [LICENSE](LICENSE) for details.

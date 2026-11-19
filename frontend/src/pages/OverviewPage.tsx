@@ -1218,6 +1218,7 @@ export const OverviewPage: React.FC = () => {
 
       {/* Split-Screen Document Source Drawer */}
       <DocumentDrawer
+        summary={documents.find(doc => doc.id === selectedDocId)}
         documentId={selectedDocId}
         onClose={() => setSelectedDocId(null)}
         onExpandToModal={() => {
