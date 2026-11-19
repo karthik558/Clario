@@ -12,19 +12,25 @@ import {
   ShieldCheck,
   Eye,
   CheckCircle2,
-  Trash2
+  Trash2,
+  BarChart2,
+  BookOpen,
+  FileCheck
 } from 'lucide-react';
 import { api } from '../services/api';
-import { ReportItem, DocumentItem } from '../types';
+import { ReportItem, DocumentItem, WordAnalysisResponse } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Markdown } from '../components/ui/Markdown';
 import { Modal } from '../components/ui/Modal';
+import { WordAnalysisVisualizer } from '../components/analytics/WordAnalysisVisualizer';
 
 export const ReportsPage: React.FC = () => {
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [wordAnalysis, setWordAnalysis] = useState<WordAnalysisResponse | null>(null);
+  const [activeTab, setActiveTab] = useState<'dossiers' | 'word_analysis'>('dossiers');
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -42,12 +48,14 @@ export const ReportsPage: React.FC = () => {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const [reportsData, docsData] = await Promise.all([
+      const [reportsData, docsData, wordData] = await Promise.all([
         api.getReports(),
-        api.getDocuments()
+        api.getDocuments(),
+        api.getWordAnalysis().catch(() => null)
       ]);
       setReports(reportsData);
       setDocuments(docsData);
+      if (wordData) setWordAnalysis(wordData);
       if (docsData.length > 0) {
         setSelectedDocIds(docsData.slice(0, 2).map((d) => d.id));
       }
@@ -147,8 +155,120 @@ export const ReportsPage: React.FC = () => {
         </div>
       </PageHeader>
 
+      {/* Top Metric Cards - Matching Overview and Documents design */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
+              Compiled Reports
+            </span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <FileCheck className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {loading ? '—' : reports.length}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Executive PDF dossiers
+          </span>
+        </Card>
+
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
+              Words Analyzed
+            </span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <FileText className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {wordAnalysis ? wordAnalysis.total_words.toLocaleString() : '—'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Across {documents.length} verified file(s)
+          </span>
+        </Card>
+
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
+              Vocabulary Richness
+            </span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <BookOpen className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {wordAnalysis ? `${wordAnalysis.lexical_density_pct}%` : '—'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            {wordAnalysis ? `${wordAnalysis.unique_words.toLocaleString()} unique terms` : 'Lexical diversity'}
+          </span>
+        </Card>
+
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
+              Readability Standard
+            </span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <BarChart2 className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {wordAnalysis ? `${wordAnalysis.flesch_reading_ease}` : '—'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            {wordAnalysis ? wordAnalysis.reading_level : 'Complexity Index'}
+          </span>
+        </Card>
+      </div>
+
+      {/* View Switcher: Dossiers vs Word Analysis Studio */}
+      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('dossiers')}
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${
+              activeTab === 'dossiers'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Executive Dossiers</span>
+            <Badge variant={activeTab === 'dossiers' ? 'navy' : 'gray'} size="sm">
+              {reports.length}
+            </Badge>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('word_analysis')}
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${
+              activeTab === 'word_analysis'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <BarChart2 className="w-3.5 h-3.5" />
+            <span>Word & Lexical Analysis</span>
+            <Badge variant={activeTab === 'word_analysis' ? 'navy' : 'gray'} size="sm">
+              Visual Studio
+            </Badge>
+          </button>
+        </div>
+      </div>
+
       {error && !showGenerateModal && <p role="alert" className="rounded-md p-3 text-sm text-rose-800 bg-rose-50">{error}</p>}
-      {/* Reports Grid */}
+
+      {activeTab === 'word_analysis' && wordAnalysis ? (
+        <WordAnalysisVisualizer data={wordAnalysis} onRefresh={fetchReports} />
+      ) : (
+        /* Reports Grid */
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
           <div className="col-span-full text-center py-12 text-xs text-clario-text-secondary">
@@ -236,6 +356,7 @@ export const ReportsPage: React.FC = () => {
           ))
         )}
       </div>
+      )}
 
       {/* Generation Modal */}
       <Modal

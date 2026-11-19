@@ -483,3 +483,55 @@ export interface PolicyAuditResponse {
   rules: PolicyRuleAudit[];
   summary: string;
 }
+
+// --- Word Analysis & Visual Analytics Types ---
+export interface KeywordAnalysisItem {
+  word: string;
+  count: number;
+  density_pct: number;
+  category: string;
+  relative_pct: number;
+}
+
+export interface CategoryDistributionItem {
+  category: string;
+  count: number;
+  pct: number;
+  color: string;
+}
+
+export interface SentimentBreakdownItem {
+  count: number;
+  pct: number;
+  label: string;
+}
+
+export interface DocumentBreakdownItem {
+  id: string;
+  title: string;
+  word_count: number;
+  unique_words: number;
+  lexical_density_pct: number;
+  reading_ease: number;
+  top_keyword: string;
+}
+
+export interface WordAnalysisResponse {
+  total_words: number;
+  unique_words: number;
+  total_characters: number;
+  lexical_density_pct: number;
+  avg_word_length: number;
+  avg_sentence_length: number;
+  flesch_reading_ease: number;
+  reading_level: string;
+  audited_documents_count: number;
+  top_keywords: KeywordAnalysisItem[];
+  category_distribution: CategoryDistributionItem[];
+  sentiment_breakdown: {
+    protective: SentimentBreakdownItem;
+    obligations: SentimentBreakdownItem;
+    exposure: SentimentBreakdownItem;
+  };
+  document_breakdowns: DocumentBreakdownItem[];
+}

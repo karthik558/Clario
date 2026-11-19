@@ -23,7 +23,8 @@ import {
   ClauseAnalysisResult,
   BriefResponse,
   AudioSummaryResponse,
-  PolicyAuditResponse
+  PolicyAuditResponse,
+  WordAnalysisResponse
 } from '../types';
 
 const API_BASE = '/api';
@@ -536,6 +537,18 @@ export const api = {
       body: JSON.stringify({ document_ids: documentIds, category_filter: category || 'all' }),
     });
     if (!res.ok) throw new Error('Failed to run policy audit');
+    return res.json();
+  },
+
+  // Word & Lexical Analysis
+  getWordAnalysis: async (documentIds?: string[]): Promise<WordAnalysisResponse> => {
+    const params = new URLSearchParams();
+    if (documentIds && documentIds.length > 0) {
+      params.set('document_ids', documentIds.join(','));
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${API_BASE}/reports/analysis/words${query}`);
+    if (!res.ok) throw new Error('Failed to load word analysis');
     return res.json();
   }
 };

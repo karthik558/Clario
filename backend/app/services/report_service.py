@@ -1,6 +1,8 @@
 import os
+import re
 import json
 import uuid
+from collections import Counter
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
@@ -292,3 +294,193 @@ class ReportService:
             db.delete(r)
         db.commit()
         return count
+
+    @staticmethod
+    def get_word_analysis(db: Session, document_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+        """
+        Analyzes the vocabulary, lexical density, key enterprise terminology,
+        and readability metrics across the document corpus.
+        """
+        query = db.query(Document)
+        if document_ids:
+            docs = query.filter(Document.id.in_(document_ids)).all()
+        else:
+            docs = query.all()
+
+        if not docs:
+            return {
+                "total_words": 0,
+                "unique_words": 0,
+                "total_characters": 0,
+                "lexical_density_pct": 0.0,
+                "avg_word_length": 0.0,
+                "avg_sentence_length": 0.0,
+                "flesch_reading_ease": 0.0,
+                "reading_level": "No Documents",
+                "audited_documents_count": 0,
+                "top_keywords": [],
+                "category_distribution": [],
+                "sentiment_breakdown": {
+                    "protective": {"count": 0, "pct": 0.0, "label": "Protective Safeguards"},
+                    "obligations": {"count": 0, "pct": 0.0, "label": "Contractual Obligations"},
+                    "exposure": {"count": 0, "pct": 0.0, "label": "Risk & Liability Exposure"}
+                },
+                "document_breakdowns": []
+            }
+
+        doc_ids = [d.id for d in docs]
+        chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id.in_(doc_ids)).all()
+
+        # Group text by document for per-document breakdown
+        doc_texts: Dict[str, List[str]] = {d.id: [] for d in docs}
+        for c in chunks:
+            if c.document_id in doc_texts and c.content:
+                doc_texts[c.document_id].append(c.content)
+
+        full_text = " ".join(c.content for c in chunks if c.content)
+        words = re.findall(r"[A-Za-z]{3,}", full_text.lower())
+        total_words = len(words)
+        unique_words = len(set(words))
+        total_chars = sum(len(w) for w in words)
+
+        sentences = [s.strip() for s in re.split(r"[.!?]+", full_text) if len(s.strip().split()) >= 3]
+        num_sentences = max(1, len(sentences))
+
+        lexical_density = round((unique_words / max(1, total_words)) * 100, 1)
+        avg_word_len = round(total_chars / max(1, total_words), 1)
+        avg_sentence_len = round(total_words / num_sentences, 1)
+
+        # Flesch Reading Ease approximation
+        syllables_count = sum(max(1, len(re.findall(r"[aeiouy]+", w))) for w in words)
+        raw_flesch = 206.835 - (1.015 * avg_sentence_len) - (84.6 * (syllables_count / max(1, total_words)))
+        flesch_score = round(max(0.0, min(100.0, raw_flesch)), 1)
+
+        if flesch_score >= 60.0:
+            reading_level = "Plain English (Executive)"
+        elif flesch_score >= 35.0:
+            reading_level = "Standard Commercial"
+        elif flesch_score >= 15.0:
+            reading_level = "Advanced Enterprise"
+        else:
+            reading_level = "Complex Statutory / Legal"
+
+        # Stopwords to filter out
+        stopwords = {
+            "the", "and", "for", "that", "with", "this", "are", "from", "which", "any",
+            "all", "such", "other", "have", "not", "been", "each", "under", "may", "will",
+            "than", "into", "more", "their", "has", "was", "were", "our", "you", "your",
+            "its", "itself", "they", "them", "who", "what", "when", "where", "why", "how",
+            "page", "agreement", "section", "article", "hereby", "thereof", "herein",
+            "shall", "can", "could", "would", "should", "also", "including", "between",
+            "either", "neither", "only", "must", "one", "two", "three", "first", "second"
+        }
+
+        meaningful_words = [w for w in words if w not in stopwords]
+        word_counts = Counter(meaningful_words)
+        top_raw = word_counts.most_common(24)
+        max_count = top_raw[0][1] if top_raw else 1
+
+        # Categorization dictionary
+        legal_terms = {"policy", "customer", "terms", "confidential", "governance", "jurisdiction", "party", "rights", "release"}
+        security_terms = {"safety", "data", "security", "breach", "incident", "audit", "retention", "encryption", "privacy"}
+        financial_terms = {"business", "services", "liability", "damages", "fees", "payment", "expenses", "credit", "commercial"}
+        tech_terms = {"model", "openai", "anthropic", "claude", "enterprise", "artificial", "intelligence", "api", "prompt"}
+
+        top_keywords = []
+        for word, count in top_raw:
+            if word in security_terms:
+                cat = "Security & Data"
+            elif word in financial_terms:
+                cat = "Commercial & Risk"
+            elif word in tech_terms:
+                cat = "AI & Infrastructure"
+            else:
+                cat = "Legal & Governance"
+
+            top_keywords.append({
+                "word": word,
+                "count": count,
+                "density_pct": round((count / max(1, total_words)) * 100, 2),
+                "category": cat,
+                "relative_pct": round((count / max_count) * 100)
+            })
+
+        # Category distribution of top meaningful words
+        cat_counts = Counter(k["category"] for k in top_keywords)
+        tot_top = len(top_keywords) or 1
+        category_distribution = [
+            {"category": "Legal & Governance", "count": cat_counts.get("Legal & Governance", 0), "pct": round(cat_counts.get("Legal & Governance", 0) / tot_top * 100, 1), "color": "#1e3a8a"},
+            {"category": "Security & Data", "count": cat_counts.get("Security & Data", 0), "pct": round(cat_counts.get("Security & Data", 0) / tot_top * 100, 1), "color": "#0d9488"},
+            {"category": "Commercial & Risk", "count": cat_counts.get("Commercial & Risk", 0), "pct": round(cat_counts.get("Commercial & Risk", 0) / tot_top * 100, 1), "color": "#d97706"},
+            {"category": "AI & Infrastructure", "count": cat_counts.get("AI & Infrastructure", 0), "pct": round(cat_counts.get("AI & Infrastructure", 0) / tot_top * 100, 1), "color": "#475569"}
+        ]
+
+        # Sentiment / Obligation Polarity Breakdown
+        protective_stems = ("indemnif", "protect", "safeguard", "secur", "warrant", "remed", "complian", "right")
+        obligation_stems = ("shall", "must", "requir", "covenant", "obligat", "adher", "comply")
+        exposure_stems = ("liabilit", "damag", "breach", "penalt", "terminat", "violat", "loss", "risk")
+
+        protective_count = sum(1 for w in words if any(w.startswith(s) for s in protective_stems))
+        obligation_count = sum(1 for w in words if any(w.startswith(s) for s in obligation_stems))
+        exposure_count = sum(1 for w in words if any(w.startswith(s) for s in exposure_stems))
+        total_polar = max(1, protective_count + obligation_count + exposure_count)
+
+        sentiment_breakdown = {
+            "protective": {
+                "count": protective_count,
+                "pct": round(protective_count / total_polar * 100, 1),
+                "label": "Protective Safeguards & Warranties"
+            },
+            "obligations": {
+                "count": obligation_count,
+                "pct": round(obligation_count / total_polar * 100, 1),
+                "label": "Mandatory Contractual Covenants"
+            },
+            "exposure": {
+                "count": exposure_count,
+                "pct": round(exposure_count / total_polar * 100, 1),
+                "label": "Risk & Exposure Covenants"
+            }
+        }
+
+        # Per-document breakdown
+        doc_breakdowns = []
+        for d in docs:
+            d_raw = " ".join(doc_texts.get(d.id, []))
+            d_words = re.findall(r"[A-Za-z]{3,}", d_raw.lower())
+            d_tot = len(d_words)
+            d_uniq = len(set(d_words))
+            d_sentences = [s for s in re.split(r"[.!?]+", d_raw) if len(s.split()) >= 3]
+            d_asl = d_tot / max(1, len(d_sentences))
+            d_syll = sum(max(1, len(re.findall(r"[aeiouy]+", w))) for w in d_words)
+            d_flesch = round(max(0.0, min(100.0, 206.835 - (1.015 * d_asl) - (84.6 * (d_syll / max(1, d_tot))))), 1)
+
+            d_meaningful = [w for w in d_words if w not in stopwords]
+            d_top = Counter(d_meaningful).most_common(1)
+            top_word = d_top[0][0] if d_top else "—"
+
+            doc_breakdowns.append({
+                "id": d.id,
+                "title": d.title or d.filename,
+                "word_count": d_tot,
+                "unique_words": d_uniq,
+                "lexical_density_pct": round(d_uniq / max(1, d_tot) * 100, 1),
+                "reading_ease": d_flesch,
+                "top_keyword": top_word
+            })
+
+        return {
+            "total_words": total_words,
+            "unique_words": unique_words,
+            "total_characters": total_chars,
+            "lexical_density_pct": lexical_density,
+            "avg_word_length": avg_word_len,
+            "avg_sentence_length": avg_sentence_len,
+            "flesch_reading_ease": flesch_score,
+            "reading_level": reading_level,
+            "audited_documents_count": len(docs),
+            "top_keywords": top_keywords,
+            "category_distribution": category_distribution,
+            "sentiment_breakdown": sentiment_breakdown,
+            "document_breakdowns": doc_breakdowns
+        }

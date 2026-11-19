@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Download, FileText, Layers, Hash, Bookmark, ExternalLink } from 'lucide-react';
+import { Download, FileText, Layers, Hash, Bookmark, ExternalLink, BarChart2 } from 'lucide-react';
 import { Markdown } from '../ui/Markdown';
 import { Modal } from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { api } from '../../services/api';
-import { DocumentDetail } from '../../types';
+import { DocumentDetail, WordAnalysisResponse } from '../../types';
+import { WordAnalysisVisualizer } from '../analytics/WordAnalysisVisualizer';
 
 interface DocumentViewerModalProps {
   documentId: string | null;
@@ -21,23 +22,32 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   onClose,
 }) => {
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
+  const [wordAnalysis, setWordAnalysis] = useState<WordAnalysisResponse | null>(null);
+  const [viewMode, setViewMode] = useState<'passages' | 'analysis'>('passages');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
 
   useEffect(() => {
     if (!documentId) {
       setDoc(null);
+      setWordAnalysis(null);
       return;
     }
     let cancelled = false;
     setDoc(null);
+    setWordAnalysis(null);
     const fetchDoc = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await api.getDocument(documentId);
-        if (!cancelled) setDoc(data);
+        const [docData, analysisData] = await Promise.all([
+          api.getDocument(documentId),
+          api.getWordAnalysis([documentId]).catch(() => null)
+        ]);
+        if (!cancelled) {
+          setDoc(docData);
+          setWordAnalysis(analysisData);
+        }
       } catch (err: any) {
         if (!cancelled) setError(err.message || 'Failed to load document');
       } finally {
@@ -106,9 +116,40 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             </div>
           </div>
 
-          <h4 className="text-sm font-semibold text-clario-navy border-b border-clario-border pb-3">Source passages ({doc.chunks.length})</h4>
-          {doc.chunks.length === 0 && <p className="text-sm text-clario-text-secondary">No extracted passages are available for this document.</p>}
+          {/* View Mode Toggle: Passages vs Word Analysis */}
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+            <button
+              type="button"
+              onClick={() => setViewMode('passages')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${
+                viewMode === 'passages'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Passages & Chunks ({doc.chunks.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('analysis')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${
+                viewMode === 'analysis'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <BarChart2 className="w-3.5 h-3.5" />
+              <span>Word & Lexical Analysis</span>
+            </button>
+          </div>
+
+          {viewMode === 'analysis' && wordAnalysis ? (
+            <WordAnalysisVisualizer data={wordAnalysis} />
+          ) : (
             <div className="space-y-3">
+              {doc.chunks.length === 0 && <p className="text-sm text-clario-text-secondary">No extracted passages are available for this document.</p>}
               {doc.chunks.map((chunk) => {
                 const isTarget = highlightChunkId ? highlightChunkId === chunk.id : highlightPage === chunk.page_number;
                 return (
@@ -144,6 +185,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 );
               })}
             </div>
+          )}
         </div>
       )}
     </Modal>

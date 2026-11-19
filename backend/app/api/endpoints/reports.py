@@ -1,6 +1,6 @@
 import os
 import json
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -43,6 +43,16 @@ def list_reports(db: Session = Depends(get_db)):
             )
         )
     return result
+
+@router.get("/reports/analysis/words")
+def get_reports_word_analysis(document_ids: Optional[str] = None, db: Session = Depends(get_db)):
+    doc_id_list = [d.strip() for d in document_ids.split(",")] if document_ids else None
+    return ReportService.get_word_analysis(db, document_ids=doc_id_list)
+
+@router.post("/reports/analysis/words")
+def analyze_reports_words(req: Optional[dict] = None, db: Session = Depends(get_db)):
+    doc_ids = req.get("document_ids") if req else None
+    return ReportService.get_word_analysis(db, document_ids=doc_ids)
 
 @router.get("/reports/{report_id}", response_model=ReportResponse)
 def get_report(report_id: str, db: Session = Depends(get_db)):

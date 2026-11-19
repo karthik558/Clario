@@ -194,3 +194,19 @@ def test_policy_checker_endpoints():
     r3 = client.post("/api/policy-checker/audit", json={"category_filter": "all"})
     assert r3.status_code == 200
     assert r3.json()["total_rules"] >= 8
+
+def test_word_analysis_endpoints():
+    r1 = client.get("/api/reports/analysis/words")
+    assert r1.status_code == 200
+    data = r1.json()
+    assert "total_words" in data
+    assert "unique_words" in data
+    assert "lexical_density_pct" in data
+    assert "top_keywords" in data
+    assert "sentiment_breakdown" in data
+    assert "document_breakdowns" in data
+    assert len(data["top_keywords"]) >= 1
+
+    r2 = client.post("/api/reports/analysis/words", json={})
+    assert r2.status_code == 200
+    assert r2.json()["total_words"] == data["total_words"]
