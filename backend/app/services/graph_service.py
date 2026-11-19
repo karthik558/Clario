@@ -185,6 +185,8 @@ class GraphService:
                         color="#94A3B8",
                         metadata={
                             "chunk_id": c.id,
+                            "document_id": d.id,
+                            "document_title": d.title,
                             "page": c.page_number,
                             "snippet": clean_snippet or c.content[:100]
                         }

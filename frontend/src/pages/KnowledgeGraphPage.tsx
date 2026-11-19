@@ -56,11 +56,21 @@ export const KnowledgeGraphPage: React.FC = () => {
   const [viewerDocId, setViewerDocId] = useState<string | null>(null);
   const [negotiateNode, setNegotiateNode] = useState<GraphNode | null>(null);
 
-  // Pan & Zoom
+  // Pan & Zoom & Node Dragging
   const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const panRef = useRef(pan);
+  panRef.current = pan;
+
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  // Individual node dragging state
+  const [customPositions, setCustomPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const [draggingClusterIds, setDraggingClusterIds] = useState<Set<string>>(new Set());
 
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -88,12 +98,14 @@ export const KnowledgeGraphPage: React.FC = () => {
       : [...selectedDocIds, docId];
     setSelectedDocIds(next);
     setSelectedNodeId(null);
+    setCustomPositions({});
     fetchGraph(next);
   };
 
   const selectAllDocuments = () => {
     setSelectedDocIds([]);
     setSelectedNodeId(null);
+    setCustomPositions({});
     fetchGraph([]);
   };
 
@@ -126,8 +138,8 @@ export const KnowledgeGraphPage: React.FC = () => {
     );
   }, [data, nodeMap]);
 
-  // Compute positions using radial layout
-  const layoutNodes = useMemo<LayoutNode[]>(() => {
+  // Compute default positions using radial layout
+  const baseLayoutNodes = useMemo<LayoutNode[]>(() => {
     if (!filteredNodes.length) return [];
     const width = 900;
     const height = 620;
@@ -188,6 +200,17 @@ export const KnowledgeGraphPage: React.FC = () => {
     return result;
   }, [filteredNodes]);
 
+  // Combine with custom user-dragged positions so moved dots stay placed
+  const layoutNodes = useMemo<LayoutNode[]>(() => {
+    return baseLayoutNodes.map((node) => {
+      const custom = customPositions[node.id];
+      if (custom) {
+        return { ...node, x: custom.x, y: custom.y };
+      }
+      return node;
+    });
+  }, [baseLayoutNodes, customPositions]);
+
   const layoutNodeMap = useMemo(() => {
     const map = new Map<string, LayoutNode>();
     layoutNodes.forEach((n) => map.set(n.id, n));
@@ -217,43 +240,194 @@ export const KnowledgeGraphPage: React.FC = () => {
     );
   }, [selectedNodeId, filteredEdges]);
 
-  // Pan handlers
-  const [hasDragged, setHasDragged] = useState(false);
-  const dragStartRef = useRef({ x: 0, y: 0 });
-
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // Canvas pan & drag handlers
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     setIsDragging(true);
-    setHasDragged(false);
-    dragStartRef.current = { x: e.clientX, y: e.clientY };
-    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    let didCanvasMove = false;
+    const startClientX = e.clientX;
+    const startClientY = e.clientY;
+    const initialPanX = panRef.current.x;
+    const initialPanY = panRef.current.y;
+
+    const onMove = (moveEvt: MouseEvent) => {
+      const dx = Math.abs(moveEvt.clientX - startClientX);
+      const dy = Math.abs(moveEvt.clientY - startClientY);
+      if (dx > 3 || dy > 3) {
+        didCanvasMove = true;
+      }
+      setPan({
+        x: initialPanX + (moveEvt.clientX - startClientX),
+        y: initialPanY + (moveEvt.clientY - startClientY),
+      });
+    };
+
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      setIsDragging(false);
+      if (!didCanvasMove) {
+        setSelectedNodeId(null);
+      }
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const dx = Math.abs(e.clientX - dragStartRef.current.x);
-    const dy = Math.abs(e.clientY - dragStartRef.current.y);
-    if (dx > 4 || dy > 4) {
-      setHasDragged(true);
+  const getClusterNodeIds = (startNode: LayoutNode): Set<string> => {
+    const cluster = new Set<string>([startNode.id]);
+
+    // 1. Resolve document scope: if document, topic, or chunk, collect full document cluster
+    let docId =
+      startNode.type === 'document'
+        ? startNode.metadata?.document_id || startNode.id.replace(/^doc_/, '')
+        : startNode.metadata?.document_id;
+
+    // If chunk without direct metadata.document_id, resolve from contains edge
+    if (!docId && startNode.type === 'chunk') {
+      const parentEdge = filteredEdges.find(
+        (e) => (e.target === startNode.id || e.source === startNode.id) && e.type === 'contains'
+      );
+      if (parentEdge) {
+        const parentId = parentEdge.target === startNode.id ? parentEdge.source : parentEdge.target;
+        docId = parentId.replace(/^doc_/, '');
+      }
     }
-    setPan({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
+
+    if (docId) {
+      const docNodeId = `doc_${docId}`;
+      cluster.add(docNodeId);
+
+      // Collect all nodes that share this document_id
+      layoutNodes.forEach((n) => {
+        const nDocId =
+          n.type === 'document'
+            ? n.metadata?.document_id || n.id.replace(/^doc_/, '')
+            : n.metadata?.document_id;
+        if (nDocId && nDocId === docId) {
+          cluster.add(n.id);
+        }
+      });
+
+      // Add all chunks and topics linked to the document via edges
+      filteredEdges.forEach((edge) => {
+        if (edge.source === docNodeId || edge.target === docNodeId) {
+          const otherId = edge.source === docNodeId ? edge.target : edge.source;
+          const otherNode = layoutNodeMap.get(otherId);
+          if (otherNode && otherNode.type !== 'document') {
+            if (edge.type === 'contains' || edge.type === 'governs') {
+              cluster.add(otherId);
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Include directly connected non-document nodes that don't belong to a different document
+    filteredEdges.forEach((edge) => {
+      let neighborId: string | null = null;
+      if (edge.source === startNode.id) neighborId = edge.target;
+      else if (edge.target === startNode.id) neighborId = edge.source;
+
+      if (neighborId && !cluster.has(neighborId)) {
+        const neighborNode = layoutNodeMap.get(neighborId);
+        if (neighborNode && neighborNode.type !== 'document') {
+          const nDocId = neighborNode.metadata?.document_id;
+          if (!nDocId || !docId || nDocId === docId) {
+            cluster.add(neighborId);
+          }
+        }
+      }
     });
+
+    return cluster;
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  const handleNodeMouseDown = (e: React.MouseEvent, node: LayoutNode) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation(); // Prevent canvas pan from firing
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    // Normal dragging moves the grabbed dot independently.
+    // Shift+drag moves the connected document cluster.
+    const isClusterMode = e.shiftKey;
+    const movingIds = isClusterMode ? getClusterNodeIds(node) : new Set<string>([node.id]);
+
+    setDraggingNodeId(node.id);
+    if (isClusterMode) {
+      setDraggingClusterIds(movingIds);
+    } else {
+      setDraggingClusterIds(new Set());
+    }
+
+    let didMove = false;
+    const startClientX = e.clientX;
+    const startClientY = e.clientY;
+    const startZoom = zoomRef.current;
+
+    // Snapshot initial positions for all moving nodes
+    const initialPositions: Record<string, { x: number; y: number }> = {};
+    layoutNodes.forEach((n) => {
+      if (movingIds.has(n.id)) {
+        initialPositions[n.id] = { x: n.x, y: n.y };
+      }
+    });
+
+    const onMove = (moveEvt: MouseEvent) => {
+      const dxScreen = moveEvt.clientX - startClientX;
+      const dyScreen = moveEvt.clientY - startClientY;
+      if (Math.abs(dxScreen) > 3 || Math.abs(dyScreen) > 3) {
+        didMove = true;
+      }
+
+      const deltaGraphX = dxScreen / startZoom;
+      const deltaGraphY = dyScreen / startZoom;
+
+      setCustomPositions((prev) => {
+        const next = { ...prev };
+        movingIds.forEach((id) => {
+          const init = initialPositions[id];
+          if (init) {
+            next[id] = {
+              x: init.x + deltaGraphX,
+              y: init.y + deltaGraphY,
+            };
+          }
+        });
+        return next;
+      });
+    };
+
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      setDraggingNodeId(null);
+      setDraggingClusterIds(new Set());
+      if (!didMove) {
+        setSelectedNodeId((prev) => (prev === node.id ? null : node.id));
+      }
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   };
 
   const handleZoom = (delta: number) => {
     setZoom((prev) => Math.min(Math.max(0.4, prev + delta), 2.5));
   };
 
+  const handleResetPositions = () => {
+    setCustomPositions({});
+  };
+
   const handleResetView = () => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setSelectedNodeId(null);
+    setCustomPositions({});
   };
 
   const toggleType = (type: string) => {
@@ -440,6 +614,18 @@ export const KnowledgeGraphPage: React.FC = () => {
 
           {/* Search in Graph & Canvas Controls */}
           <div className="flex items-center gap-2">
+            {Object.keys(customPositions).length > 0 && (
+              <button
+                type="button"
+                onClick={handleResetPositions}
+                className="text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-300 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1.5 font-medium bg-white shadow-xs"
+                title="Reset moved dots back to automatic radial layout"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                Reset Nodes ({Object.keys(customPositions).length})
+              </button>
+            )}
+
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" />
               <input
@@ -447,7 +633,7 @@ export const KnowledgeGraphPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Find node or topic..."
-                className="text-xs pl-8 pr-2.5 py-1 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900 w-44 bg-white"
+                className="text-xs pl-8 pr-2.5 py-1 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-900 w-40 bg-white"
               />
             </div>
 
@@ -472,7 +658,7 @@ export const KnowledgeGraphPage: React.FC = () => {
                 type="button"
                 onClick={handleResetView}
                 className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                title="Reset View"
+                title="Reset View and Positions"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -510,142 +696,182 @@ export const KnowledgeGraphPage: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <svg
-              ref={svgRef}
-              className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-            >
-              <defs>
-                {/* Subtle Dot Grid */}
-                <pattern id="graphGrid" width="32" height="32" patternUnits="userSpaceOnUse">
-                  <circle cx="2" cy="2" r="1" fill="#E2E8F0" />
-                </pattern>
+            <div className="w-full h-full relative">
+              {/* Top Interaction Guide Chip */}
+              <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-xs border border-slate-200 rounded-md px-2.5 py-1 text-[11px] text-slate-500 shadow-xs pointer-events-none flex items-center gap-2 z-10">
+                <span className="font-medium text-slate-700">Drag any dot to reposition</span>
+                <span>•</span>
+                <span>Drag background to pan</span>
+                {Object.keys(customPositions).length > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="text-slate-900 font-semibold">
+                      {Object.keys(customPositions).length} dot{Object.keys(customPositions).length > 1 ? 's' : ''} moved
+                    </span>
+                  </>
+                )}
+              </div>
 
-                {/* Node Color Gradients */}
-                <linearGradient id="gradNavy" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#1E293B" />
-                  <stop offset="100%" stopColor="#0F172A" />
-                </linearGradient>
+              <svg
+                ref={svgRef}
+                className={`w-full h-full ${
+                  draggingNodeId ? 'cursor-grabbing' : isDragging ? 'cursor-grabbing' : 'cursor-default'
+                }`}
+                onMouseDown={handleCanvasMouseDown}
+              >
+                <defs>
+                  {/* Subtle Dot Grid */}
+                  <pattern id="graphGrid" width="32" height="32" patternUnits="userSpaceOnUse">
+                    <circle cx="2" cy="2" r="1" fill="#E2E8F0" />
+                  </pattern>
 
-                <linearGradient id="gradTopic" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#3B82F6" />
-                  <stop offset="100%" stopColor="#1D4ED8" />
-                </linearGradient>
+                  {/* Node Color Gradients */}
+                  <linearGradient id="gradNavy" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#1E293B" />
+                    <stop offset="100%" stopColor="#0F172A" />
+                  </linearGradient>
 
-                <linearGradient id="gradRose" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#F43F5E" />
-                  <stop offset="100%" stopColor="#BE123C" />
-                </linearGradient>
+                  <linearGradient id="gradTopic" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3B82F6" />
+                    <stop offset="100%" stopColor="#1D4ED8" />
+                  </linearGradient>
 
-                <linearGradient id="gradSlate" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#64748B" />
-                  <stop offset="100%" stopColor="#475569" />
-                </linearGradient>
-              </defs>
+                  <linearGradient id="gradRose" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#F43F5E" />
+                    <stop offset="100%" stopColor="#BE123C" />
+                  </linearGradient>
 
-              {/* Background Canvas */}
-              <rect width="100%" height="100%" fill="url(#graphGrid)" />
+                  <linearGradient id="gradSlate" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#64748B" />
+                    <stop offset="100%" stopColor="#475569" />
+                  </linearGradient>
+                </defs>
 
-              <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-                {/* Edge Lines */}
-                {filteredEdges.map((edge) => {
-                  const source = layoutNodeMap.get(edge.source);
-                  const target = layoutNodeMap.get(edge.target);
-                  if (!source || !target) return null;
+                {/* Background Canvas */}
+                <rect width="100%" height="100%" fill="url(#graphGrid)" />
 
-                  const isHighlighted =
-                    selectedNodeId &&
-                    (edge.source === selectedNodeId || edge.target === selectedNodeId);
-                  const isDimmed = selectedNodeId && !isHighlighted;
+                <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+                  {/* Edge Lines */}
+                  {filteredEdges.map((edge) => {
+                    const source = layoutNodeMap.get(edge.source);
+                    const target = layoutNodeMap.get(edge.target);
+                    if (!source || !target) return null;
 
-                  return (
-                    <g key={edge.id}>
-                      <line
-                        x1={source.x}
-                        y1={source.y}
-                        x2={target.x}
-                        y2={target.y}
-                        stroke={isHighlighted ? '#0F172A' : edge.color || '#CBD5E1'}
-                        strokeWidth={isHighlighted ? 2.5 : edge.weight || 1.2}
-                        strokeDasharray={edge.dashed ? '4,4' : undefined}
-                        opacity={isDimmed ? 0.15 : isHighlighted ? 1 : 0.75}
-                        className="transition-all duration-150"
-                      />
-                    </g>
-                  );
-                })}
+                    const isHighlighted =
+                      selectedNodeId &&
+                      (edge.source === selectedNodeId || edge.target === selectedNodeId);
+                    const isDimmed = selectedNodeId && !isHighlighted;
 
-                {/* Node Circles & Labels */}
-                {layoutNodes.map((node) => {
-                  const isSelected = node.id === selectedNodeId;
-                  const isConnected = connectedNodeIds.has(node.id);
-                  const isDimmed = selectedNodeId && !isSelected && !isConnected;
-                  const isHovered = node.id === hoveredNodeId;
-
-                  const nodeRadius = node.size ? Math.max(node.size * 0.85, 12) : 16;
-                  const fill = getNodeFill(node.type);
-
-                  return (
-                    <g
-                      key={node.id}
-                      transform={`translate(${node.x}, ${node.y})`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!hasDragged) {
-                          setSelectedNodeId(node.id === selectedNodeId ? null : node.id);
-                        }
-                      }}
-                      onMouseEnter={() => setHoveredNodeId(node.id)}
-                      onMouseLeave={() => setHoveredNodeId(null)}
-                      className="cursor-pointer transition-transform duration-100"
-                      opacity={isDimmed ? 0.18 : 1}
-                    >
-                      {/* Selection Ring */}
-                      {(isSelected || isHovered) && (
-                        <circle
-                          r={nodeRadius + 6}
-                          fill="none"
-                          stroke={node.type === 'finding' ? '#E11D48' : '#0F172A'}
-                          strokeWidth={2}
-                          strokeDasharray={isSelected ? undefined : '3,3'}
-                          opacity={0.85}
+                    return (
+                      <g key={edge.id}>
+                        <line
+                          x1={source.x}
+                          y1={source.y}
+                          x2={target.x}
+                          y2={target.y}
+                          stroke={isHighlighted ? '#0F172A' : edge.color || '#CBD5E1'}
+                          strokeWidth={isHighlighted ? 2.5 : edge.weight || 1.2}
+                          strokeDasharray={edge.dashed ? '4,4' : undefined}
+                          opacity={isDimmed ? 0.15 : isHighlighted ? 1 : 0.75}
+                          className="transition-all duration-150"
                         />
-                      )}
+                      </g>
+                    );
+                  })}
 
-                      {/* Main Node Circle */}
-                      <circle
-                        r={nodeRadius}
-                        fill={fill}
-                        stroke="#FFFFFF"
-                        strokeWidth={2}
-                        className="shadow-sm"
-                      />
+                  {/* Node Circles & Labels */}
+                  {layoutNodes.map((node) => {
+                    const isSelected = node.id === selectedNodeId;
+                    const isConnected = connectedNodeIds.has(node.id);
+                    const isDimmed = selectedNodeId && !isSelected && !isConnected;
+                    const isHovered = node.id === hoveredNodeId;
+                    const isBeingDragged = draggingNodeId === node.id;
+                    const isInActiveDraggedCluster = draggingClusterIds.has(node.id) && !isBeingDragged;
 
-                      {/* Inner Indicator Point */}
-                      <circle r={2.5} fill="#FFFFFF" />
+                    const nodeRadius = node.size ? Math.max(node.size * 0.85, 12) : 16;
+                    const fill = getNodeFill(node.type);
 
-                      {/* Node Label Text */}
-                      <text
-                        y={nodeRadius + 14}
-                        textAnchor="middle"
-                        fontSize={node.type === 'document' ? '12px' : '10px'}
-                        fontWeight={node.type === 'document' || isSelected ? '600' : '500'}
-                        fill="#0F172A"
-                        className="pointer-events-none select-none"
-                        style={{
-                          textShadow: '0 1px 3px rgba(255,255,255,0.9), 0 -1px 3px rgba(255,255,255,0.9)',
-                        }}
+                    return (
+                      <g
+                        key={node.id}
+                        transform={`translate(${node.x}, ${node.y})`}
+                        onMouseDown={(e) => handleNodeMouseDown(e, node)}
+                        onMouseEnter={() => setHoveredNodeId(node.id)}
+                        onMouseLeave={() => setHoveredNodeId(null)}
+                        className={`transition-opacity duration-150 ${
+                          isBeingDragged ? 'cursor-grabbing' : 'cursor-grab'
+                        }`}
+                        opacity={isDimmed ? 0.18 : 1}
                       >
-                        {node.label.length > 22 ? `${node.label.slice(0, 20)}…` : node.label}
-                      </text>
-                    </g>
-                  );
-                })}
-              </g>
-            </svg>
+                        {/* Active Drag Halo Ring (Direct Grabbed Dot) */}
+                        {isBeingDragged && (
+                          <circle
+                            r={nodeRadius + 8}
+                            fill="none"
+                            stroke="#2563EB"
+                            strokeWidth={2}
+                            strokeDasharray="4,3"
+                            opacity={0.9}
+                          />
+                        )}
+
+                        {/* Co-moving Cluster Ring (Sibling dots moving together) */}
+                        {isInActiveDraggedCluster && (
+                          <circle
+                            r={nodeRadius + 6}
+                            fill="none"
+                            stroke="#3B82F6"
+                            strokeWidth={1.5}
+                            strokeDasharray="3,3"
+                            opacity={0.7}
+                          />
+                        )}
+
+                        {/* Selection / Hover Ring */}
+                        {(isSelected || isHovered) && !isBeingDragged && (
+                          <circle
+                            r={nodeRadius + 6}
+                            fill="none"
+                            stroke={node.type === 'finding' ? '#E11D48' : '#0F172A'}
+                            strokeWidth={2}
+                            strokeDasharray={isSelected ? undefined : '3,3'}
+                            opacity={0.85}
+                          />
+                        )}
+
+                        {/* Main Node Circle */}
+                        <circle
+                          r={nodeRadius}
+                          fill={fill}
+                          stroke="#FFFFFF"
+                          strokeWidth={2}
+                          className="shadow-sm"
+                        />
+
+                        {/* Inner Indicator Point */}
+                        <circle r={2.5} fill="#FFFFFF" />
+
+                        {/* Node Label Text */}
+                        <text
+                          y={nodeRadius + 14}
+                          textAnchor="middle"
+                          fontSize={node.type === 'document' ? '12px' : '10px'}
+                          fontWeight={node.type === 'document' || isSelected ? '600' : '500'}
+                          fill="#0F172A"
+                          className="pointer-events-none select-none"
+                          style={{
+                            textShadow:
+                              '0 1px 3px rgba(255,255,255,0.9), 0 -1px 3px rgba(255,255,255,0.9)',
+                          }}
+                        >
+                          {node.label.length > 22 ? `${node.label.slice(0, 20)}…` : node.label}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              </svg>
+            </div>
           )}
 
           {/* Quick Graph Legend Overlay */}
