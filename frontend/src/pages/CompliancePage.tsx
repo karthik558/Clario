@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useBackgroundTasks } from '../context/BackgroundTaskContext';
 import { ComplianceAuditResponse, DocumentItem, ComplianceGap } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -22,6 +23,7 @@ import { Button } from '../components/ui/Button';
 
 export const CompliancePage: React.FC = () => {
   const navigate = useNavigate();
+  const { startTask } = useBackgroundTasks();
   const [data, setData] = useState<ComplianceAuditResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
@@ -53,9 +55,23 @@ export const CompliancePage: React.FC = () => {
   const handleRunAudit = async () => {
     try {
       setAuditing(true);
-      const res = await api.auditCompliance(
-        selectedDocIds.length > 0 ? selectedDocIds : undefined
-      );
+      const scopeLabel = selectedDocIds.length > 0 ? `${selectedDocIds.length} doc(s)` : 'All Documents';
+      const res = await startTask<ComplianceAuditResponse>({
+        title: 'Compliance Framework Audit',
+        category: 'scan',
+        targetScope: scopeLabel,
+        route: '/compliance',
+        initialStage: 'Scanning against GDPR, HIPAA, SOC 2, and EU AI Act...',
+        executor: async (updateProgress) => {
+          updateProgress(35, 'Evaluating contractual covenants and audit rights...', 'Matching framework controls');
+          await new Promise((r) => setTimeout(r, 300));
+          const compRes = await api.auditCompliance(
+            selectedDocIds.length > 0 ? selectedDocIds : undefined
+          );
+          updateProgress(100, 'Compliance audit complete', 'Framework gaps evaluated');
+          return compRes;
+        },
+      });
       setData(res);
     } catch (err) {
       console.error('Audit execution failed', err);
@@ -177,7 +193,7 @@ export const CompliancePage: React.FC = () => {
             </span>
             <button
               onClick={() => setSelectedDocIds([])}
-              className={`px-2.5 py-1 rounded text-xs transition-colors shrink-0 ${
+              className={`px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 ${
                 selectedDocIds.length === 0
                   ? 'bg-slate-900 text-white font-medium'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -191,7 +207,7 @@ export const CompliancePage: React.FC = () => {
                 <button
                   key={d.id}
                   onClick={() => toggleDocSelection(d.id)}
-                  className={`px-2.5 py-1 rounded text-xs transition-colors shrink-0 flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 flex items-center gap-1.5 ${
                     isSelected
                       ? 'bg-slate-900 text-white font-medium'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'

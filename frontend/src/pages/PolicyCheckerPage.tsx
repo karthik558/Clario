@@ -24,10 +24,12 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { api } from '../services/api';
+import { useBackgroundTasks } from '../context/BackgroundTaskContext';
 import { PolicyAuditResponse, PolicyRuleAudit, DocumentItem } from '../types';
 
 export const PolicyCheckerPage: React.FC = () => {
   const navigate = useNavigate();
+  const { startTask } = useBackgroundTasks();
   const [audit, setAudit] = useState<PolicyAuditResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
@@ -63,10 +65,24 @@ export const PolicyCheckerPage: React.FC = () => {
   const handleRunAudit = async () => {
     try {
       setAuditing(true);
-      const res = await api.auditPolicies(
-        selectedDocIds.length > 0 ? selectedDocIds : undefined,
-        selectedCategory !== 'all' ? selectedCategory : undefined
-      );
+      const scopeLabel = selectedDocIds.length > 0 ? `${selectedDocIds.length} doc(s)` : 'All Documents';
+      const res = await startTask<PolicyAuditResponse>({
+        title: 'Policy Governance Benchmark Check',
+        category: 'scan',
+        targetScope: scopeLabel,
+        route: '/policy-checker',
+        initialStage: 'Evaluating contractual language against governance rules...',
+        executor: async (updateProgress) => {
+          updateProgress(35, 'Analyzing liability caps, SLAs, and data retention rules...', 'Auditing policy rules');
+          await new Promise((r) => setTimeout(r, 300));
+          const auditRes = await api.auditPolicies(
+            selectedDocIds.length > 0 ? selectedDocIds : undefined,
+            selectedCategory !== 'all' ? selectedCategory : undefined
+          );
+          updateProgress(100, 'Policy audit completed', 'Policy compliance evaluated');
+          return auditRes;
+        },
+      });
       setAudit(res);
     } catch (err) {
       console.error('Failed to run policy audit', err);
@@ -240,7 +256,7 @@ export const PolicyCheckerPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedDocIds([])}
-              className={`px-2.5 py-1 rounded text-xs transition-colors shrink-0 ${
+              className={`px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 ${
                 selectedDocIds.length === 0
                   ? 'bg-slate-900 text-white font-medium'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -255,7 +271,7 @@ export const PolicyCheckerPage: React.FC = () => {
                   key={d.id}
                   type="button"
                   onClick={() => handleToggleDoc(d.id)}
-                  className={`px-2.5 py-1 rounded text-xs transition-colors shrink-0 flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 flex items-center gap-1.5 ${
                     isSelected
                       ? 'bg-slate-900 text-white font-medium'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'

@@ -22,6 +22,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useBackgroundTasks } from '../context/BackgroundTaskContext';
 import { ComparisonResponse, DocumentItem, ContradictionCandidate } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -34,6 +35,7 @@ const getSearchParam = (key: string): string => {
 };
 
 export const ComparePage: React.FC = () => {
+  const { startTask } = useBackgroundTasks();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [docAId, setDocAId] = useState<string>('');
   const [docBId, setDocBId] = useState<string>('');
@@ -110,10 +112,25 @@ export const ComparePage: React.FC = () => {
     setPromotedIndices([]);
     setError('');
     try {
-      const [data, bench] = await Promise.all([
-        api.compareDocuments(docAId, docBId),
-        api.getRiskBenchmark(docAId, docBId).catch(() => null)
-      ]);
+      const docAName = documents.find((d) => d.id === docAId)?.title || 'Document A';
+      const docBName = documents.find((d) => d.id === docBId)?.title || 'Document B';
+      const [data, bench] = await startTask<[ComparisonResponse, any]>({
+        title: `Compare: ${docAName} vs ${docBName}`,
+        category: 'scan',
+        targetScope: `${docAName} vs ${docBName}`,
+        route: `/compare?doc_a=${docAId}&doc_b=${docBId}`,
+        initialStage: 'Aligning passages and vector chunks...',
+        executor: async (updateProgress) => {
+          updateProgress(30, 'Computing semantic diffs and discrepancies...', 'Matching clauses');
+          await new Promise((r) => setTimeout(r, 250));
+          const [resData, resBench] = await Promise.all([
+            api.compareDocuments(docAId, docBId),
+            api.getRiskBenchmark(docAId, docBId).catch(() => null)
+          ]);
+          updateProgress(100, 'Comparison completed', 'Diffs and risk benchmark aligned');
+          return [resData, resBench];
+        },
+      });
       setComparison(data);
       setRiskBenchmark(bench);
     } catch (err) {

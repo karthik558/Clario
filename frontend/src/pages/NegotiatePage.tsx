@@ -13,7 +13,13 @@ import {
   Layers,
   RotateCcw,
   Download,
-  Cpu
+  Mail,
+  TrendingUp,
+  Sliders,
+  ChevronRight,
+  Cpu,
+  Target,
+  Briefcase
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackgroundTasks } from '../context/BackgroundTaskContext';
@@ -25,6 +31,19 @@ import { Select } from '../components/ui/Select';
 
 type StanceType = 'balanced' | 'customer_protective' | 'vendor_favorable' | 'strict_compliance';
 
+type CounterpartyProfile = 'monopoly' | 'balanced' | 'vendor';
+
+interface PlaybookTier {
+  tier: 1 | 2 | 3;
+  name: string;
+  badge: string;
+  badgeColor: 'navy' | 'sage' | 'gold';
+  clause: string;
+  rationale: string;
+  giveawayRisk: string;
+  counterResistance: number;
+}
+
 const STANCES: { id: StanceType; label: string; desc: string }[] = [
   { id: 'balanced', label: 'Balanced Compromise', desc: 'Equal burden sharing, industry-standard mutual terms' },
   { id: 'customer_protective', label: 'Customer Protective', desc: 'Prioritizes customer liability caps, audit rights, and remedies' },
@@ -32,8 +51,140 @@ const STANCES: { id: StanceType; label: string; desc: string }[] = [
   { id: 'strict_compliance', label: 'Strict Compliance', desc: 'Zero regulatory exposure, mandatory auditability and breach notices' },
 ];
 
+const COUNTERPARTY_CONFIGS: Record<CounterpartyProfile, {
+  label: string;
+  tagline: string;
+  resistanceBaseline: number;
+  expectedObjection: string;
+  recommendedPivot: string;
+  tiers: (topic: string, baseA: string, baseB: string) => PlaybookTier[];
+}> = {
+  monopoly: {
+    label: 'Enterprise Monopolist',
+    tagline: 'Dominant market incumbent with rigid legal terms and high walk-away tolerance',
+    resistanceBaseline: 82,
+    expectedObjection: 'Counterparty counsel typically issues standard form rejection for custom indemnification caps, citing global corporate underwriting guidelines.',
+    recommendedPivot: 'Offer mutual aggregate limitation pegged to 2x trailing 12-month contract value with carve-outs strictly bounded to deliberate breach of confidentiality.',
+    tiers: (_topic, _baseA, _baseB) => [
+      {
+        tier: 1,
+        name: 'Opening Anchor (Aggressive)',
+        badge: 'Target Position',
+        badgeColor: 'navy',
+        clause: `Notwithstanding any provision to the contrary, in no event shall Customer's total cumulative liability under this Agreement exceed the total fees paid or payable by Customer in the preceding twelve (12) months. Service Provider shall unconditionally defend, indemnify, and hold harmless Customer against all third-party claims arising from security incidents or data breaches without monetary limitation.`,
+        rationale: 'Establishes a firm customer-favorable boundary before expected counterparty redlining.',
+        giveawayRisk: 'Likely immediate pushback; counterparty will refuse uncapped security indemnity.',
+        counterResistance: 88,
+      },
+      {
+        tier: 2,
+        name: 'Market Compromise (Reciprocal)',
+        badge: 'Recommended Deal-Closer',
+        badgeColor: 'sage',
+        clause: `Except for claims arising from gross negligence, willful misconduct, or unauthorized disclosure of confidential data, each party's maximum aggregate liability shall not exceed two times (2x) the amounts paid by Customer during the twelve (12) months prior to the incident giving rise to liability. Mutual indemnification applies to intellectual property infringement and gross confidentiality violations.`,
+        rationale: 'Acceptable standard for Fortune 500 SaaS and enterprise procurement; establishes reciprocal safeguards.',
+        giveawayRisk: 'Moderate concession on non-material operational errors.',
+        counterResistance: 42,
+      },
+      {
+        tier: 3,
+        name: 'Walk-Away Floor (Defensive Minima)',
+        badge: 'Absolute Floor',
+        badgeColor: 'gold',
+        clause: `Subject to applicable law, each party's aggregate liability under this Agreement shall be limited to one times (1x) the fees paid by Customer during the prior twelve (12) months. Neither party shall be liable for indirect, punitive, or consequential damages; provided, however, that neither party disclaims liability for direct damages arising from statutory data breach notification obligations.`,
+        rationale: 'Lowest tolerable commercial threshold; guarantees statutory compliance while conceding consequential damages.',
+        giveawayRisk: 'Limits recovery for extended downtime or vendor security lapses.',
+        counterResistance: 15,
+      },
+    ],
+  },
+  balanced: {
+    label: 'Balanced Commercial Peer',
+    tagline: 'Equal bargaining power seeking clean execution and rapid mutual close',
+    resistanceBaseline: 45,
+    expectedObjection: 'Counterparty will request symmetry in indemnity obligations and a balanced 30-day cure window prior to material breach termination.',
+    recommendedPivot: 'Grant reciprocal indemnity for IP and IP infringement while binding both parties to 30-day notice and cure requirements.',
+    tiers: (_topic, _baseA, _baseB) => [
+      {
+        tier: 1,
+        name: 'Opening Anchor (Strategic Edge)',
+        badge: 'Target Position',
+        badgeColor: 'navy',
+        clause: `Each party agrees to hold harmless the other for direct claims arising from breach of material warranties. Vendor warrants 99.9% uptime availability and guarantees SLA fee credits calculated as 10% of monthly subscription fees per hour of unplanned outage exceeding SLA boundaries.`,
+        rationale: 'Strong uptime guarantee and financial remedy structure.',
+        giveawayRisk: 'Counterparty will negotiate downtime credit thresholds.',
+        counterResistance: 55,
+      },
+      {
+        tier: 2,
+        name: 'Market Compromise (Balanced Equity)',
+        badge: 'Recommended Deal-Closer',
+        badgeColor: 'sage',
+        clause: `The parties mutually agree that aggregate liability for all claims arising out of or related to this Agreement shall be capped at 1.5x the total fees paid or payable by Customer in the 12-month period preceding the claim. Both parties commit to standard commercial best efforts, 30-day written notice and cure periods, and reciprocal IP defense covenants.`,
+        rationale: 'Clean bilateral compromise minimizing legal friction and executive escalation.',
+        giveawayRisk: 'Balanced and equitable burden sharing.',
+        counterResistance: 22,
+      },
+      {
+        tier: 3,
+        name: 'Walk-Away Floor (Pragmatic Minimum)',
+        badge: 'Absolute Floor',
+        badgeColor: 'gold',
+        clause: `Total liability of either party shall be capped at 100% of fees paid during the contract term. Standard mutual limitations on consequential damages apply, excluding deliberate confidentiality breaches.`,
+        rationale: 'Quick-close baseline for low-risk transactional agreements.',
+        giveawayRisk: 'Limits upside protection in worst-case vendor failure scenarios.',
+        counterResistance: 8,
+      },
+    ],
+  },
+  vendor: {
+    label: 'Motivated Challenger / Vendor',
+    tagline: 'Fast-growing high-velocity provider highly incentivized to win business',
+    resistanceBaseline: 25,
+    expectedObjection: 'Minor hesitance regarding unlimited liquidated damages or non-standard bespoke audit frequency.',
+    recommendedPivot: 'Accept annual third-party SOC 2 Type II audit report delivery in lieu of on-premises intrusive audits.',
+    tiers: (_topic, _baseA, _baseB) => [
+      {
+        tier: 1,
+        name: 'Opening Anchor (Full Enterprise Security)',
+        badge: 'Target Position',
+        badgeColor: 'navy',
+        clause: `Vendor covenants to provide Customer with unconditional 24/7 dedicated support, 99.95% availability SLA with compound credits, annual on-site security audit access, and full indemnity for any regulatory fines or incident response expenses caused by Vendor's infrastructure.`,
+        rationale: 'Extracts premium enterprise governance terms from hungry challenger vendor.',
+        giveawayRisk: 'Vendor legal team may request annual audit expense reimbursement.',
+        counterResistance: 38,
+      },
+      {
+        tier: 2,
+        name: 'Market Compromise (Optimal Alignment)',
+        badge: 'Recommended Deal-Closer',
+        badgeColor: 'sage',
+        clause: `Vendor provides quarterly SOC 2 Type II audit reporting, 99.9% uptime SLA with monthly credits, 72-hour security incident notification SLA, and mutual liability cap set at 2x annual contract value, with carve-outs for data security and confidentiality breaches.`,
+        rationale: 'High operational compliance with zero friction for fast signing.',
+        giveawayRisk: 'Negligible; vendor happily accepts standard enterprise terms.',
+        counterResistance: 12,
+      },
+      {
+        tier: 3,
+        name: 'Walk-Away Floor (Commercial Comfort)',
+        badge: 'Absolute Floor',
+        badgeColor: 'gold',
+        clause: `Vendor delivers annual third-party security certifications and maintains $2,000,000 cyber-liability policy naming Customer as additional insured, with liability capped at 12 months fees paid.`,
+        rationale: 'Ensures insurance backing even if direct corporate balance sheet is small.',
+        giveawayRisk: 'Adequate backstop via cyber insurance policy.',
+        counterResistance: 5,
+      },
+    ],
+  },
+};
+
 export const NegotiatePage: React.FC = () => {
   const { startTask, getLatestTask } = useBackgroundTasks();
+  const [resultSubTab, setResultSubTab] = useState<'redline' | 'playbook' | 'rationale'>('redline');
+  const [counterparty, setCounterparty] = useState<CounterpartyProfile>('monopoly');
+  const [selectedTierIndex, setSelectedTierIndex] = useState<number>(1);
+  const [copiedEmail, setCopiedEmail] = useState(false);
+
   const [findings, setFindings] = useState<FindingItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedFindingId, setSelectedFindingId] = useState<string>('');
@@ -162,9 +313,12 @@ export const NegotiatePage: React.FC = () => {
         route: '/negotiate#synthesis-result',
         initialStage: `Harmonizing ${topic || 'provision'} (${stance})...`,
         executor: async (updateProgress) => {
-          updateProgress(30, 'Analyzing conflicting statements...', `Comparing ${docATitle} against ${docBTitle}`);
+          updateProgress(25, 'Analyzing conflicting statements...', `Comparing ${docATitle || 'Doc A'} against ${docBTitle || 'Doc B'}`);
+          await new Promise((r) => setTimeout(r, 350));
           if (useAi) {
-            updateProgress(60, 'Synthesizing compromise redline with AI...', `Applying ${stance} stance guidelines`);
+            updateProgress(65, 'Synthesizing compromise redline with AI...', `Applying ${stance} stance guidelines`);
+          } else {
+            updateProgress(65, 'Harmonizing terms & applying bargaining posture...', `Applying ${stance} stance guidelines`);
           }
           const negRes = await api.negotiateClause({
             statement_a: statementA,
@@ -177,6 +331,7 @@ export const NegotiatePage: React.FC = () => {
             finding_id: selectedFindingId || undefined,
             use_ai: useAi,
           });
+          await new Promise((r) => setTimeout(r, 250));
           updateProgress(100, 'Redline clause drafted', 'Harmonized compromise ready');
           return negRes;
         },
@@ -211,10 +366,42 @@ export const NegotiatePage: React.FC = () => {
     }
   };
 
+  const activePlaybookConfig = COUNTERPARTY_CONFIGS[counterparty];
+  const activeTiers = activePlaybookConfig.tiers(topic, statementA, statementB);
+  const currentTier = activeTiers[selectedTierIndex] || activeTiers[1];
+
+  const handleCopyAttorneyEmail = () => {
+    const emailBody = `Subject: Proposed Revision & Harmonization - ${topic || 'Contract Provision'} (${docATitle || 'Agreement'})
+
+Counsel,
+
+In reviewing the provision regarding "${topic || 'General Terms'}" between our respective organizations, we have synthesized a balanced compromise to align our mutual commercial interests while ensuring appropriate risk allocation.
+
+PROPOSED CLAUSE:
+"${currentTier.clause}"
+
+COMMERCIAL RATIONALE & CONCESSION STRUCTURE:
+- Strategic Posture: ${activePlaybookConfig.label} (${currentTier.name})
+- Justification: ${currentTier.rationale}
+- Anticipated Consideration: In exchange for incorporating these terms, we are prepared to accept reciprocal standards on notice periods and standard liability limitation caps.
+
+Please review this marked revision with your team and confirm if this provides a workable path forward for signature.
+
+Warm regards,
+Legal & Commercial Deal Desk`;
+
+    navigator.clipboard.writeText(emailBody);
+    setCopiedEmail(true);
+    setTimeout(() => setCopiedEmail(false), 2500);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <PageHeader title="Clause redline" description="Compare alternative wording and draft revisions to a clause.">
+      <PageHeader
+        title="Clause Redline & Negotiation Playbook"
+        description="Bridge conflicting contractual provisions, select bargaining postures, and generate compromise language with escalation playbooks."
+      >
         {findings.length > 0 && (
           <div className="w-full sm:w-72">
             <Select
@@ -234,21 +421,54 @@ export const NegotiatePage: React.FC = () => {
         )}
       </PageHeader>
 
+      {/* 3-Step Guided Walkthrough */}
+      <div className="p-4 rounded-md bg-white border border-slate-200 shadow-xs grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        <div className="flex items-start gap-2.5">
+          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
+          <div>
+            <strong className="text-slate-900 block font-semibold">Select Opposing Terms</strong>
+            <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
+              Choose a flagged finding above or paste opposing terms from Document A and Document B.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2.5">
+          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
+          <div>
+            <strong className="text-slate-900 block font-semibold">Set Bargaining Posture</strong>
+            <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
+              Select your desired stance (Balanced, Protective, Vendor) and counterparty profile.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2.5">
+          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
+          <div>
+            <strong className="text-slate-900 block font-semibold">Review Redline & Playbook</strong>
+            <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
+              Generate harmonized amendments, inspect 3-tier escalation fallbacks, and copy lawyer memos.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {error && (
         <div role="alert" className="p-3.5 rounded-md bg-rose-50 border border-rose-200 text-xs text-rose-800">
           {error}
         </div>
       )}
 
-      {/* Main Studio Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Left Column: Inputs & Stance Controls */}
-        <div className="space-y-5">
+      {/* Main Unified Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Input Terms & Posture Controls (5 cols) */}
+        <div className="lg:col-span-5 space-y-5">
           {/* Conflicting Text Inputs */}
-          <Card className="p-5 bg-white border border-slate-200 shadow-sm rounded-lg space-y-4">
+          <Card className="p-5 bg-white border border-slate-200 shadow-sm rounded-md space-y-4">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
               <FileText className="w-4 h-4 text-slate-700" />
-              <span>Contradictory Clauses to Bridge</span>
+              <span>1. Contradictory Clauses to Bridge</span>
             </h3>
 
             <div>
@@ -273,7 +493,7 @@ export const NegotiatePage: React.FC = () => {
                   value={docATitle}
                   onChange={(e) => setDocATitle(e.target.value)}
                   placeholder="Doc A Title"
-                  className="text-[11px] px-2 py-0.5 border border-slate-200 rounded text-slate-600 w-44 text-right"
+                  className="text-[11px] px-2 py-0.5 border border-slate-200 rounded-md text-slate-600 w-44 text-right"
                 />
               </div>
               <textarea
@@ -294,7 +514,7 @@ export const NegotiatePage: React.FC = () => {
                   value={docBTitle}
                   onChange={(e) => setDocBTitle(e.target.value)}
                   placeholder="Doc B Title"
-                  className="text-[11px] px-2 py-0.5 border border-slate-200 rounded text-slate-600 w-44 text-right"
+                  className="text-[11px] px-2 py-0.5 border border-slate-200 rounded-md text-slate-600 w-44 text-right"
                 />
               </div>
               <textarea
@@ -307,36 +527,81 @@ export const NegotiatePage: React.FC = () => {
             </div>
           </Card>
 
-          {/* Stance Selector */}
-          <Card className="p-5 bg-white border border-slate-200 shadow-sm rounded-lg space-y-4">
+          {/* Stance & Counterparty Controls */}
+          <Card className="p-5 bg-white border border-slate-200 shadow-sm rounded-md space-y-4">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-100">
               <Shield className="w-4 h-4 text-slate-700" />
-              <span>Negotiation Strategy & Stance</span>
+              <span>2. Strategy & Counterparty Posture</span>
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {STANCES.map((s) => {
-                const isActive = stance === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setStance(s.id)}
-                    className={`p-3 rounded-md border text-left transition-all ${
-                      isActive
-                        ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-800'
-                    }`}
-                  >
-                    <div className="text-xs font-bold mb-0.5">{s.label}</div>
-                    <p className={`text-[11px] leading-relaxed line-clamp-2 ${isActive ? 'text-slate-300' : 'text-slate-500'}`}>
-                      {s.desc}
-                    </p>
-                  </button>
-                );
-              })}
+            {/* Stance Selection */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1.5">
+                Target Bargaining Stance
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {STANCES.map((s) => {
+                  const isActive = stance === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setStance(s.id)}
+                      className={`p-2.5 rounded-md border text-left transition-all ${
+                        isActive
+                          ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-800'
+                      }`}
+                    >
+                      <div className="text-xs font-bold mb-0.5">{s.label}</div>
+                      <p className={`text-[10.5px] leading-relaxed line-clamp-2 ${isActive ? 'text-slate-300' : 'text-slate-500'}`}>
+                        {s.desc}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
+            {/* Counterparty Profile */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-700">
+                  Counterparty Persona & Posture
+                </label>
+                <span className="text-[10px] text-slate-500">
+                  Resistance Risk: <strong className="text-slate-900 font-mono">{activePlaybookConfig.resistanceBaseline}%</strong>
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(['monopoly', 'balanced', 'vendor'] as CounterpartyProfile[]).map((cpKey) => {
+                  const conf = COUNTERPARTY_CONFIGS[cpKey];
+                  const isSelected = counterparty === cpKey;
+                  return (
+                    <button
+                      key={cpKey}
+                      type="button"
+                      onClick={() => {
+                        setCounterparty(cpKey);
+                        setSelectedTierIndex(1);
+                      }}
+                      className={`p-2 rounded-md border text-center transition-all ${
+                        isSelected
+                          ? 'border-slate-900 bg-slate-900 text-white shadow-xs font-semibold'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs'
+                      }`}
+                    >
+                      <span className="block text-xs truncate">{conf.label.split(' ')[0]}</span>
+                      <span className={`text-[9.5px] block font-mono ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
+                        {conf.resistanceBaseline}% risk
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Instructions */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                 Custom Redline Instructions (Optional)
@@ -354,7 +619,7 @@ export const NegotiatePage: React.FC = () => {
             <div className="flex items-center justify-between pb-3 pt-2 border-t border-slate-100">
               <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-slate-600" />
-                <span>Generate with AI (LLM Synthesis)</span>
+                <span>AI Synthesis (LLM)</span>
               </span>
               <button
                 type="button"
@@ -374,111 +639,249 @@ export const NegotiatePage: React.FC = () => {
               size="md"
               disabled={loading || (!statementA.trim() && !statementB.trim())}
               onClick={handleGenerate}
-              className="w-full justify-center text-xs font-semibold py-2.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
+              className="w-full justify-center text-xs font-semibold py-2.5 bg-slate-900 hover:bg-slate-800 text-white shadow-sm rounded-md"
             >
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                  <span>Synthesizing Harmonized Redline...</span>
+                  <span>Synthesizing Compromise...</span>
                 </>
               ) : (
                 <>
                   <Scale className="w-4 h-4 mr-2" />
-                  <span>Generate AI Redline Amendment</span>
+                  <span>Generate Harmonized Redline</span>
                 </>
               )}
             </Button>
           </Card>
         </div>
 
-        {/* Right Column: Generated Redline Output */}
-        <div className="space-y-5">
+        {/* Right Column: Unified Output Studio (7 cols) */}
+        <div className="lg:col-span-7 space-y-4">
           <Card
             id="synthesis-result"
-            className="p-5 bg-white border border-slate-200 shadow-sm rounded-lg min-h-[460px] flex flex-col justify-between scroll-mt-6 transition-all duration-300"
+            className="p-5 bg-white border border-slate-200 shadow-sm rounded-md min-h-[580px] flex flex-col justify-between scroll-mt-6 transition-all duration-300"
           >
             {result ? (
               <div className="space-y-4">
-                {/* Result Header Bar */}
+                {/* Result Header & View Tabs */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                  <div className="inline-flex rounded-md border border-slate-200 bg-slate-100 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setResultSubTab('redline')}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                        resultSubTab === 'redline'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Harmonized Provision
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setResultSubTab('playbook')}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+                        resultSubTab === 'playbook'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Target className="w-3.5 h-3.5 text-slate-700" />
+                      <span>3-Tier Playbook</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setResultSubTab('rationale')}
+                      className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                        resultSubTab === 'rationale'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Strategy & Justification
+                    </button>
+                  </div>
+
                   <div className="flex items-center gap-2">
                     <Badge variant="navy">STANCE: {result.stance.toUpperCase()}</Badge>
                     <Badge variant={result.risk_level === 'Low' ? 'sage' : result.risk_level === 'Medium' ? 'gold' : 'red'}>
                       Risk: {result.risk_level}
                     </Badge>
                   </div>
-                  <span className="text-[11px] font-mono text-slate-400">
-                    {result.mode}
-                  </span>
                 </div>
 
-                {/* Proposed Clause Box */}
-                <div>
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      Proposed Redline Amendment
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={handleExportDocx}
-                        disabled={exportingDocx}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200 shadow-xs"
-                        title="Download Microsoft Word document with tracked changes markup"
-                      >
-                        <Download className="w-3.5 h-3.5 text-slate-600" />
-                        <span>{exportingDocx ? 'Exporting...' : 'Export Track Changes (.docx)'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCopy}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 transition-colors"
-                      >
-                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copied ? 'Copied' : 'Copy Clause'}</span>
-                      </button>
+                {/* TAB 1: Harmonized Provision */}
+                {resultSubTab === 'redline' && (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                          Proposed Redline Amendment
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={handleExportDocx}
+                            disabled={exportingDocx}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200 shadow-xs"
+                            title="Download Microsoft Word document with tracked changes markup"
+                          >
+                            <Download className="w-3.5 h-3.5 text-slate-600" />
+                            <span>{exportingDocx ? 'Exporting...' : 'Export Track Changes (.docx)'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCopy}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200 shadow-xs"
+                          >
+                            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copied ? 'Copied' : 'Copy Clause'}</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-4 rounded-md border border-slate-200 bg-slate-50 text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-slate-200">
+                        {result.proposed_clause}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800 block mb-1">
+                        Summary of Changes & Compromise Rationale
+                      </span>
+                      <p className="text-xs text-slate-700 leading-relaxed bg-white border border-slate-100 p-3 rounded-md">
+                        {result.rationale}
+                      </p>
                     </div>
                   </div>
-                  <div className="p-4 rounded-md border border-slate-200 bg-slate-50 text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-slate-200">
-                    {result.proposed_clause}
+                )}
+
+                {/* TAB 2: 3-Tier Negotiation Playbook */}
+                {resultSubTab === 'playbook' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                        Escalation Fallbacks for {activePlaybookConfig.label}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyAttorneyEmail}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-md transition-colors shadow-xs"
+                      >
+                        {copiedEmail ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Mail className="w-3.5 h-3.5" />}
+                        <span>{copiedEmail ? 'Email Copied!' : 'Copy Lawyer Email Memo'}</span>
+                      </button>
+                    </div>
+
+                    {/* Tier selector tabs */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {activeTiers.map((t, idx) => {
+                        const isSelected = selectedTierIndex === idx;
+                        return (
+                          <div
+                            key={t.tier}
+                            onClick={() => setSelectedTierIndex(idx)}
+                            className={`p-3 rounded-md border cursor-pointer transition-all ${
+                              isSelected
+                                ? 'border-slate-900 bg-white shadow-xs ring-1 ring-slate-900'
+                                : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-bold text-slate-900">
+                                Tier {t.tier}
+                              </span>
+                              <Badge variant={t.badgeColor} size="sm">{t.badge}</Badge>
+                            </div>
+                            <span className="text-[11px] text-slate-600 block truncate">
+                              {t.name.split(' ')[0]}
+                            </span>
+                            <span className="text-[10px] text-slate-400 block mt-1">
+                              Pushback: <strong className="text-slate-800 font-mono">{t.counterResistance}%</strong>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Selected Tier Provision Box */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <strong className="text-slate-800">{currentTier.name}</strong>
+                        <span className="text-slate-500 text-[11px]">{currentTier.giveawayRisk}</span>
+                      </div>
+                      <div className="p-3.5 rounded-md border border-slate-200 bg-slate-50 font-mono text-xs text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-slate-200">
+                        {currentTier.clause}
+                      </div>
+                    </div>
+
+                    {/* Deal Desk Email Memo Preview */}
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800 block mb-1">
+                        Counterparty Counsel Negotiation Memo
+                      </span>
+                      <div className="p-3 rounded-md bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-mono leading-relaxed space-y-1 whitespace-pre-wrap">
+{`Subject: Proposed Revision - ${topic || 'Contract Provision'} (${docATitle || 'Agreement'})
+
+Counsel,
+In reviewing "${topic || 'General Terms'}" between our organizations, we proposed the following compromise:
+"${currentTier.clause}"
+
+Rationale: ${currentTier.rationale}`}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Legal Rationale */}
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-800 block mb-1">
-                    Strategic Rationale & Justification
-                  </span>
-                  <p className="text-xs text-slate-700 leading-relaxed bg-white border border-slate-100 p-3 rounded-md">
-                    {result.rationale}
-                  </p>
-                </div>
+                {/* TAB 3: Strategy & Concessions */}
+                {resultSubTab === 'rationale' && (
+                  <div className="space-y-4">
+                    {/* Tactical Intelligence Banner */}
+                    <div className="p-4 rounded-md bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <span className="font-bold text-slate-900 block mb-1">Predicted Counterparty Objection</span>
+                        <p className="text-slate-600 leading-relaxed">
+                          {activePlaybookConfig.expectedObjection}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-900 block mb-1">Recommended Tactical Pivot</span>
+                        <p className="text-slate-600 leading-relaxed">
+                          {activePlaybookConfig.recommendedPivot}
+                        </p>
+                      </div>
+                    </div>
 
-                {/* Key Concessions */}
-                {result.key_concessions && result.key_concessions.length > 0 && (
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800 block mb-1">
-                      Key Concessions & Safeguards
-                    </span>
-                    <ul className="space-y-1">
-                      {result.key_concessions.map((c, i) => (
-                        <li key={i} className="text-xs text-slate-700 flex items-start gap-2">
-                          <Check className="w-3.5 h-3.5 text-slate-600 shrink-0 mt-0.5" />
-                          <span>{c}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {/* Key Concessions */}
+                    {result.key_concessions && result.key_concessions.length > 0 && (
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-800 block mb-2">
+                          Safeguards & Concessions Check
+                        </span>
+                        <ul className="space-y-2">
+                          {result.key_concessions.map((c, i) => (
+                            <li key={i} className="text-xs text-slate-700 flex items-start gap-2 p-2 rounded-md bg-white border border-slate-100">
+                              <Check className="w-3.5 h-3.5 text-slate-600 shrink-0 mt-0.5" />
+                              <span>{c}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center text-center py-20 px-6 text-slate-500 my-auto">
+              <div className="flex flex-col items-center justify-center text-center py-24 px-6 text-slate-500 my-auto">
                 <Scale className="w-12 h-12 text-slate-300 mb-3 stroke-[1.2]" />
-                <h4 className="text-sm font-bold text-slate-700 mb-1">No Redline Generated Yet</h4>
+                <h4 className="text-sm font-bold text-slate-700 mb-1">Ready to Bridge Opposing Terms</h4>
                 <p className="text-xs text-slate-500 max-w-sm leading-relaxed mb-4">
-                  Select a detected finding or paste contradictory clauses on the left, choose your preferred bargaining stance, and generate a harmonized clause.
+                  Select a detected finding from the header, choose your target bargaining stance on the left, and click <strong>Generate Harmonized Redline</strong>.
                 </p>
-
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>Supports automated Microsoft Word (.docx) track changes export</span>
+                </div>
               </div>
             )}
 
@@ -494,7 +897,7 @@ export const NegotiatePage: React.FC = () => {
                     size="sm"
                     disabled={savedNotes}
                     onClick={handleSaveToFinding}
-                    className="text-xs"
+                    className="text-xs rounded-md"
                   >
                     <BookmarkCheck className="w-3.5 h-3.5 mr-1.5 text-slate-700" />
                     <span>{savedNotes ? 'Saved to Audit Notes' : 'Save to Finding'}</span>

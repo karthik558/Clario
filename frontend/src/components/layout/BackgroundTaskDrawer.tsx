@@ -172,7 +172,7 @@ export const BackgroundTaskDrawer: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => cancelTask(task.id)}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded border border-rose-200 transition-colors"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200 transition-colors"
                           >
                             <Square className="w-3 h-3 fill-current" />
                             <span>End Task</span>

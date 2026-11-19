@@ -254,7 +254,7 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
               key={cat}
               type="button"
               onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 rounded text-xs transition-colors shrink-0 ${
+              className={`px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 ${
                 selectedCategory === cat
                   ? 'bg-slate-900 text-white font-medium shadow-xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
