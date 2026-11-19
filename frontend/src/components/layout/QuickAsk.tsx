@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { ArrowUp, Maximize2, Search, X } from 'lucide-react';
+import { ArrowUp, Maximize2, Search, X, Bot, User } from 'lucide-react';
 import { api } from '../../services/api';
 import type { AskResponse, CitationItem } from '../../types';
 import { Markdown } from '../ui/Markdown';
@@ -65,14 +65,40 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
           <summary className="cursor-pointer font-semibold">{selection.ids.length ? `${selection.ids.length} document${selection.ids.length === 1 ? '' : 's'} selected` : 'Choose documents · Entire workspace'}</summary>
           <div className="py-2"><AskSources documents={documents} selection={selection} error={sourceError} disabled={pending} /></div>
         </details>
-        <div ref={thread} className="min-h-0 overflow-y-auto px-4 py-4">
-          {sentQuestion && <p className="mb-3 ml-auto w-fit max-w-full break-words rounded-lg bg-clario-navy px-3 py-2 text-sm text-white">{sentQuestion}</p>}
-          {answer ? <>
-            <Markdown>{answer.answer}</Markdown>
-            {answer.citations.length > 0 && <p className="mt-3 text-xs text-slate-500">{answer.mode}</p>}
-            {answer.citations.map(source => <button key={source.citation_id} onClick={() => onSource(source)} className="mt-2 block max-w-full truncate text-left text-xs font-medium underline">[{source.citation_id}] {source.document_title} · p. {source.page_number}</button>)}
-          </> : !sentQuestion && <p className="text-sm text-slate-600">Ask a question about your indexed documents, or search for a passage.</p>}
-          <button onClick={() => { close(); onSearch(); }} className="mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs hover:bg-slate-50"><Search size={14} />Search passages</button>
+        <div ref={thread} className="min-h-0 overflow-y-auto px-4 py-4 space-y-3">
+          {sentQuestion && (
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1.5 mb-1 pr-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <span>My Play</span>
+                <div className="w-5 h-5 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center shadow-xs border border-slate-700">
+                  <User size={12} />
+                </div>
+              </div>
+              <p className="ml-auto w-fit max-w-[85%] break-words rounded-2xl rounded-tr-xs bg-clario-navy px-3.5 py-2.5 text-sm text-white shadow-sm">
+                {sentQuestion}
+              </p>
+            </div>
+          )}
+          {answer ? (
+            <div className="flex flex-col items-start w-full">
+              <div className="flex items-center gap-1.5 mb-1 pl-1 text-[10px] font-bold uppercase tracking-wider text-clario-navy">
+                <div className="w-5 h-5 rounded-full bg-clario-navy text-white flex items-center justify-center shadow-xs">
+                  <Bot size={12} />
+                </div>
+                <span>Clario Play</span>
+              </div>
+              <div className="rounded-2xl rounded-tl-xs border border-slate-200 bg-slate-50/70 p-3.5 text-sm text-slate-800 shadow-xs w-full space-y-2">
+                <Markdown>{answer.answer}</Markdown>
+                {answer.citations.length > 0 && <p className="mt-2 text-xs text-slate-500 font-medium">{answer.mode}</p>}
+                {answer.citations.map(source => (
+                  <button key={source.citation_id} onClick={() => onSource(source)} className="mt-1 block max-w-full truncate text-left text-xs font-medium underline text-clario-navy hover:text-slate-900">
+                    [{source.citation_id}] {source.document_title} · p. {source.page_number}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : !sentQuestion && <p className="text-sm text-slate-600">Ask a question about your indexed documents, or search for a passage.</p>}
+          <button onClick={() => { close(); onSearch(); }} className="mt-2 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs hover:bg-slate-50"><Search size={14} />Search passages</button>
         </div>
         {pending && <p role="status" className="px-4 pb-2 text-xs text-slate-600">Clario is answering…</p>}
         {error && <p role="alert" className="px-4 pb-2 text-xs text-rose-700">{error}</p>}
