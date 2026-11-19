@@ -1,6 +1,6 @@
 import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   Scale,
   ShieldAlert,
@@ -38,21 +38,46 @@ export const CritiquePage: React.FC = () => {
   const [draftingOptionKey, setDraftingOptionKey] = useState<string | null>(null);
   const [aiDraftedFlags, setAiDraftedFlags] = useState<Record<string, boolean>>({});
 
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
   const activeCritiqueTask = activeTasks.find((t) => t.category === 'critique');
 
   const selectedDocTitle = selectedDocIds.length > 0
     ? documents.find((d) => d.id === selectedDocIds[0])?.title || 'Selected Document'
     : 'All Workspace Documents';
 
+  useEffect(() => {
+    const council = searchParams.get('council') || searchParams.get('persona');
+    if (council && ['general_counsel', 'cfo', 'ciso', 'cco', 'coo'].includes(council)) {
+      setActivePersonaTab(council);
+    }
+    if (location.hash) {
+      const elementId = location.hash.replace('#', '');
+      const timer = setTimeout(() => {
+        const el = document.getElementById(elementId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-slate-900', 'ring-offset-2', 'transition-all');
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-slate-900', 'ring-offset-2');
+          }, 3500);
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, location.hash]);
+
   const handleDraftOptionWithAi = async (personaId: string, point: string, detail: string, idx: number) => {
     const key = `${personaId}-${idx}`;
+    const targetRoute = `/critique?council=${personaId}#flag-${personaId}-${idx}`;
     try {
       setDraftingOptionKey(key);
       const res = await startTask<{ point: string; counter_clause: string; rationale: string; mode: string }>({
-        title: `AI Counter: ${point}`,
+        title: point,
         category: 'counter',
         targetScope: selectedDocTitle,
-        route: '/critique',
+        route: targetRoute,
         initialStage: `Synthesizing defense for ${point}...`,
         executor: async (updateProgress) => {
           updateProgress(35, `Drafting ${personaId} defense covenants...`, `Analyzing ${point} in ${selectedDocTitle}`);
@@ -120,7 +145,7 @@ export const CritiquePage: React.FC = () => {
         title: aiMode ? 'AI Red Team Multi-Council Audit' : 'Red Team Adversarial Audit',
         category: 'critique',
         targetScope: selectedDocTitle,
-        route: '/critique',
+        route: '/critique#audit-consensus',
         initialStage: 'Binding document scope and loading passages...',
         executor: async (updateProgress) => {
           updateProgress(20, 'Analyzing Legal Counsel & CFO liabilities...', `Auditing ${selectedDocTitle} for liability super-caps and auto-renewals`);
@@ -405,7 +430,7 @@ export const CritiquePage: React.FC = () => {
 
       {/* Strategic Consensus & Executive Leverage Callout */}
       {data && data.personas.length > 0 && (
-        <div className="p-4 rounded-md bg-white border-l-4 border-l-clario-navy border border-slate-200 shadow-xs space-y-2">
+        <div id="audit-consensus" className="p-4 rounded-md bg-white border-l-4 border-l-clario-navy border border-slate-200 shadow-xs space-y-2 scroll-mt-6 transition-all duration-300">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-clario-navy">
@@ -502,7 +527,11 @@ export const CritiquePage: React.FC = () => {
 
           <div className="space-y-3">
             {activePersona.red_flags.map((flag, idx) => (
-              <Card key={idx} className="p-5 bg-white border border-slate-200 shadow-xs space-y-3">
+              <Card
+                key={idx}
+                id={`flag-${activePersona.persona_id}-${idx}`}
+                className="p-5 bg-white border border-slate-200 shadow-xs space-y-3 scroll-mt-6 transition-all duration-300"
+              >
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <Badge variant={flag.severity === 'Critical' ? 'red' : flag.severity === 'High' ? 'gold' : 'navy'} size="sm">

@@ -21,7 +21,8 @@ import {
   BookOpen,
   FileCheck,
   ClipboardCheck,
-  Cpu
+  Cpu,
+  CheckCircle2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -144,28 +145,75 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="relative p-2 rounded-md hover:bg-white/10 text-amber-300 mx-auto block"
-                title={`${activeTasks.length} background task(s) active. Click to view logs or end task.`}
-                aria-label="Active background tasks"
+                className="relative p-2.5 rounded-lg bg-slate-800 border border-emerald-500/40 text-emerald-400 mx-auto block hover:bg-slate-700 transition-all shadow-xs"
+                title={`Editing: ${activeTasks[0].title} (${activeTasks[0].progress}%)`}
+                aria-label="Active Editing"
               >
-                <Cpu className="w-5 h-5 animate-spin" />
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <Cpu className="w-4 h-4 animate-spin text-emerald-400" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-all shadow-xs group"
-                title="Click to view live logs or end running tasks"
+                className="w-full text-left p-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/30 hover:border-emerald-500/60 transition-all shadow-sm space-y-1.5 group"
+                title="Click to view live editing status or end task"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
-                  <span className="truncate text-[11px] font-semibold text-slate-200">
-                    {activeTasks[0].stage || 'AI Task running...'}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-300 tracking-wide uppercase font-mono">
+                      Editing
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">
+                    {activeTasks[0].progress}%
                   </span>
                 </div>
-                <span className="text-[10px] font-mono bg-amber-500/30 px-1.5 py-0.5 rounded text-amber-200 shrink-0 font-bold ml-1">
-                  {activeTasks.length} active
+
+                <div className="text-xs font-semibold text-slate-100 truncate">
+                  {activeTasks[0].title}
+                </div>
+                <div className="text-[10px] text-slate-400 truncate">
+                  {activeTasks[0].stage}
+                </div>
+
+                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-1">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-400 to-teal-300 rounded-full transition-all duration-300 animate-pulse"
+                    style={{ width: `${Math.max(10, activeTasks[0].progress)}%` }}
+                  />
+                </div>
+              </button>
+            )
+          ) : tasks.length > 0 ? (
+            collapsed ? (
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="p-2 rounded-lg hover:bg-white/10 text-emerald-400 mx-auto block"
+                title={`${tasks.length} task(s) ready`}
+                aria-label="Tasks"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-all text-xs"
+                title="View completed tasks"
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-[11px] font-medium text-slate-200">Tasks Ready</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded">
+                  {tasks.length}
                 </span>
               </button>
             )
@@ -174,7 +222,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               onClick={() => setIsDrawerOpen(true)}
               className="p-2 rounded-md hover:bg-white/10 text-slate-400 mx-auto block"
-              title="Background Tasks & AI Logs"
+              title="Background Tasks"
               aria-label="Background Tasks"
             >
               <Cpu className="w-4 h-4 opacity-70 hover:opacity-100 transition-opacity" />
@@ -184,14 +232,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               onClick={() => setIsDrawerOpen(true)}
               className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors"
-              title="View recent background tasks and AI execution history"
+              title="View background tasks"
             >
               <div className="flex items-center gap-2">
                 <Cpu className="w-3.5 h-3.5" />
                 <span>Background Tasks</span>
               </div>
               <span className="font-mono text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">
-                {tasks.length}
+                0
               </span>
             </button>
           )}

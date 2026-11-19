@@ -1,6 +1,6 @@
 import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   FileText,
   Download,
@@ -26,6 +26,8 @@ import { AudioBriefingPlayer } from '../components/audio/AudioBriefingPlayer';
 
 export const BriefsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { startTask, getLatestTask } = useBackgroundTasks();
   const [brief, setBrief] = useState<BriefResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -37,6 +39,27 @@ export const BriefsPage: React.FC = () => {
   const [error, setError] = useState('');
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const tParam = searchParams.get('template');
+    if (tParam) {
+      setSelectedTemplate(tParam);
+    }
+    if (location.hash) {
+      const elementId = location.hash.replace('#', '');
+      const timer = setTimeout(() => {
+        const el = document.getElementById(elementId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-slate-900', 'ring-offset-2', 'transition-all');
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-slate-900', 'ring-offset-2');
+          }, 3500);
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, location.hash, brief]);
 
   const fetchAudioSummary = async () => {
     try {
@@ -87,7 +110,7 @@ export const BriefsPage: React.FC = () => {
         title: effectiveAi ? `AI ${templateName} Synthesis` : `${templateName} Compilation`,
         category: 'brief',
         targetScope: 'Workspace Documents',
-        route: '/briefs',
+        route: `/briefs?template=${tId}#memorandum-preview`,
         initialStage: 'Compiling executive portfolio & contract telemetry...',
         executor: async (updateProgress) => {
           updateProgress(25, 'Aggregating financial exposures and liability caps...', `Analyzing exposure across ${documents.length || 'workspace'} active contracts`);
@@ -239,7 +262,10 @@ export const BriefsPage: React.FC = () => {
           <p className="text-xs text-slate-500">No brief available. Select a template above to generate.</p>
         </Card>
       ) : (
-        <Card className="[overflow-wrap:anywhere] p-6 sm:p-8 bg-white border border-slate-200 shadow-sm space-y-6">
+        <Card
+          id="memorandum-preview"
+          className="[overflow-wrap:anywhere] p-6 sm:p-8 bg-white border border-slate-200 shadow-sm space-y-6 scroll-mt-6 transition-all duration-300"
+        >
           {/* Header Memo Style */}
           <div className="border-b border-slate-200 pb-5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">

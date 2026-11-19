@@ -17,6 +17,7 @@ export interface BackgroundTask {
   logs: TaskLogEntry[];
   startedAt: string;
   completedAt?: string;
+  completedTimestamp?: number;
   result?: any;
   error?: string;
   route: string;
@@ -57,8 +58,20 @@ export const BackgroundTaskProvider: React.FC<{ children: React.ReactNode }> = (
       const saved = sessionStorage.getItem('clario_bg_tasks');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Clean out aborted running tasks from previous session reload
-        return parsed.map((t: any) => t.status === 'running' ? { ...t, status: 'completed', stage: 'Restored from previous session' } : t);
+        const now = Date.now();
+        // Purge completed tasks older than 5 minutes
+        return parsed
+          .filter((t: any) => {
+            if (t.completedTimestamp && now - t.completedTimestamp > 5 * 60 * 1000) {
+              return false;
+            }
+            return true;
+          })
+          .map((t: any) =>
+            t.status === 'running'
+              ? { ...t, status: 'completed', stage: 'Restored from previous session', completedTimestamp: now }
+              : t
+          );
       }
     } catch {
       // Ignore storage errors
@@ -69,6 +82,25 @@ export const BackgroundTaskProvider: React.FC<{ children: React.ReactNode }> = (
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const tasksRef = useRef<BackgroundTask[]>(tasks);
   tasksRef.current = tasks;
+
+  // Automatically clear completed/cancelled tasks after 5 minutes
+  useEffect(() => {
+    const AUTO_CLEAR_MS = 5 * 60 * 1000; // 5 minutes
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setTasks((prev) =>
+        prev.filter((t) => {
+          if (t.status === 'running') return true;
+          if (t.completedTimestamp && now - t.completedTimestamp > AUTO_CLEAR_MS) {
+            return false;
+          }
+          return true;
+        })
+      );
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Persist tasks in sessionStorage
   useEffect(() => {
@@ -139,6 +171,7 @@ export const BackgroundTaskProvider: React.FC<{ children: React.ReactNode }> = (
     try {
       const result = await config.executor(updateProgress, controller.signal);
       const finishedTime = formatTime();
+      const finishedTimestamp = Date.now();
 
       setTasks((prev) =>
         prev.map((t) => {
@@ -147,8 +180,9 @@ export const BackgroundTaskProvider: React.FC<{ children: React.ReactNode }> = (
             ...t,
             status: 'completed',
             progress: 100,
-            stage: 'Completed successfully',
+            stage: 'Completed',
             completedAt: finishedTime,
+            completedTimestamp: finishedTimestamp,
             result,
             logs: [
               ...t.logs,
@@ -164,6 +198,7 @@ export const BackgroundTaskProvider: React.FC<{ children: React.ReactNode }> = (
       return result;
     } catch (err: any) {
       const failedTime = formatTime();
+      const failedTimestamp = Date.now();
       const isCancelled = controller.signal.aborted || err?.name === 'AbortError' || err?.message?.includes('aborted');
 
       setTasks((prev) =>
@@ -174,6 +209,7 @@ export const BackgroundTaskProvider: React.FC<{ children: React.ReactNode }> = (
             status: isCancelled ? 'cancelled' : 'failed',
             stage: isCancelled ? 'Cancelled by user' : (err?.message || 'Task failed'),
             completedAt: failedTime,
+            completedTimestamp: failedTimestamp,
             error: err?.message || 'Task execution failed',
             logs: [
               ...t.logs,

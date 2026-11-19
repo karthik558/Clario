@@ -1,5 +1,6 @@
 import { PageHeader } from '../components/layout/PageHeader';
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Scale,
   Copy,
@@ -52,6 +53,24 @@ export const NegotiatePage: React.FC = () => {
   const [savedNotes, setSavedNotes] = useState(false);
   const [exportingDocx, setExportingDocx] = useState(false);
   const [useAi, setUseAi] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const elementId = location.hash.replace('#', '');
+      const timer = setTimeout(() => {
+        const el = document.getElementById(elementId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-slate-900', 'ring-offset-2', 'transition-all');
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-slate-900', 'ring-offset-2');
+          }, 3500);
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [location.hash, result]);
 
   const handleExportDocx = async () => {
     if (!result) return;
@@ -140,7 +159,7 @@ export const NegotiatePage: React.FC = () => {
         title: useAi ? `AI Redline: ${topic || 'Clause Harmonization'}` : `Redline: ${topic || 'Clause'}`,
         category: 'redline',
         targetScope: `${docATitle || 'Doc A'} vs ${docBTitle || 'Doc B'}`,
-        route: '/negotiate',
+        route: '/negotiate#synthesis-result',
         initialStage: `Harmonizing ${topic || 'provision'} (${stance})...`,
         executor: async (updateProgress) => {
           updateProgress(30, 'Analyzing conflicting statements...', `Comparing ${docATitle} against ${docBTitle}`);
@@ -374,7 +393,10 @@ export const NegotiatePage: React.FC = () => {
 
         {/* Right Column: Generated Redline Output */}
         <div className="space-y-5">
-          <Card className="p-5 bg-white border border-slate-200 shadow-sm rounded-lg min-h-[460px] flex flex-col justify-between">
+          <Card
+            id="synthesis-result"
+            className="p-5 bg-white border border-slate-200 shadow-sm rounded-lg min-h-[460px] flex flex-col justify-between scroll-mt-6 transition-all duration-300"
+          >
             {result ? (
               <div className="space-y-4">
                 {/* Result Header Bar */}
