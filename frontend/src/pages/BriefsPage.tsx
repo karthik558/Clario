@@ -16,10 +16,11 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { api } from '../services/api';
-import { BriefResponse, DocumentItem } from '../types';
+import { BriefResponse, DocumentItem, AudioSummaryResponse } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { AudioBriefingPlayer } from '../components/audio/AudioBriefingPlayer';
 
 export const BriefsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -27,23 +28,35 @@ export const BriefsPage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('board_executive');
   const [templates, setTemplates] = useState<Array<{ id: string; name: string; description: string }>>([]);
+  const [audioSummary, setAudioSummary] = useState<AudioSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const fetchAudioSummary = async () => {
+    try {
+      const audio = await api.getAudioSummary();
+      setAudioSummary(audio);
+    } catch {
+      // Non-fatal if audio summary generation is skipped
+    }
+  };
+
   const fetchInitialBrief = async () => {
     try {
       setLoading(true);
       setError('');
-      const [briefRes, docs, availableTemplates] = await Promise.all([
+      const [briefRes, docs, availableTemplates, audioRes] = await Promise.all([
         api.generateBrief('board_executive'),
         api.getDocuments(),
-        api.getBriefTemplates()
+        api.getBriefTemplates(),
+        api.getAudioSummary().catch(() => null)
       ]);
       if (briefRes) setBrief(briefRes);
       setDocuments(docs);
       setTemplates(availableTemplates);
+      if (audioRes) setAudioSummary(audioRes);
     } catch (err) {
       setError('Could not load the workspace briefing.');
     } finally {
@@ -148,6 +161,14 @@ export const BriefsPage: React.FC = () => {
           );
         })}
       </div>
+
+      {/* AI Audio Narration & Briefing Player */}
+      {audioSummary && (
+        <AudioBriefingPlayer
+          data={audioSummary}
+          onRefresh={fetchAudioSummary}
+        />
+      )}
 
       {/* Generated Briefing Document */}
       {error ? null : !loading && documents.length === 0 ? (

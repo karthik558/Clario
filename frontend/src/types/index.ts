@@ -436,3 +436,50 @@ export interface BriefResponse {
   action_items: string[];
   custom_notes: string;
 }
+
+// --- Audio Briefing Types ---
+export interface AudioSection {
+  id: string;
+  speaker: string;
+  title: string;
+  text: string;
+  estimated_seconds: number;
+}
+
+export interface AudioSummaryResponse {
+  title: string;
+  generated_date: string;
+  duration_seconds: number;
+  duration_formatted: string;
+  word_count: number;
+  audited_documents: string[];
+  sections: AudioSection[];
+  full_audio_text: string;
+}
+
+// --- Policy Checker Types ---
+export interface PolicyRuleAudit {
+  id: string;
+  title: string;
+  category: string;
+  severity: 'Critical' | 'High' | 'Medium' | 'Informational';
+  benchmark: string;
+  status: 'COMPLIANT' | 'NEEDS_REVIEW' | 'VIOLATION';
+  evidence_quote: string;
+  evidence_source: string;
+  violation_notes: string;
+  remediation_clause: string;
+}
+
+export interface PolicyAuditResponse {
+  audit_date: string;
+  overall_score: number;
+  overall_grade: string;
+  total_rules: number;
+  passed_count: number;
+  warning_count: number;
+  violation_count: number;
+  audited_documents: string[];
+  rules: PolicyRuleAudit[];
+  summary: string;
+}

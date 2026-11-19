@@ -149,3 +149,48 @@ def test_conversational_and_meta_basic_questions():
         # Ensure it NEVER returns the rigid document_scope refusal
         assert "I can only answer questions about your uploaded documents" not in data["answer"]
         assert "I could not find supporting passages in the selected documents" not in data["answer"]
+
+def test_audio_summary_endpoints():
+    res1 = client.get("/api/briefs/audio-summary")
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert "title" in data1
+    assert "duration_seconds" in data1
+    assert "sections" in data1
+    assert "full_audio_text" in data1
+    assert len(data1["sections"]) >= 1
+
+    res2 = client.post("/api/briefs/audio-summary", json={"tone": "executive"})
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert "duration_formatted" in data2
+
+    # Audio export endpoints
+    res_mp3 = client.get("/api/briefs/audio-export?format=mp3")
+    assert res_mp3.status_code == 200
+    assert len(res_mp3.content) > 1000
+
+    res_mp4 = client.get("/api/briefs/audio-export?format=mp4")
+    assert res_mp4.status_code == 200
+    assert len(res_mp4.content) > 1000
+
+def test_policy_checker_endpoints():
+    r1 = client.get("/api/policy-checker/rules")
+    assert r1.status_code == 200
+    rules_data = r1.json()
+    assert rules_data["total_rules"] >= 8
+    assert any(r["id"] == "data_retention" for r in rules_data["rules"])
+    assert any(r["id"] == "ai_model_training" for r in rules_data["rules"])
+
+    r2 = client.get("/api/policy-checker/audit")
+    assert r2.status_code == 200
+    audit = r2.json()
+    assert "overall_score" in audit
+    assert "overall_grade" in audit
+    assert "rules" in audit
+    assert len(audit["rules"]) >= 8
+    assert any(r["status"] in ("COMPLIANT", "NEEDS_REVIEW", "VIOLATION") for r in audit["rules"])
+
+    r3 = client.post("/api/policy-checker/audit", json={"category_filter": "all"})
+    assert r3.status_code == 200
+    assert r3.json()["total_rules"] >= 8

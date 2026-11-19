@@ -21,7 +21,9 @@ import {
   CritiqueResponse,
   ClauseLibraryResponse,
   ClauseAnalysisResult,
-  BriefResponse
+  BriefResponse,
+  AudioSummaryResponse,
+  PolicyAuditResponse
 } from '../types';
 
 const API_BASE = '/api';
@@ -497,6 +499,43 @@ export const api = {
   getRiskBenchmark: async (docAId: string, docBId: string) => {
     const res = await fetch(`${API_BASE}/risk/benchmark?doc_a=${encodeURIComponent(docAId)}&doc_b=${encodeURIComponent(docBId)}`);
     if (!res.ok) throw new Error('Failed to fetch risk benchmark');
+    return res.json();
+  },
+
+  // Audio Intelligence & Narration
+  getAudioSummary: async (documentIds?: string[], tone?: string): Promise<AudioSummaryResponse> => {
+    const res = await fetch(`${API_BASE}/briefs/audio-summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_ids: documentIds, tone: tone || 'executive' }),
+    });
+    if (!res.ok) throw new Error('Failed to generate audio summary');
+    return res.json();
+  },
+
+  getAudioExportUrl: (documentIds?: string[], format: 'mp3' | 'mp4' = 'mp3'): string => {
+    const params = new URLSearchParams();
+    params.set('format', format);
+    if (documentIds && documentIds.length > 0) {
+      params.set('document_ids', documentIds.join(','));
+    }
+    return `${API_BASE}/briefs/audio-export?${params.toString()}`;
+  },
+
+  // Policy Checker & Audit Studio
+  getPolicyRules: async () => {
+    const res = await fetch(`${API_BASE}/policy-checker/rules`);
+    if (!res.ok) throw new Error('Failed to load policy rules');
+    return res.json();
+  },
+
+  auditPolicies: async (documentIds?: string[], category?: string): Promise<PolicyAuditResponse> => {
+    const res = await fetch(`${API_BASE}/policy-checker/audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_ids: documentIds, category_filter: category || 'all' }),
+    });
+    if (!res.ok) throw new Error('Failed to run policy audit');
     return res.json();
   }
 };

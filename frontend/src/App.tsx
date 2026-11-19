@@ -20,6 +20,7 @@ import { ObligationsPage } from './pages/ObligationsPage';
 import { CritiquePage } from './pages/CritiquePage';
 import { ClauseLibraryPage } from './pages/ClauseLibraryPage';
 import { BriefsPage } from './pages/BriefsPage';
+import { PolicyCheckerPage } from './pages/PolicyCheckerPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,6 +71,8 @@ export const App: React.FC = () => {
             <Route path="findings" element={<FindingsPage />} />
             <Route path="negotiate" element={<NegotiatePage />} />
             <Route path="compliance" element={<CompliancePage />} />
+            <Route path="policy-checker" element={<PolicyCheckerPage />} />
+            <Route path="policy-audit" element={<Navigate to="/policy-checker" replace />} />
             <Route path="obligations" element={<ObligationsPage />} />
             <Route path="critique" element={<CritiquePage />} />
             <Route path="clauses" element={<ClauseLibraryPage />} />

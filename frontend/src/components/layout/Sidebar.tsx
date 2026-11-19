@@ -18,7 +18,8 @@ import {
   Calendar,
   ShieldAlert,
   BookOpen,
-  FileCheck
+  FileCheck,
+  ClipboardCheck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -64,6 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Findings', path: '/findings', icon: AlertTriangle },
     { name: 'Clause Redline', path: '/negotiate', icon: Scale },
     { name: 'Compliance Matrix', path: '/compliance', icon: ShieldCheck },
+    { name: 'Policy Checker', path: '/policy-checker', icon: ClipboardCheck },
     { name: 'Obligations Timeline', path: '/obligations', icon: Calendar },
     { name: 'Red Team Critique', path: '/critique', icon: ShieldAlert },
     { name: 'Clause Library', path: '/clauses', icon: BookOpen },
