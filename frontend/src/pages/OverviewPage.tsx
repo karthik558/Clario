@@ -36,6 +36,7 @@ import { GraphDataResponse, DashboardStats, DocumentItem, FindingItem } from '..
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
 import { FileUploadZone } from '../components/documents/FileUploadZone';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 
@@ -423,22 +424,22 @@ export const OverviewPage: React.FC = () => {
       {/* Enterprise Contract Risk Scorecard & Health Index */}
       {riskScorecard && riskScorecard.total_documents > 0 && (
         <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-            <div className="flex items-center space-x-3">
-              <div className="p-2.5 rounded-md bg-slate-900 text-white">
-                <ShieldCheck className="w-5 h-5" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-clario-border">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+                <ShieldCheck className="w-3.5 h-3.5" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-slate-900 tracking-tight">
-                  Portfolio Contract Risk Scorecard
+                <h3 className="font-bold text-sm text-clario-navy tracking-tight">
+                  Portfolio contract risk
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Autonomous 0–100 risk rating synthesized across privacy, auto-renewal lock-in, IP defense, SLAs, and liability super-caps.
+                <p className="text-xs text-clario-text-secondary mt-0.5">
+                  Composite risk ratings synthesized across privacy, auto-renewal lock-in, IP defense, SLAs, and liability super-caps.
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="navy" size="md">
+              <Badge variant="navy" size="sm">
                 Portfolio Grade: {riskScorecard.composite_grade}
               </Badge>
               <Button
@@ -453,93 +454,86 @@ export const OverviewPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            {/* Left Column: Composite Portfolio Index */}
-            <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col justify-between h-full">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                  Workspace Risk Index
-                </span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl font-extrabold text-slate-900 font-mono">
-                    {riskScorecard.composite_score}
+          {/* Balanced Metrics Ribbon */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between">
+              <span className="text-xs text-slate-600 font-medium">Workspace Risk Index</span>
+              <span className="font-mono text-sm font-bold text-slate-900">
+                {riskScorecard.composite_score} <span className="text-xs font-normal text-slate-400">/ 100</span>
+              </span>
+            </div>
+            <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between">
+              <span className="text-xs text-slate-600 font-medium">Composite Portfolio Grade</span>
+              <Badge variant="navy" size="sm">{riskScorecard.composite_grade}</Badge>
+            </div>
+            <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between">
+              <span className="text-xs text-slate-600 font-medium">Audited Coverage</span>
+              <span className="font-mono text-xs font-bold text-slate-800">{riskScorecard.total_documents} agreements</span>
+            </div>
+          </div>
+
+          {/* Active Document Risk Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {riskScorecard.documents?.map((doc: any) => (
+              <div
+                key={doc.document_id}
+                className="p-3.5 rounded-md border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-2 shadow-xs"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-900 truncate" title={doc.document_title}>
+                    {doc.document_title}
                   </span>
-                  <span className="text-sm font-semibold text-slate-400 font-mono">/ 100</span>
+                  <Badge variant={doc.composite_score >= 80 ? 'navy' : 'gray'} size="sm">
+                    {doc.composite_score}/100
+                  </Badge>
                 </div>
-                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                  Higher scores indicate stronger customer-protective covenants, uncapped IP indemnities, and balanced notice terms.
-                </p>
-              </div>
-              <div className="pt-3 border-t border-slate-200 mt-3">
-                <span className="text-[10px] text-slate-400 font-medium">
-                  {riskScorecard.total_documents} active documents audited
-                </span>
-              </div>
-            </div>
 
-            {/* Middle & Right: Active Document Cards */}
-            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {riskScorecard.documents?.map((doc: any) => (
-                <div
-                  key={doc.document_id}
-                  className="p-4 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-2.5 shadow-xs"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-xs font-bold text-slate-900 truncate max-w-[170px]" title={doc.document_title}>
-                      {doc.document_title}
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Strongest Protection:</span>
+                    <span className="font-medium text-slate-800 truncate max-w-[140px] text-right">
+                      {doc.strongest_protection?.name}
                     </span>
-                    <Badge variant={doc.composite_score >= 80 ? 'navy' : 'gray'} size="sm">
-                      {doc.composite_score}/100
-                    </Badge>
                   </div>
-
-                  <div className="space-y-1.5 text-[11px]">
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span>Strongest Protection:</span>
-                      <span className="font-semibold text-slate-800 truncate max-w-[120px] text-right">
-                        {doc.strongest_protection?.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span>Primary Exposure:</span>
-                      <span className="font-semibold text-rose-700 truncate max-w-[120px] text-right">
-                        {doc.highest_risk_area?.name}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-500 font-medium truncate max-w-[130px]">
-                      {doc.composite_grade}
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Primary Exposure:</span>
+                    <span className="font-medium text-rose-700 truncate max-w-[140px] text-right">
+                      {doc.highest_risk_area?.name}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/negotiate')}
-                      className="text-[11px] font-semibold text-slate-900 hover:text-slate-700 flex items-center gap-0.5"
-                    >
-                      <span>Redline</span>
-                      <ArrowUpRight className="w-3 h-3" />
-                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    Grade {doc.composite_grade}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/negotiate')}
+                    className="text-xs font-semibold text-slate-900 hover:text-slate-700 flex items-center gap-0.5"
+                  >
+                    <span>Redline</span>
+                    <ArrowUpRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </Card>
       )}
 
       {/* Side-by-Side Document Comparison & Contradiction Scanner */}
       <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-md bg-slate-100 text-slate-800">
-              <GitCompare className="w-5 h-5" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-clario-border">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+              <GitCompare className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-slate-900 tracking-tight">
-                Side-by-Side Document Comparison & Contradiction Scanner
+              <h3 className="font-bold text-sm text-clario-navy tracking-tight">
+                Side-by-side document comparison
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-clario-text-secondary mt-0.5">
                 Select two document versions from your workspace to run differential analysis and extract discrepancies.
               </p>
             </div>
@@ -564,11 +558,11 @@ export const OverviewPage: React.FC = () => {
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Document A (Base Version)
                 </label>
-                <select
+                <Select
                   aria-label="Document A base version"
                   value={quickDocA}
                   onChange={(e) => setQuickDocA(e.target.value)}
-                  className="w-full text-xs font-medium bg-white border border-slate-200 rounded-md p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full text-xs"
                 >
                   <option value="">-- Choose Base Document --</option>
                   {documents.map((d) => (
@@ -576,7 +570,7 @@ export const OverviewPage: React.FC = () => {
                       {d.title} ({d.file_type.toUpperCase()})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div className="flex justify-center sm:pb-0.5">
@@ -596,11 +590,11 @@ export const OverviewPage: React.FC = () => {
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Document B (Target Version)
                 </label>
-                <select
+                <Select
                   aria-label="Document B target version"
                   value={quickDocB}
                   onChange={(e) => setQuickDocB(e.target.value)}
-                  className="w-full text-xs font-medium bg-white border border-slate-200 rounded-md p-2.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full text-xs"
                 >
                   <option value="">-- Choose Target Document --</option>
                   {documents.map((d) => (
@@ -608,7 +602,7 @@ export const OverviewPage: React.FC = () => {
                       {d.title} ({d.file_type.toUpperCase()})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
 
@@ -866,73 +860,73 @@ export const OverviewPage: React.FC = () => {
       </div>
 
       {/* Multi-Agreement Clause Exposure Heatmap & Radar */}
-      <Card className="rounded-md p-6 bg-white border border-slate-200 shadow-sm space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-          <div>
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-slate-800" />
-              <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">
-                Cross-Agreement Clause Exposure Heatmap
-              </h3>
+      <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-clario-border">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+              <ShieldAlert className="w-3.5 h-3.5" />
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Comparative exposure matrix across core liability, indemnity, SLA, and data protection vectors.
-            </p>
+            <div>
+              <h3 className="font-bold text-sm text-clario-navy tracking-tight">
+                Cross-agreement clause exposure
+              </h3>
+              <p className="text-xs text-clario-text-secondary mt-0.5">
+                Comparative exposure matrix across core liability, indemnity, SLA, and data protection vectors.
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3 text-[11px] font-medium text-slate-600">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-              <span>Compliant / Low Risk</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+              <span>Low Risk</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-              <span>Moderate Variance</span>
+              <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+              <span>Moderate</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
-              <span>Critical Exposure</span>
+              <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
+              <span>Critical</span>
             </span>
           </div>
         </div>
 
         {documents.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-bold uppercase text-[10.5px] tracking-wider">
-                  <th className="py-2.5 px-3 min-w-[200px]">Document Title</th>
+                <tr className="border-b border-clario-border text-clario-text-secondary font-semibold text-[11px] uppercase tracking-wider">
+                  <th className="pb-3 px-3 min-w-[200px]">Document Title</th>
                   {EXPOSURE_VECTORS.map((v) => (
-                    <th key={v.id} className="py-2.5 px-3 min-w-[150px] text-center">
+                    <th key={v.id} className="pb-3 px-3 min-w-[150px] text-center">
                       <span>{v.name}</span>
-                      <span className="block text-[9.5px] font-normal text-slate-400 normal-case">{v.category}</span>
+                      <span className="block text-[10px] font-normal text-slate-400 normal-case">{v.category}</span>
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-clario-border/60">
                 {documents.map((doc, docIdx) => (
                   <tr key={doc.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-3 font-semibold text-slate-900 flex items-center gap-2">
-                      <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <td className="py-3 px-3 font-semibold text-clario-navy flex items-center space-x-2.5">
+                      <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+                        <FileText className="w-3.5 h-3.5" />
+                      </div>
                       <span className="truncate max-w-[220px]" title={doc.title}>{doc.title}</span>
                     </td>
                     {EXPOSURE_VECTORS.map((vector) => {
                       const detail = getExposureDetail(doc, docIdx, vector);
                       const isSelected = selectedCell?.docId === doc.id && selectedCell?.vector.id === vector.id;
-                      const pillStyle =
-                        detail.rating === 'critical'
-                          ? 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100 hover:border-rose-300'
-                          : detail.rating === 'moderate'
-                          ? 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100 hover:border-amber-300'
-                          : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100 hover:border-emerald-300';
 
                       return (
                         <td key={vector.id} className="py-2.5 px-2 text-center">
                           <button
                             type="button"
                             onClick={() => setSelectedCell(detail)}
-                            className={`w-full py-1.5 px-2 rounded-md border text-[11px] font-medium transition-all text-left truncate flex items-center justify-between gap-1 shadow-2xs ${pillStyle} ${
-                              isSelected ? 'ring-2 ring-slate-900 font-bold' : ''
+                            className={`w-full py-1.5 px-2 rounded-md border text-[11px] font-medium transition-all text-left truncate flex items-center justify-between gap-1 shadow-2xs ${
+                              isSelected
+                                ? 'border-clario-navy bg-clario-navy/5 text-clario-navy font-bold ring-2 ring-clario-navy'
+                                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:border-slate-300'
                             }`}
                             title={`${doc.title} - ${vector.name}: ${detail.summary}`}
                           >
@@ -940,10 +934,10 @@ export const OverviewPage: React.FC = () => {
                             <span
                               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                 detail.rating === 'critical'
-                                  ? 'bg-rose-600'
+                                  ? 'bg-rose-500'
                                   : detail.rating === 'moderate'
                                   ? 'bg-amber-500'
-                                  : 'bg-emerald-600'
+                                  : 'bg-emerald-500'
                               }`}
                             />
                           </button>
@@ -963,25 +957,26 @@ export const OverviewPage: React.FC = () => {
 
         {/* Selected Heatmap Cell Drilldown Inspector */}
         {selectedCell && (
-          <div className="p-4 rounded-md bg-slate-900 text-white space-y-3 animate-in fade-in transition-all">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
+          <div className="p-4 rounded-md bg-slate-50 border border-slate-200 text-slate-800 space-y-3 animate-in fade-in transition-all">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                <Badge
+                  variant={
                     selectedCell.rating === 'critical'
-                      ? 'bg-rose-500 text-white'
+                      ? 'red'
                       : selectedCell.rating === 'moderate'
-                      ? 'bg-amber-500 text-slate-950'
-                      : 'bg-emerald-500 text-white'
-                  }`}
+                      ? 'gold'
+                      : 'sage'
+                  }
+                  size="sm"
                 >
                   {selectedCell.rating.toUpperCase()} RISK
-                </span>
-                <span className="text-xs font-bold text-white">
+                </Badge>
+                <span className="text-xs font-bold text-slate-900">
                   {selectedCell.vector.name} ({selectedCell.vector.category})
                 </span>
                 <span className="text-slate-400 text-xs">•</span>
-                <span className="text-xs text-slate-300 font-mono truncate max-w-sm">
+                <span className="text-xs text-slate-600 font-mono truncate max-w-sm">
                   {selectedCell.docTitle}
                 </span>
               </div>
@@ -990,24 +985,24 @@ export const OverviewPage: React.FC = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => navigate('/negotiate')}
-                  className="text-xs text-slate-200 border-slate-700 hover:bg-slate-800 flex items-center gap-1.5"
+                  className="text-xs flex items-center gap-1.5"
                 >
-                  <Scale className="w-3.5 h-3.5 text-slate-300" />
+                  <Scale className="w-3.5 h-3.5 text-slate-600" />
                   <span>Harmonize in Redline Studio</span>
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => navigate('/redact')}
-                  className="text-xs text-slate-200 border-slate-700 hover:bg-slate-800 flex items-center gap-1.5"
+                  className="text-xs flex items-center gap-1.5"
                 >
-                  <EyeOff className="w-3.5 h-3.5 text-slate-300" />
+                  <EyeOff className="w-3.5 h-3.5 text-slate-600" />
                   <span>Sanitize in Redaction Studio</span>
                 </Button>
                 <button
                   type="button"
                   onClick={() => setSelectedCell(null)}
-                  className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded"
+                  className="text-slate-400 hover:text-slate-700 text-xs px-2 py-1 rounded-md hover:bg-slate-200 transition-colors"
                 >
                   ✕
                 </button>
@@ -1016,21 +1011,21 @@ export const OverviewPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Identified Contract Excerpt
                 </span>
-                <div className="p-3 rounded bg-slate-800/80 border border-slate-700 font-mono text-[11px] leading-relaxed text-slate-200">
+                <div className="p-3 rounded-md bg-white border border-slate-200 font-mono text-[11px] leading-relaxed text-slate-800">
                   "{selectedCell.excerpt}"
                 </div>
               </div>
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                   Legal & Commercial Risk Rationale
                 </span>
-                <p className="text-xs text-slate-300 leading-relaxed pt-1">
+                <p className="text-xs text-slate-600 leading-relaxed pt-1">
                   {selectedCell.rationale}
                 </p>
-                <div className="pt-2 text-[11px] text-slate-400">
+                <div className="pt-2 text-[11px] text-slate-500">
                   Tip: Switch between opening target, market compromise, and walk-away positions in the <strong>Bargaining Playbook</strong>.
                 </div>
               </div>
@@ -1040,14 +1035,20 @@ export const OverviewPage: React.FC = () => {
       </Card>
 
       {/* Recent Documents Table */}
-      <Card className="rounded-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="font-bold text-sm text-clario-navy tracking-tight">Recent documents</h3>
-            <p className="text-xs text-clario-text-secondary mt-0.5">Open a document to inspect its text and source passages.</p>
+      <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-clario-border">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+              <FileText className="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-clario-navy tracking-tight">Recent documents</h3>
+              <p className="text-xs text-clario-text-secondary mt-0.5">Open a document to inspect its text and source passages.</p>
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate('/documents')}>
-            View All Documents
+          <Button variant="outline" size="sm" onClick={() => navigate('/documents')} className="flex items-center gap-1.5 shrink-0">
+            <span>View All Documents</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </Button>
         </div>
 
@@ -1083,27 +1084,36 @@ export const OverviewPage: React.FC = () => {
                     </Badge>
                   </td>
                   <td className="py-3 px-3 text-clario-text-secondary font-medium">
-                    {doc.collection}
+                    <div className="flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{doc.collection}</span>
+                    </div>
                   </td>
-                  <td className="py-3 px-3 font-mono text-slate-900 font-bold">
-                    {doc.chunk_count} chunks
+                  <td className="py-3 px-3 font-mono text-slate-900 font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <FileCheck2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{doc.chunk_count} chunks</span>
+                    </div>
                   </td>
                   <td className="py-3 px-3">
-                    <Badge variant={doc.status === 'READY' ? 'sage' : 'gold'} size="sm">
-                      {doc.status}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${doc.status === 'READY' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                      <Badge variant={doc.status === 'READY' ? 'sage' : 'gold'} size="sm">
+                        {doc.status}
+                      </Badge>
+                    </div>
                   </td>
                   <td className="py-3 px-3 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setSelectedDocId(doc.id)}
-                      className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-white transition-colors"
+                      className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                       title="Inspect chunks"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => handleDelete(doc.id, e)}
-                      className="p-1.5 rounded-md text-clario-text-secondary hover:text-rose-600 hover:bg-white transition-colors"
+                      className="p-1.5 rounded-md text-clario-text-secondary hover:text-rose-600 hover:bg-rose-50 transition-colors"
                       title="Delete document"
                     >
                       <Trash2 className="w-4 h-4" />

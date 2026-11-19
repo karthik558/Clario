@@ -20,6 +20,7 @@ import { AudioSummaryResponse, AudioSection } from '../../types';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { Select } from '../ui/Select';
 import { api } from '../../services/api';
 
 interface AudioBriefingPlayerProps {
@@ -435,18 +436,18 @@ export const AudioBriefingPlayer: React.FC<AudioBriefingPlayerProps> = ({
             </div>
 
             {voices.length > 0 && (
-              <select
+              <Select
                 aria-label="Speech voice"
                 value={selectedVoiceURI}
                 onChange={(e) => setSelectedVoiceURI(e.target.value)}
-                className="text-xs bg-white border border-slate-200 rounded-md px-2 py-1 text-slate-700 focus:outline-none max-w-[150px] truncate"
+                className="text-xs bg-white border border-slate-200 rounded-md px-2 py-1 text-slate-700 max-w-[160px] truncate"
               >
                 {voices.slice(0, 15).map((v) => (
                   <option key={v.voiceURI} value={v.voiceURI}>
                     {v.name} ({v.lang})
                   </option>
                 ))}
-              </select>
+              </Select>
             )}
           </div>
         </div>
