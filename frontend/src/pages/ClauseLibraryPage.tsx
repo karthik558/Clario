@@ -86,66 +86,74 @@ export const ClauseLibraryPage: React.FC = () => {
         </Card>
       )}
 
-      {/* KPI Stat Cards */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+      {/* KPI Stat Cards matching Overview and Documents */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Clause Categories
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {data ? data.total_categories : 5}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Standard taxonomies</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Layers className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <Layers className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {data ? data.total_categories : 5}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Standard taxonomies
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Indexed Documents
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {documents.length}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Contract repository</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <FileText className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <FileText className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {documents.length}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Contract repository
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Critical Standards
             </span>
-            <span className="text-2xl font-bold text-rose-600 font-mono mt-0.5 block">
-              {data ? data.benchmarks.filter((b) => b.risk_weight === 'Critical').length : 2}
-            </span>
-            <span className="text-[10px] text-rose-500 mt-0.5 block">Liability & Privacy</span>
+            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+              <AlertTriangle className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+            {data ? data.benchmarks.filter((b) => b.risk_weight === 'Critical').length : 2}
+          </span>
+          <span className="text-[10px] text-rose-500 font-medium mt-1">
+            Liability & Privacy
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Market Norms
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              Fortune 500
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Standard commercial</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            Fortune 500
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Standard commercial
+          </span>
         </Card>
       </div>
 

@@ -189,56 +189,66 @@ export const FindingsPage: React.FC = () => {
         </div>
       </PageHeader>
 
-      {/* Findings Stat Ribbon */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Total Flagged</span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">{findings.length}</span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Discovered issues</span>
+      {/* Findings Stat Ribbon matching Overview and Documents */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">Total Flagged</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <AlertTriangle className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {findings.length}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Discovered issues
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Critical & High</span>
-            <span className="text-2xl font-bold text-rose-600 font-mono mt-0.5 block">
-              {findings.filter(f => f.severity === 'critical' || f.severity === 'high').length}
-            </span>
-            <span className="text-[10px] text-rose-500 mt-0.5 block">Immediate attention</span>
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">Critical & High</span>
+            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+              <AlertCircle className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-            <AlertCircle className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+            {findings.filter(f => f.severity === 'critical' || f.severity === 'high').length}
+          </span>
+          <span className="text-[10px] text-rose-500 font-medium mt-1">
+            Immediate attention
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Under Review</span>
-            <span className="text-2xl font-bold text-amber-700 font-mono mt-0.5 block">
-              {findings.filter(f => f.status === 'under_review').length}
-            </span>
-            <span className="text-[10px] text-amber-600 mt-0.5 block">Pending resolution</span>
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">Under Review</span>
+            <div className="p-1.5 rounded bg-amber-50 text-amber-700">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-700 shrink-0">
-            <Clock className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-amber-700 font-mono">
+            {findings.filter(f => f.status === 'under_review').length}
+          </span>
+          <span className="text-[10px] text-amber-600 font-medium mt-1">
+            Pending resolution
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Resolved / Confirmed</span>
-            <span className="text-2xl font-bold text-emerald-700 font-mono mt-0.5 block">
-              {findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length}
-            </span>
-            <span className="text-[10px] text-emerald-600 mt-0.5 block">Verified & addressed</span>
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">Resolved / Confirmed</span>
+            <div className="p-1.5 rounded bg-emerald-50 text-emerald-700">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-emerald-700 font-mono">
+            {findings.filter(f => f.status === 'resolved' || f.status === 'confirmed').length}
+          </span>
+          <span className="text-[10px] text-emerald-600 font-medium mt-1">
+            Verified & addressed
+          </span>
         </Card>
       </div>
 

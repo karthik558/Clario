@@ -108,66 +108,74 @@ export const ObligationsPage: React.FC = () => {
         </div>
       </PageHeader>
 
-      {/* KPI Stat Ribbon */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+      {/* KPI Stat Ribbon matching Overview and Documents */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Active Obligations
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {obligations.length}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Across all documents</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <Clock className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {obligations.length}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Across all documents
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               High Risk / Deadlines
             </span>
-            <span className="text-2xl font-bold text-rose-600 font-mono mt-0.5 block">
-              {criticalCount}
-            </span>
-            <span className="text-[10px] text-rose-500 mt-0.5 block">Action required</span>
+            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+              <AlertTriangle className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+            {criticalCount}
+          </span>
+          <span className="text-[10px] text-rose-500 font-medium mt-1">
+            Action required
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Notice Windows
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {obligations.filter((o) => o.category === 'Termination & Notice').length}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Auto-renewal gates</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Calendar className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <Calendar className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {obligations.filter((o) => o.category === 'Termination & Notice').length}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Auto-renewal gates
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Audited Documents
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {documents.length}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Contractual scope</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <FileText className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <FileText className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {documents.length}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Contractual scope
+          </span>
         </Card>
       </div>
 

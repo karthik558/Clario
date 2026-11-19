@@ -93,72 +93,78 @@ export const CompliancePage: React.FC = () => {
         </div>
       </PageHeader>
 
-      {/* KPI Stat Cards */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+      {/* KPI Stat Cards matching Overview and Documents */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Readiness Score
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {data ? `${data.overall_score}%` : '—'}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">
-              {(data as any)?.scope_status === 'operational_non_regulatory'
-                ? 'Not applicable for financial scope'
-                : data && data.overall_score >= 75
-                ? 'Passable threshold'
-                : 'Attention required'}
-            </span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {data ? `${data.overall_score}%` : '—'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            {(data as any)?.scope_status === 'operational_non_regulatory'
+              ? 'Not applicable for financial scope'
+              : data && data.overall_score >= 75
+              ? 'Passable threshold'
+              : 'Attention required'}
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Frameworks
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {data ? data.frameworks.length : 4}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">GDPR, HIPAA, SOC 2, AI Act</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Layers className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <Layers className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {data ? data.frameworks.length : 4}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            GDPR, HIPAA, SOC 2, AI Act
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Compliance Gaps
             </span>
-            <span className="text-2xl font-bold text-rose-600 font-mono mt-0.5 block">
-              {data ? data.gaps_count : 0}
-            </span>
-            <span className="text-[10px] text-rose-500 mt-0.5 block">Missing covenants</span>
+            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+              <AlertTriangle className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+            {data ? data.gaps_count : 0}
+          </span>
+          <span className="text-[10px] text-rose-500 font-medium mt-1">
+            Missing covenants
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Audited Scope
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {data ? data.audited_documents : documents.length}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Active documents</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <FileCheck className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <FileCheck className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {data ? data.audited_documents : documents.length}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Active documents
+          </span>
         </Card>
       </div>
 

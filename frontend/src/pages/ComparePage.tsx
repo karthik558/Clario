@@ -6,6 +6,7 @@ import {
   GitCompare,
   ArrowRight,
   AlertTriangle,
+  AlertCircle,
   CheckCircle2,
   BookmarkPlus,
   Layers,
@@ -264,41 +265,71 @@ export const ComparePage: React.FC = () => {
       {/* Comparison Analysis Results */}
       {comparison && (
         <div className="space-y-6 animate-in fade-in">
-          {/* Summary Metric Ribbon */}
+          {/* Summary Metric Ribbon matching Overview and Documents */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <Card className="p-3 text-center">
-              <span className="text-[10px] text-clario-text-muted uppercase tracking-wider block">Similarity Ratio</span>
-              <span className="text-xl font-bold text-slate-900 font-mono">
+            <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+              <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider">Similarity Ratio</span>
+                <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                  <GitCompare className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
                 {(comparison.similarity_score * 100).toFixed(1)}%
               </span>
+              <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Cross-clause match</span>
             </Card>
 
-            <Card className="p-3 text-center bg-emerald-50/50 border-emerald-200">
-              <span className="text-[10px] text-emerald-800 uppercase tracking-wider block">Added Segments</span>
-              <span className="text-xl font-bold text-emerald-700 font-mono">
+            <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+              <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider">Added Segments</span>
+                <div className="p-1.5 rounded bg-emerald-50 text-emerald-700">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <span className="text-2xl font-semibold tracking-tight tabular-nums text-emerald-700 font-mono">
                 +{comparison.added_tokens_count}
               </span>
+              <span className="text-[10px] text-emerald-600 font-medium mt-1">New provisions in Doc B</span>
             </Card>
 
-            <Card className="p-3 text-center bg-rose-50/50 border-rose-200">
-              <span className="text-[10px] text-rose-800 uppercase tracking-wider block">Removed Segments</span>
-              <span className="text-xl font-bold text-rose-700 font-mono">
+            <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+              <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider">Removed Segments</span>
+                <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
                 -{comparison.removed_tokens_count}
               </span>
+              <span className="text-[10px] text-rose-500 font-medium mt-1">Omitted in revised version</span>
             </Card>
 
-            <Card className="p-3 text-center bg-amber-50/50 border-amber-200">
-              <span className="text-[10px] text-amber-800 uppercase tracking-wider block">Modified Passages</span>
-              <span className="text-xl font-bold text-amber-700 font-mono">
+            <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+              <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider">Modified Passages</span>
+                <div className="p-1.5 rounded bg-amber-50 text-amber-700">
+                  <FileText className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <span className="text-2xl font-semibold tracking-tight tabular-nums text-amber-700 font-mono">
                 {comparison.changed_sections_count}
               </span>
+              <span className="text-[10px] text-amber-600 font-medium mt-1">Edited paragraphs</span>
             </Card>
 
-            <Card className="p-3 text-center border-amber-200 bg-amber-50/30">
-              <span className="text-[10px] text-amber-800 uppercase tracking-wider block">Contradictions Flagged</span>
-              <span className="text-xl font-bold text-amber-800 font-mono">
+            <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+              <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider">Contradictions</span>
+                <div className="p-1.5 rounded bg-amber-50 text-amber-700">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <span className="text-2xl font-semibold tracking-tight tabular-nums text-amber-800 font-mono">
                 {comparison.contradiction_candidates.length}
               </span>
+              <span className="text-[10px] text-amber-600 font-medium mt-1">Flagged for review</span>
             </Card>
           </div>
 

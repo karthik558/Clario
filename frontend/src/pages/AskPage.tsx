@@ -308,74 +308,66 @@ export const AskPage: React.FC = () => {
       )}
       {loadingHistory && <p role="status" className="text-sm text-slate-500">Loading saved answers…</p>}
 
-      {/* KPI Stat Ribbon matching Overview, Critique, and Compare */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-              AI Provider
-            </span>
-            <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block truncate max-w-[140px]">
-              {llmProvider === 'ollama' ? 'Ollama Local' : 'LM Studio'}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block truncate max-w-[140px]">
-              {localModel || 'Default model'}
-            </span>
+      {/* KPI Stat Ribbon matching Overview and Documents */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">AI Provider</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Cpu className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-9 h-9 rounded-md bg-slate-100 flex items-center justify-center text-clario-navy shrink-0">
-            <Cpu className="w-4 h-4" />
-          </div>
+          <span className="text-xl font-semibold tracking-tight text-clario-navy font-mono truncate">
+            {llmProvider === 'ollama' ? 'Ollama Local' : 'LM Studio'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1 truncate">
+            {localModel || 'Default model'}
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-              Document Scope
-            </span>
-            <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block">
-              {selectedDocIds.length > 0 ? `${selectedDocIds.length} Selected` : `${documents.length} All Files`}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">
-              {selectedDocIds.length > 0 ? 'Targeted retrieval' : 'Entire workspace'}
-            </span>
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">Document Scope</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Layers className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-9 h-9 rounded-md bg-slate-100 flex items-center justify-center text-clario-navy shrink-0">
-            <Layers className="w-4 h-4" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {selectedDocIds.length > 0 ? `${selectedDocIds.length} Selected` : `${documents.length} Files`}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            {selectedDocIds.length > 0 ? 'Targeted retrieval' : 'Entire workspace corpus'}
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-              Verification Engine
-            </span>
-            <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block">
-              {thinkingMode ? 'Deep Thinking ON' : 'Direct Answer'}
-            </span>
-            <span className="text-[10px] text-teal-600 mt-0.5 block">
-              {streamingMode ? 'Streaming active' : 'Batch synthesis'}
-            </span>
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">Verification Engine</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Brain className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-9 h-9 rounded-md bg-slate-100 flex items-center justify-center text-clario-navy shrink-0">
-            <Brain className="w-4 h-4" />
-          </div>
+          <span className="text-xl font-semibold tracking-tight text-clario-navy font-mono">
+            {thinkingMode ? 'Deep Thinking' : 'Direct Answer'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            {streamingMode ? 'Streaming active' : 'Batch synthesis'}
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-              Gateway Status
-            </span>
-            <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block truncate max-w-[140px]">
-              {statusMessage || 'Connected'}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">
-              Low latency pipeline
-            </span>
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">Gateway Status</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Bot className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-9 h-9 rounded-md bg-slate-100 flex items-center justify-center text-clario-navy shrink-0">
-            <Bot className="w-4 h-4" />
-          </div>
+          <span className="text-xl font-semibold tracking-tight text-clario-navy font-mono truncate">
+            {statusMessage || 'Connected'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            Low latency pipeline
+          </span>
         </Card>
       </div>
 

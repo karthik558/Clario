@@ -164,36 +164,56 @@ export const SearchLabPage: React.FC = () => {
             <div className="space-y-6 animate-in fade-in">
               {/* Overlap & Performance Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="p-4 text-center bg-white border border-slate-200">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">BM25 Latency</span>
-                  <span className="text-xl font-bold text-slate-900 font-mono">
+                <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+                  <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider">BM25 Latency</span>
+                    <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                      <Clock className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
                     {comparison.latency_bm25_ms} ms
                   </span>
-                  <span className="text-[10px] text-slate-500 block mt-0.5">Lexical Inverted Index</span>
+                  <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Lexical Inverted Index</span>
                 </Card>
 
-                <Card className="p-4 text-center bg-white border border-slate-200">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Vector Latency</span>
-                  <span className="text-xl font-bold text-slate-900 font-mono">
+                <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+                  <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider">Vector Latency</span>
+                    <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                      <Layers className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
                     {comparison.latency_vector_ms} ms
                   </span>
-                  <span className="text-[10px] text-slate-500 block mt-0.5">Dense Cosine Similarity</span>
+                  <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Dense Cosine Similarity</span>
                 </Card>
 
-                <Card className="p-4 text-center bg-white border border-slate-200">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Hybrid RRF Latency</span>
-                  <span className="text-xl font-bold text-slate-900 font-mono">
+                <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+                  <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider">Hybrid RRF Latency</span>
+                    <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                      <SearchCheck className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
                     {comparison.latency_hybrid_ms} ms
                   </span>
-                  <span className="text-[10px] text-slate-500 block mt-0.5">Rank Fusion (k=60)</span>
+                  <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Rank Fusion (k=60)</span>
                 </Card>
 
-                <Card className="p-4 text-center bg-slate-50 border border-slate-200">
-                  <span className="text-[10px] text-slate-600 uppercase tracking-wider block">Method Overlap (Jaccard)</span>
-                  <span className="text-xl font-bold text-slate-900 font-mono">
+                <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+                  <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider">Method Overlap</span>
+                    <div className="p-1.5 rounded bg-emerald-50 text-emerald-700">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <span className="text-2xl font-semibold tracking-tight tabular-nums text-emerald-700 font-mono">
                     {(comparison.jaccard_similarity * 100).toFixed(1)}%
                   </span>
-                  <span className="text-[10px] text-slate-600 block mt-0.5">
+                  <span className="text-[10px] text-emerald-600 font-medium mt-1">
                     {comparison.overlap_count} shared top-{topK} passages
                   </span>
                 </Card>

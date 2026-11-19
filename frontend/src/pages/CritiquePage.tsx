@@ -104,66 +104,74 @@ export const CritiquePage: React.FC = () => {
         </div>
       </PageHeader>
 
-      {/* KPI Stat Ribbon */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+      {/* KPI Stat Ribbon matching Overview and Documents */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Composite Risk Score
             </span>
-            <span className="text-2xl font-bold text-rose-600 font-mono mt-0.5 block">
-              {data ? `${data.composite_risk_score}/100` : '—'}
-            </span>
-            <span className="text-[10px] text-rose-500 mt-0.5 block">High exposure index</span>
+            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+              <ShieldAlert className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+            {data ? `${data.composite_risk_score}/100` : '—'}
+          </span>
+          <span className="text-[10px] text-rose-500 font-medium mt-1">
+            High exposure index
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Legal Risk
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {data?.personas[0] ? `${data.personas[0].risk_score}%` : '—'}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">General Counsel</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Scale className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <Scale className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {data?.personas[0] ? `${data.personas[0].risk_score}%` : '—'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            General Counsel
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Financial Risk
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {data?.personas[1] ? `${data.personas[1].risk_score}%` : '—'}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">CFO / Finance</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <Coins className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <Coins className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {data?.personas[1] ? `${data.personas[1].risk_score}%` : '—'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            CFO / Finance
+          </span>
         </Card>
 
-        <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+          <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+            <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Security Risk
             </span>
-            <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">
-              {data?.personas[2] ? `${data.personas[2].risk_score}%` : '—'}
-            </span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">CISO / Infosec</span>
+            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+            {data?.personas[2] ? `${data.personas[2].risk_score}%` : '—'}
+          </span>
+          <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
+            CISO / Infosec
+          </span>
         </Card>
       </div>
 

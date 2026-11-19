@@ -457,48 +457,56 @@ export const KnowledgeGraphPage: React.FC = () => {
       {/* Executive Metric Cards */}
       {data?.stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Indexed Documents</span>
-              <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">{data.stats.total_documents}</span>
-              <span className="text-[10px] text-slate-400 mt-0.5 block">Corpus scope</span>
+          <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+            <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider">Indexed Documents</span>
+              <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-              <FileText className="w-5 h-5" />
-            </div>
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+              {data.stats.total_documents}
+            </span>
+            <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Corpus scope</span>
           </Card>
 
-          <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Semantic Topics</span>
-              <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">{data.stats.total_topics}</span>
-              <span className="text-[10px] text-slate-400 mt-0.5 block">Discovered clusters</span>
+          <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+            <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider">Semantic Topics</span>
+              <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                <Layers className="w-3.5 h-3.5" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-              <Layers className="w-5 h-5" />
-            </div>
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+              {data.stats.total_topics}
+            </span>
+            <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Discovered clusters</span>
           </Card>
 
-          <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Flagged Findings</span>
-              <span className="text-2xl font-bold text-rose-600 font-mono mt-0.5 block">{data.stats.total_findings}</span>
-              <span className="text-[10px] text-rose-500 mt-0.5 block">Contradictions</span>
+          <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+            <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider">Flagged Findings</span>
+              <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+                <AlertTriangle className="w-3.5 h-3.5" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-rose-600 font-mono">
+              {data.stats.total_findings}
+            </span>
+            <span className="text-[10px] text-rose-500 font-medium mt-1">Contradictions</span>
           </Card>
 
-          <Card className="p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Active Nodes</span>
-              <span className="text-2xl font-bold text-slate-900 font-mono mt-0.5 block">{data.stats.total_nodes}</span>
-              <span className="text-[10px] text-slate-400 mt-0.5 block">{filteredEdges.length} connected edges</span>
+          <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+            <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider">Active Nodes</span>
+              <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                <Network className="w-3.5 h-3.5" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 shrink-0">
-              <Network className="w-5 h-5" />
-            </div>
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
+              {data.stats.total_nodes}
+            </span>
+            <span className="text-[10px] text-clario-text-secondary font-medium mt-1">{filteredEdges.length} connected edges</span>
           </Card>
         </div>
       )}
@@ -637,11 +645,11 @@ export const KnowledgeGraphPage: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center border border-slate-300 rounded-md bg-white">
+            <div className="flex items-center border border-slate-300 rounded-md bg-white overflow-hidden shadow-xs">
               <button
                 type="button"
                 onClick={() => handleZoom(0.15)}
-                className="p-1.5 text-slate-600 hover:text-slate-900 border-r border-slate-200 hover:bg-slate-50"
+                className="p-1.5 text-slate-600 hover:text-slate-900 border-r border-slate-200 hover:bg-slate-100 transition-colors focus:outline-none"
                 title="Zoom In"
               >
                 <ZoomIn className="w-4 h-4" />
@@ -649,7 +657,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleZoom(-0.15)}
-                className="p-1.5 text-slate-600 hover:text-slate-900 border-r border-slate-200 hover:bg-slate-50"
+                className="p-1.5 text-slate-600 hover:text-slate-900 border-r border-slate-200 hover:bg-slate-100 transition-colors focus:outline-none"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-4 h-4" />
@@ -657,7 +665,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleResetView}
-                className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none"
                 title="Reset View and Positions"
               >
                 <RotateCcw className="w-4 h-4" />
