@@ -167,7 +167,7 @@ export const SearchLabPage: React.FC = () => {
                 <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
                   <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                     <span className="text-[10.5px] font-bold uppercase tracking-wider">BM25 Latency</span>
-                    <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                    <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                       <Clock className="w-3.5 h-3.5" />
                     </div>
                   </div>
@@ -180,7 +180,7 @@ export const SearchLabPage: React.FC = () => {
                 <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
                   <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                     <span className="text-[10.5px] font-bold uppercase tracking-wider">Vector Latency</span>
-                    <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                    <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                       <Layers className="w-3.5 h-3.5" />
                     </div>
                   </div>
@@ -193,7 +193,7 @@ export const SearchLabPage: React.FC = () => {
                 <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
                   <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                     <span className="text-[10.5px] font-bold uppercase tracking-wider">Hybrid RRF Latency</span>
-                    <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                    <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                       <SearchCheck className="w-3.5 h-3.5" />
                     </div>
                   </div>
@@ -206,7 +206,7 @@ export const SearchLabPage: React.FC = () => {
                 <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
                   <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                     <span className="text-[10.5px] font-bold uppercase tracking-wider">Method Overlap</span>
-                    <div className="p-1.5 rounded bg-emerald-50 text-emerald-700">
+                    <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-700">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                     </div>
                   </div>
@@ -473,21 +473,21 @@ export const SearchLabPage: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 text-[11px] pt-1">
-                          <div className="p-2 rounded bg-blue-50/50 border border-blue-200">
+                          <div className="p-2 rounded-md bg-blue-50/50 border border-blue-200">
                             <span className="font-semibold text-blue-900 block mb-0.5">BM25</span>
                             <span className="font-mono text-blue-800">
                               P@3: {(q.bm25_metrics.precision_at_3 * 100).toFixed(0)}% &bull; MRR: {q.bm25_metrics.mrr.toFixed(2)} &bull; nDCG: {q.bm25_metrics.ndcg_at_5.toFixed(2)}
                             </span>
                           </div>
 
-                          <div className="p-2 rounded bg-purple-50/50 border border-purple-200">
+                          <div className="p-2 rounded-md bg-purple-50/50 border border-purple-200">
                             <span className="font-semibold text-purple-900 block mb-0.5">Vector</span>
                             <span className="font-mono text-purple-800">
                               P@3: {(q.vector_metrics.precision_at_3 * 100).toFixed(0)}% &bull; MRR: {q.vector_metrics.mrr.toFixed(2)} &bull; nDCG: {q.vector_metrics.ndcg_at_5.toFixed(2)}
                             </span>
                           </div>
 
-                          <div className="p-2 rounded bg-emerald-50/50 border border-emerald-200">
+                          <div className="p-2 rounded-md bg-emerald-50/50 border border-emerald-200">
                             <span className="font-semibold text-emerald-900 block mb-0.5">Hybrid RRF</span>
                             <span className="font-mono text-emerald-800">
                               P@3: {(q.hybrid_metrics.precision_at_3 * 100).toFixed(0)}% &bull; MRR: {q.hybrid_metrics.mrr.toFixed(2)} &bull; nDCG: {q.hybrid_metrics.ndcg_at_5.toFixed(2)}

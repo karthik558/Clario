@@ -128,7 +128,7 @@ export const ClauseNegotiatorModal: React.FC<ClauseNegotiatorModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Autonomous Redline & Clause Negotiator" maxWidth="4xl">
       <div className="space-y-6 max-h-[80vh] overflow-y-auto px-1 py-1">
         {/* Header Topic Context */}
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+        <div className="bg-slate-50 border border-slate-200 rounded-md p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Subject / Clause Topic</span>
             <Badge variant="gray">{topic}</Badge>
@@ -140,7 +140,7 @@ export const ClauseNegotiatorModal: React.FC<ClauseNegotiatorModalProps> = ({
 
         {/* Conflicting Statements Comparison */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm">
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
               <span className="text-xs font-semibold text-navy-800 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-slate-500" />
@@ -153,7 +153,7 @@ export const ClauseNegotiatorModal: React.FC<ClauseNegotiatorModalProps> = ({
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-md p-4 shadow-sm">
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
               <span className="text-xs font-semibold text-navy-800 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-slate-500" />
@@ -180,7 +180,7 @@ export const ClauseNegotiatorModal: React.FC<ClauseNegotiatorModalProps> = ({
                   key={s.id}
                   type="button"
                   onClick={() => setStance(s.id)}
-                  className={`text-left p-3 rounded-lg border transition-all ${
+                  className={`text-left p-3 rounded-md border transition-all ${
                     active
                       ? 'border-navy-800 bg-navy-50/50 shadow-sm ring-1 ring-navy-800'
                       : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/50'
@@ -237,7 +237,7 @@ export const ClauseNegotiatorModal: React.FC<ClauseNegotiatorModalProps> = ({
 
         {/* Error Notice */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2.5 text-xs text-red-700">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2.5 text-xs text-red-700">
             <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-600" />
             <span>{error}</span>
           </div>
@@ -245,7 +245,7 @@ export const ClauseNegotiatorModal: React.FC<ClauseNegotiatorModalProps> = ({
 
         {/* Negotiated Clause Output */}
         {result && (
-          <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm space-y-0">
+          <div className="border border-slate-200 rounded-md bg-white overflow-hidden shadow-sm space-y-0">
             <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-navy-900">Proposed Redline Amendment</span>

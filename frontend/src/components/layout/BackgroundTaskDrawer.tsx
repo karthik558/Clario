@@ -112,7 +112,7 @@ export const BackgroundTaskDrawer: React.FC = () => {
                 return (
                   <div
                     key={task.id}
-                    className="p-4 rounded-lg border border-slate-200 bg-white shadow-xs space-y-3 transition-all hover:border-slate-300"
+                    className="p-4 rounded-md border border-slate-200 bg-white shadow-xs space-y-3 transition-all hover:border-slate-300"
                   >
                     {/* Top Row: Category badge & status */}
                     <div className="flex items-center justify-between gap-2">
@@ -125,21 +125,21 @@ export const BackgroundTaskDrawer: React.FC = () => {
                       </div>
 
                       {isRunning ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
                           <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
                           Editing ({task.progress}%)
                         </span>
                       ) : task.status === 'completed' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           Ready
                         </span>
                       ) : task.status === 'cancelled' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
                           Cancelled
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
                           Failed
                         </span>
                       )}
@@ -215,7 +215,7 @@ export const BackgroundTaskDrawer: React.FC = () => {
               <button
                 type="button"
                 onClick={clearCompleted}
-                className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 transition-colors font-medium"
+                className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 transition-colors font-medium px-2 py-1 rounded-md hover:bg-slate-100"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Clear Completed</span>

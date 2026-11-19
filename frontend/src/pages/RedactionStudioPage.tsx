@@ -379,7 +379,7 @@ export const RedactionStudioPage: React.FC = () => {
                 type="checkbox"
                 checked={togglePii}
                 onChange={(e) => setTogglePii(e.target.checked)}
-                className="rounded border-slate-300 text-clario-navy focus:ring-0"
+                className="rounded-md border-slate-300 text-clario-navy focus:ring-0"
               />
               <span className="font-medium text-slate-800">PII & Contact</span>
             </label>
@@ -389,7 +389,7 @@ export const RedactionStudioPage: React.FC = () => {
                 type="checkbox"
                 checked={toggleFinancial}
                 onChange={(e) => setToggleFinancial(e.target.checked)}
-                className="rounded border-slate-300 text-clario-navy focus:ring-0"
+                className="rounded-md border-slate-300 text-clario-navy focus:ring-0"
               />
               <span className="font-medium text-slate-800">Financial Rates</span>
             </label>
@@ -399,7 +399,7 @@ export const RedactionStudioPage: React.FC = () => {
                 type="checkbox"
                 checked={toggleEntity}
                 onChange={(e) => setToggleEntity(e.target.checked)}
-                className="rounded border-slate-300 text-clario-navy focus:ring-0"
+                className="rounded-md border-slate-300 text-clario-navy focus:ring-0"
               />
               <span className="font-medium text-slate-800">Entity Names</span>
             </label>
@@ -409,7 +409,7 @@ export const RedactionStudioPage: React.FC = () => {
                 type="checkbox"
                 checked={toggleLegal}
                 onChange={(e) => setToggleLegal(e.target.checked)}
-                className="rounded border-slate-300 text-clario-navy focus:ring-0"
+                className="rounded-md border-slate-300 text-clario-navy focus:ring-0"
               />
               <span className="font-medium text-slate-800">Legal Privilege</span>
             </label>

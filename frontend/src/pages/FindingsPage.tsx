@@ -194,7 +194,7 @@ export const FindingsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Total Flagged</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -209,7 +209,7 @@ export const FindingsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Critical & High</span>
-            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
               <AlertCircle className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -224,7 +224,7 @@ export const FindingsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Under Review</span>
-            <div className="p-1.5 rounded bg-amber-50 text-amber-700">
+            <div className="p-1.5 rounded-md bg-amber-50 text-amber-700">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -239,7 +239,7 @@ export const FindingsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Resolved / Confirmed</span>
-            <div className="p-1.5 rounded bg-emerald-50 text-emerald-700">
+            <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-700">
               <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -363,7 +363,7 @@ export const FindingsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleDeleteSingle(f.id, f.title)}
-                    className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                     title="Delete finding"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -417,13 +417,13 @@ export const FindingsPage: React.FC = () => {
                       />
                       <button
                         onClick={() => handleSaveNotes(f.id)}
-                        className="p-1 rounded bg-slate-900 text-white hover:bg-slate-800"
+                        className="p-1 rounded-md bg-slate-900 text-white hover:bg-slate-800"
                       >
                         <Check className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setEditingNotesId(null)}
-                        className="p-1 rounded text-slate-500 hover:text-slate-800"
+                        className="p-1 rounded-md text-slate-500 hover:text-slate-800"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>

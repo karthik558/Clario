@@ -287,7 +287,7 @@ export const ComparePage: React.FC = () => {
             <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
               <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider">Similarity Ratio</span>
-                <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+                <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                   <GitCompare className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -300,7 +300,7 @@ export const ComparePage: React.FC = () => {
             <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
               <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider">Added Segments</span>
-                <div className="p-1.5 rounded bg-emerald-50 text-emerald-700">
+                <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-700">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -313,7 +313,7 @@ export const ComparePage: React.FC = () => {
             <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
               <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider">Removed Segments</span>
-                <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+                <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
                   <AlertCircle className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -326,7 +326,7 @@ export const ComparePage: React.FC = () => {
             <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
               <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider">Modified Passages</span>
-                <div className="p-1.5 rounded bg-amber-50 text-amber-700">
+                <div className="p-1.5 rounded-md bg-amber-50 text-amber-700">
                   <FileText className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -339,7 +339,7 @@ export const ComparePage: React.FC = () => {
             <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
               <div className="flex items-center justify-between text-clario-text-secondary mb-3">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider">Contradictions</span>
-                <div className="p-1.5 rounded bg-amber-50 text-amber-700">
+                <div className="p-1.5 rounded-md bg-amber-50 text-amber-700">
                   <AlertTriangle className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -369,9 +369,9 @@ export const ComparePage: React.FC = () => {
           {riskBenchmark && (
             <Card className="p-5 bg-white border border-slate-200 shadow-sm space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+                    <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
@@ -384,7 +384,7 @@ export const ComparePage: React.FC = () => {
                 </div>
 
                 {/* Overall Winner Callout */}
-                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg">
+                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-md">
                   <Award className="w-4 h-4 text-amber-600 shrink-0" />
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-semibold text-slate-500 block">
@@ -417,7 +417,7 @@ export const ComparePage: React.FC = () => {
                 {riskBenchmark.pillar_comparisons?.map((p: any) => (
                   <div
                     key={p.pillar_id}
-                    className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-white transition-colors space-y-2.5"
+                    className="p-3.5 rounded-md border border-slate-200 bg-slate-50/50 hover:bg-white transition-colors space-y-2.5"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-bold text-slate-900">
@@ -472,7 +472,7 @@ export const ComparePage: React.FC = () => {
                         {p.doc_a_findings.slice(0, 2).map((f: any, i: number) => (
                           <span
                             key={i}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-medium truncate max-w-full"
+                            className="text-[10px] px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-medium truncate max-w-full"
                           >
                             • {f.text}
                           </span>
@@ -579,15 +579,15 @@ export const ComparePage: React.FC = () => {
               </h3>
               <div className="flex items-center space-x-3 text-[11px] text-clario-text-secondary">
                 <span className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded bg-emerald-400 inline-block" />
+                  <span className="w-2.5 h-2.5 rounded-md bg-emerald-400 inline-block" />
                   <span>Added Text</span>
                 </span>
                 <span className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded bg-rose-400 inline-block" />
+                  <span className="w-2.5 h-2.5 rounded-md bg-rose-400 inline-block" />
                   <span>Removed Text</span>
                 </span>
                 <span className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded bg-amber-300 inline-block" />
+                  <span className="w-2.5 h-2.5 rounded-md bg-amber-300 inline-block" />
                   <span>Modified Text</span>
                 </span>
               </div>
@@ -605,7 +605,7 @@ export const ComparePage: React.FC = () => {
                   {comparison.diff_blocks.map((block, idx) => {
                     if (block.type === 'delete') {
                       return (
-                        <div key={idx} className="p-2 rounded bg-rose-50 border border-rose-200 text-rose-900">
+                        <div key={idx} className="p-2 rounded-md bg-rose-50 border border-rose-200 text-rose-900">
                           <span className="text-[10px] text-rose-600 font-mono block mb-0.5">Removed in Doc B:</span>
                           {block.text_a}
                         </div>
@@ -613,7 +613,7 @@ export const ComparePage: React.FC = () => {
                     }
                     if (block.type === 'replace') {
                       return (
-                        <div key={idx} className="p-2 rounded bg-amber-50 border border-amber-200 text-amber-900">
+                        <div key={idx} className="p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-900">
                           <span className="text-[10px] text-amber-600 font-mono block mb-0.5">Modified:</span>
                           {block.text_a}
                         </div>
@@ -641,7 +641,7 @@ export const ComparePage: React.FC = () => {
                   {comparison.diff_blocks.map((block, idx) => {
                     if (block.type === 'insert') {
                       return (
-                        <div key={idx} className="p-2 rounded bg-emerald-50 border border-emerald-200 text-emerald-900">
+                        <div key={idx} className="p-2 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-900">
                           <span className="text-[10px] text-emerald-600 font-mono block mb-0.5">Added in Doc B:</span>
                           {block.text_b}
                         </div>
@@ -649,7 +649,7 @@ export const ComparePage: React.FC = () => {
                     }
                     if (block.type === 'replace') {
                       return (
-                        <div key={idx} className="p-2 rounded bg-amber-50 border border-amber-200 text-amber-900">
+                        <div key={idx} className="p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-900">
                           <span className="text-[10px] text-amber-600 font-mono block mb-0.5">Modified (New Version):</span>
                           {block.text_b}
                         </div>

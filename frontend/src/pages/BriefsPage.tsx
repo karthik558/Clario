@@ -205,7 +205,7 @@ export const BriefsPage: React.FC = () => {
             <button
               key={tmpl.id}
               onClick={() => handleGenerate(tmpl.id)}
-              className={`p-4 rounded-lg border text-left transition-all ${
+              className={`p-4 rounded-md border text-left transition-all ${
                 isSelected
                   ? 'border-slate-900 bg-slate-50/70 shadow-xs ring-1 ring-slate-900'
                   : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
@@ -316,7 +316,7 @@ export const BriefsPage: React.FC = () => {
               </h3>
               <div className="space-y-2.5">
                 {brief.financial_exposure.map((f, i) => (
-                  <div key={i} className="p-3 rounded bg-slate-50 border border-slate-200 space-y-1">
+                  <div key={i} className="p-3 rounded-md bg-slate-50 border border-slate-200 space-y-1">
                     <span className="text-xs font-bold text-slate-900 block">{f.label}</span>
                     <p className="text-[11px] text-slate-600 leading-relaxed">{f.detail}</p>
                   </div>
@@ -331,7 +331,7 @@ export const BriefsPage: React.FC = () => {
               </h3>
               <div className="space-y-2.5">
                 {brief.legal_risks.map((r, i) => (
-                  <div key={i} className="p-3 rounded bg-slate-50 border border-slate-200 space-y-1">
+                  <div key={i} className="p-3 rounded-md bg-slate-50 border border-slate-200 space-y-1">
                     <div className="flex flex-wrap gap-2 items-center justify-between">
                       <span className="text-xs font-bold text-slate-900">{r.item}</span>
                       <Badge variant={r.status === 'Action Required' ? 'red' : 'navy'} size="sm">

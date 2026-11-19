@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onOpenNavigation }
           <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <span className="truncate">Search documents…</span>
         </span>
-        <kbd className="hidden sm:inline px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[10px] font-mono text-slate-500 shadow-xs shrink-0">
+        <kbd className="hidden sm:inline px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded-md text-[10px] font-mono text-slate-500 shadow-xs shrink-0">
           ⌘K / Ctrl K
         </kbd>
       </button>

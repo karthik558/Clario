@@ -55,7 +55,7 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
     <div className="quick-ask fixed z-20 flex flex-col items-end gap-2" onKeyDown={event => {
       if (open && event.key === 'Escape') { event.stopPropagation(); close(); }
     }}>
-      {open && <section id="quick-ask-panel" role="dialog" aria-label="Quick Ask Clario" className="quick-panel flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-elevated">
+      {open && <section id="quick-ask-panel" role="dialog" aria-label="Quick Ask Clario" className="quick-panel flex min-h-0 flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-elevated">
         <header className="flex shrink-0 items-center gap-2 border-b px-4 py-3">
           <img src="/favicon.svg" alt="" width="24" height="24" className="brightness-0 opacity-90" /><h2 className="flex-1 font-semibold">Ask Clario</h2>
           <button aria-label="Expand to Ask Clario" title="Open full conversation" disabled={pending} onClick={() => onExpand(draft)} className="rounded-md p-2 hover:bg-slate-100 disabled:opacity-40"><Maximize2 size={16} /></button>
@@ -74,7 +74,7 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
                   <User size={12} />
                 </div>
               </div>
-              <p className="ml-auto w-fit max-w-[85%] break-words rounded-2xl rounded-tr-xs bg-clario-navy px-3.5 py-2.5 text-sm text-white shadow-sm">
+              <p className="ml-auto w-fit max-w-[85%] break-words rounded-md bg-clario-navy px-3.5 py-2.5 text-sm text-white shadow-sm">
                 {sentQuestion}
               </p>
             </div>
@@ -87,7 +87,7 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
                 </div>
                 <span>Clario Play</span>
               </div>
-              <div className="rounded-2xl rounded-tl-xs border border-slate-200 bg-slate-50/70 p-3.5 text-sm text-slate-800 shadow-xs w-full space-y-2">
+              <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3.5 text-sm text-slate-800 shadow-xs w-full space-y-2">
                 <Markdown>{answer.answer}</Markdown>
                 {answer.citations.length > 0 && <p className="mt-2 text-xs text-slate-500 font-medium">{answer.mode}</p>}
                 {answer.citations.map(source => (
@@ -98,12 +98,12 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
               </div>
             </div>
           ) : !sentQuestion && <p className="text-sm text-slate-600">Ask a question about your indexed documents, or search for a passage.</p>}
-          <button onClick={() => { close(); onSearch(); }} className="mt-2 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs hover:bg-slate-50"><Search size={14} />Search passages</button>
+          <button onClick={() => { close(); onSearch(); }} className="mt-2 inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs hover:bg-slate-50"><Search size={14} />Search passages</button>
         </div>
         {pending && <p role="status" className="px-4 pb-2 text-xs text-slate-600">Clario is answering…</p>}
         {error && <p role="alert" className="px-4 pb-2 text-xs text-rose-700">{error}</p>}
         <form onSubmit={submit} className="flex shrink-0 items-center gap-2 border-t bg-slate-50 p-3">
-          <input ref={input} aria-label="Quick document question" placeholder="Ask about your documents…" value={draft} readOnly={pending} onChange={event => setDraft(event.target.value)} className="min-w-0 flex-1 rounded-lg border bg-white px-3 py-2 text-base sm:text-sm" />
+          <input ref={input} aria-label="Quick document question" placeholder="Ask about your documents…" value={draft} readOnly={pending} onChange={event => setDraft(event.target.value)} className="min-w-0 flex-1 rounded-md border bg-white px-3 py-2 text-base sm:text-sm" />
           <button aria-label="Send quick question" disabled={pending || !draft.trim()} className="rounded-full bg-clario-navy p-2.5 text-white disabled:opacity-40"><ArrowUp size={16} /></button>
         </form>
       </section>}

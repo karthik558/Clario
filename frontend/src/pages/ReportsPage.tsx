@@ -194,7 +194,7 @@ export const ReportsPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Compiled Reports
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileCheck className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -211,7 +211,7 @@ export const ReportsPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Words Analyzed
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileText className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -228,7 +228,7 @@ export const ReportsPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Vocabulary Diversity
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <BookOpen className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -245,7 +245,7 @@ export const ReportsPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Readability Standard
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <BarChart2 className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -477,7 +477,7 @@ export const ReportsPage: React.FC = () => {
                           setSelectedDocIds([...selectedDocIds, d.id]);
                         }
                       }}
-                      className="rounded text-slate-900 focus:ring-slate-900"
+                      className="rounded-md text-slate-900 focus:ring-slate-900"
                     />
                     <span className="text-xs text-slate-700 truncate">{d.title}</span>
                   </label>
@@ -504,7 +504,7 @@ export const ReportsPage: React.FC = () => {
                 type="checkbox"
                 checked={useAi}
                 onChange={(e) => setUseAi(e.target.checked)}
-                className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                className="rounded-md border-slate-300 text-slate-900 focus:ring-slate-900"
               />
               <Cpu className="w-3.5 h-3.5 text-slate-600" />
               <span>Synthesize Executive Overview with AI (LLM Analysis)</span>

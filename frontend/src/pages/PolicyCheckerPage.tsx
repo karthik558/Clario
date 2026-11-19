@@ -182,7 +182,7 @@ export const PolicyCheckerPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Policy Health Score
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <ShieldCheck className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -199,7 +199,7 @@ export const PolicyCheckerPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Compliant Rules
             </span>
-            <div className="p-1.5 rounded bg-emerald-50 text-emerald-700">
+            <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-700">
               <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -216,7 +216,7 @@ export const PolicyCheckerPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Flagged Gaps
             </span>
-            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -233,7 +233,7 @@ export const PolicyCheckerPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Audited Scope
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileCheck className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -467,7 +467,7 @@ export const PolicyCheckerPage: React.FC = () => {
                           Copy Clause
                         </button>
                       </div>
-                      <p className="text-slate-800 font-mono text-[11px] leading-relaxed bg-white p-3 rounded border border-slate-200 select-all">
+                      <p className="text-slate-800 font-mono text-[11px] leading-relaxed bg-white p-3 rounded-md border border-slate-200 select-all">
                         {rule.remediation_clause}
                       </p>
                     </div>

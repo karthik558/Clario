@@ -93,7 +93,7 @@ export const ClauseLibraryPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Clause Categories
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -110,7 +110,7 @@ export const ClauseLibraryPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Indexed Documents
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileText className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -127,7 +127,7 @@ export const ClauseLibraryPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Critical Standards
             </span>
-            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -144,7 +144,7 @@ export const ClauseLibraryPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Market Norms
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <ShieldCheck className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -248,7 +248,7 @@ export const ClauseLibraryPage: React.FC = () => {
                 }`}
               >
                 <span>{b.category}</span>
-                <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded-md text-slate-600">
                   {b.detected_count}
                 </span>
               </button>
@@ -327,7 +327,7 @@ export const ClauseLibraryPage: React.FC = () => {
                         {clause.favorability}
                       </Badge>
                     </div>
-                    <p className="text-xs font-mono text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-100 leading-relaxed whitespace-pre-wrap">
+                    <p className="text-xs font-mono text-slate-800 bg-slate-50 p-2.5 rounded-md border border-slate-100 leading-relaxed whitespace-pre-wrap">
                       "{clause.text}"
                     </p>
                   </Card>

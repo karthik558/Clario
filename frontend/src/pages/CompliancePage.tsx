@@ -116,7 +116,7 @@ export const CompliancePage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Readiness Score
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <ShieldCheck className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -137,7 +137,7 @@ export const CompliancePage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Frameworks
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -154,7 +154,7 @@ export const CompliancePage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Compliance Gaps
             </span>
-            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -171,7 +171,7 @@ export const CompliancePage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Audited Scope
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileCheck className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -341,7 +341,7 @@ export const CompliancePage: React.FC = () => {
                               </span>
                             </div>
                             <p className="text-xs text-slate-700 pl-6">{c.description}</p>
-                            <p className="text-xs italic text-slate-800 pl-6 bg-white p-2.5 rounded border border-slate-200 mt-1 leading-relaxed">
+                            <p className="text-xs italic text-slate-800 pl-6 bg-white p-2.5 rounded-md border border-slate-200 mt-1 leading-relaxed">
                               "{c.evidence_quote}"
                             </p>
                           </div>
@@ -400,7 +400,7 @@ export const CompliancePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleCopyRemediation(gap)}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2 py-1 rounded bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2 py-1 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
                     >
                       {copiedGapId === gap.id ? (
                         <>

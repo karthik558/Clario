@@ -323,7 +323,7 @@ export const CritiquePage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider">
               Composite Risk
             </span>
-            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
               <ShieldAlert className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -341,7 +341,7 @@ export const CritiquePage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider">
               General Counsel
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Scale className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -359,7 +359,7 @@ export const CritiquePage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider">
               CFO / Finance
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Coins className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -377,7 +377,7 @@ export const CritiquePage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider">
               CISO / Infosec
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <ShieldCheck className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -395,7 +395,7 @@ export const CritiquePage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider">
               CCO / Compliance
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileCheck className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -413,7 +413,7 @@ export const CritiquePage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase tracking-wider">
               COO / Operations
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Briefcase className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -495,7 +495,7 @@ export const CritiquePage: React.FC = () => {
             >
               {getPersonaIcon(persona.persona_id)}
               <span>{persona.role_title}</span>
-              <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+              <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded-md text-slate-600">
                 {persona.risk_score}%
               </span>
             </button>

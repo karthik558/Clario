@@ -110,7 +110,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             type="button"
             aria-label="Clear search"
             onClick={() => handleSearch('')}
-            className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer outline-none focus:outline-none"
+            className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer outline-none focus:outline-none"
           >
             <X className="w-4 h-4" />
           </button>
@@ -179,7 +179,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   <div className="flex items-center gap-2 min-w-0">
                     <FileText className="w-4 h-4 text-slate-600 shrink-0" />
                     <span className="text-xs font-semibold text-slate-900 truncate">{doc.title}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 uppercase font-mono">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 uppercase font-mono">
                       {doc.file_type}
                     </span>
                   </div>
@@ -211,13 +211,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   if (onSelectResult) onSelectResult(r);
                   onClose();
                 }}
-                className="w-full text-left p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer group bg-white outline-none focus:outline-none focus:ring-1 focus:ring-slate-300"
+                className="w-full text-left p-3 rounded-md border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer group bg-white outline-none focus:outline-none focus:ring-1 focus:ring-slate-300"
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center space-x-2">
                     <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span className="font-semibold text-xs text-slate-900">{r.document_title}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
                       Page {r.page_number}
                     </span>
                   </div>
@@ -290,7 +290,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       {/* Footer */}
       <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
         <div className="flex items-center space-x-2 text-[11px] text-slate-400">
-          <span>Press <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-mono text-slate-500 shadow-2xs">ESC</kbd> to close</span>
+          <span>Press <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded-md font-mono text-slate-500 shadow-2xs">ESC</kbd> to close</span>
         </div>
 
         {/* Retrieval Mode Toggle */}
@@ -301,7 +301,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               type="button"
               aria-pressed={mode === 'hybrid'}
               onClick={() => { setMode('hybrid'); if (query) handleSearch(query, 'hybrid'); }}
-              className={`px-2 py-0.5 rounded font-medium transition-colors cursor-pointer outline-none ${
+              className={`px-2 py-0.5 rounded-md font-medium transition-colors cursor-pointer outline-none ${
                 mode === 'hybrid' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -311,7 +311,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               type="button"
               aria-pressed={mode === 'bm25'}
               onClick={() => { setMode('bm25'); if (query) handleSearch(query, 'bm25'); }}
-              className={`px-2 py-0.5 rounded font-medium transition-colors cursor-pointer outline-none ${
+              className={`px-2 py-0.5 rounded-md font-medium transition-colors cursor-pointer outline-none ${
                 mode === 'bm25' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -321,7 +321,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               type="button"
               aria-pressed={mode === 'vector'}
               onClick={() => { setMode('vector'); if (query) handleSearch(query, 'vector'); }}
-              className={`px-2 py-0.5 rounded font-medium transition-colors cursor-pointer outline-none ${
+              className={`px-2 py-0.5 rounded-md font-medium transition-colors cursor-pointer outline-none ${
                 mode === 'vector' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >

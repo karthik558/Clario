@@ -131,7 +131,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onUploadSuccess,
                     className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-slate-900" />
                 </label>
                 <button aria-label={`Remove ${item.file.name}`} disabled={uploading}
-                  onClick={() => setFiles(files.filter((_, i) => i !== index))} className="p-2 text-slate-500">
+                  onClick={() => setFiles(files.filter((_, i) => i !== index))} className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors">
                   <X size={16} />
                 </button>
               </li>

@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             aria-label="Close navigation"
             onClick={onCloseMobile}
-            className="lg:hidden ml-auto p-1.5 text-slate-300 hover:text-white"
+            className="lg:hidden ml-auto p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-white/10"
           >
             <X className="w-5 h-5" />
           </button>
@@ -148,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="relative p-2.5 rounded-lg bg-slate-800 border border-emerald-500/40 text-emerald-400 mx-auto block hover:bg-slate-700 transition-all shadow-xs"
+                className="relative p-2.5 rounded-md bg-slate-800 border border-emerald-500/40 text-emerald-400 mx-auto block hover:bg-slate-700 transition-all shadow-xs"
                 title={`A Task is Running: ${activeTasks[0].title} (${activeTasks[0].progress}%)`}
                 aria-label="A task is running"
               >
@@ -159,7 +159,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="w-full text-left p-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/30 hover:border-emerald-500/60 transition-all shadow-sm space-y-1.5 group"
+                className="w-full text-left p-2.5 rounded-md bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/30 hover:border-emerald-500/60 transition-all shadow-sm space-y-1.5 group"
                 title="Click to view live task progress or end task"
               >
                 <div className="flex items-center justify-between">
@@ -169,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       A Task is Running
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/70 border border-emerald-500/30 px-1.5 py-0.2 rounded-md font-bold">
                     {activeTasks[0].progress}%
                   </span>
                 </div>
@@ -194,7 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="p-2 rounded-lg hover:bg-white/10 text-emerald-400 mx-auto block"
+                className="p-2 rounded-md hover:bg-white/10 text-emerald-400 mx-auto block"
                 title={`${tasks.length} task(s) ready`}
                 aria-label="Tasks"
               >
@@ -204,14 +204,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-all text-xs"
+                className="w-full flex items-center justify-between px-2.5 py-2 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-all text-xs"
                 title="View completed tasks"
               >
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span className="text-[11px] font-medium text-slate-200">Tasks Ready</span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded-md">
                   {tasks.length}
                 </span>
               </button>
@@ -237,7 +237,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Cpu className="w-3.5 h-3.5" />
                 <span>Background Tasks</span>
               </div>
-              <span className="font-mono text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">
+              <span className="font-mono text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded-md">
                 0
               </span>
             </button>

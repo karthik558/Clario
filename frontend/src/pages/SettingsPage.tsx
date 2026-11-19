@@ -176,8 +176,8 @@ export const SettingsPage: React.FC = () => {
   if (loading && !settings) return <p role="status" className="text-sm text-clario-text-secondary">Loading saved workspace settings…</p>;
 
   return (
-    <div className="space-y-8 max-w-5xl">
-      {error && <p role="alert" className="p-4 rounded-md bg-rose-50 text-rose-800 text-sm">{error}</p>}
+    <div className="space-y-6">
+      {error && <p role="alert" className="p-4 rounded-md bg-rose-50 text-rose-800 text-sm border border-rose-200">{error}</p>}
       {/* Header */}
       <PageHeader title="Workspace settings" description="Configure model connections and retrieval, and inspect the workspace database.">
         <div className="flex flex-wrap items-center gap-2">
@@ -202,11 +202,11 @@ export const SettingsPage: React.FC = () => {
       )}
 
       {/* Ollama Local Integration Card */}
-      <Card className="rounded-md p-6 border-slate-200 bg-white shadow-card space-y-5">
+      <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-clario-border">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-md bg-clario-navy/5 text-clario-navy">
-              <Bot className="w-5 h-5" />
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+              <Bot className="w-3.5 h-3.5" />
             </div>
             <div>
               <h3 className="font-bold text-sm text-clario-navy">Local Ollama Model Integration</h3>
@@ -229,7 +229,7 @@ export const SettingsPage: React.FC = () => {
             </Button>
             <Badge
               variant={ollamaStatus?.running ? 'sage' : 'red'}
-              size="md"
+              size="sm"
               className="font-semibold"
             >
               {checkingOllama ? 'Checking connection…' : ollamaStatus?.running ? 'Ollama Online' : 'Ollama Offline'}
@@ -293,8 +293,18 @@ export const SettingsPage: React.FC = () => {
             <label htmlFor="ollamaModel" className="block text-[11px] font-bold text-clario-navy uppercase tracking-wider mb-1.5">
               Model Name / Custom Model
             </label>
-            <input id="ollamaModel" aria-label="Model name or custom model" value={ollamaModel} onChange={e => setOllamaModel(e.target.value)} placeholder="llama3.2 or your custom model" className="w-full text-sm font-mono bg-white border border-clario-border text-clario-text rounded-md px-3 py-2.5" />
-            {ollamaStatus && ollamaStatus.models.length > 0 && <Select aria-label="Installed Ollama models" value={ollamaStatus.models.includes(ollamaModel) ? ollamaModel : ''} onChange={e => { if (e.target.value) setOllamaModel(e.target.value); }} className="w-full mt-2 border border-clario-border bg-white text-clario-text p-2 text-xs rounded-md"><option value="">Choose an installed model</option>{ollamaStatus.models.map(model => <option key={model} value={model}>{model}</option>)}</Select>}
+            <input id="ollamaModel" aria-label="Model name or custom model" value={ollamaModel} onChange={e => setOllamaModel(e.target.value)} placeholder="llama3.2 or your custom model" className="w-full text-xs font-mono bg-white border border-slate-200 text-slate-900 rounded-md px-3 py-2.5" />
+            {ollamaStatus && ollamaStatus.models.length > 0 && (
+              <Select
+                aria-label="Installed Ollama models"
+                value={ollamaStatus.models.includes(ollamaModel) ? ollamaModel : ''}
+                onChange={e => { if (e.target.value) setOllamaModel(e.target.value); }}
+                className="w-full mt-2 border border-slate-200 bg-white text-slate-800 px-3 py-2 text-xs rounded-md"
+              >
+                <option value="">Choose an installed model</option>
+                {ollamaStatus.models.map(model => <option key={model} value={model}>{model}</option>)}
+              </Select>
+            )}
           </div>
         </div>
 
@@ -302,7 +312,7 @@ export const SettingsPage: React.FC = () => {
           <summary className="cursor-pointer font-medium text-clario-navy">Set up Ollama or a custom model</summary>
           <div className="mt-4 space-y-3 text-slate-600">
             <p>Install <a href="https://ollama.com/download" target="_blank" rel="noreferrer" className="text-slate-900 underline font-medium">Ollama</a>, open the app, and download a model in your terminal:</p>
-            <pre className="bg-slate-50 border border-slate-200 rounded p-3 overflow-x-auto text-xs text-slate-800">ollama pull llama3.2</pre>
+            <pre className="bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto text-xs text-slate-800">ollama pull llama3.2</pre>
             <p>Choose Ollama above, enter the exact installed model name, and save the configuration. Custom models created in Ollama work in the same field.</p>
             <p className="text-xs">These are setup instructions. Commands are run in your own terminal.</p>
           </div>
@@ -316,11 +326,11 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       {/* Database Explorer Section */}
-      <Card className="rounded-md p-6 space-y-5">
+      <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-md bg-slate-100 text-slate-800">
-              <Database className="w-5 h-5" />
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+              <Database className="w-3.5 h-3.5" />
             </div>
             <div>
               <h3 className="font-bold text-sm text-slate-900">Interactive Database Explorer</h3>
@@ -349,7 +359,7 @@ export const SettingsPage: React.FC = () => {
               }`}
             >
               <span>{t.name}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded ${
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
                 selectedTable === t.name ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
               }`}>
                 {t.row_count}
@@ -394,16 +404,23 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       {/* Information Retrieval (IR) Tuning */}
-      <Card className="rounded-md p-6 space-y-4">
-        <div className="flex items-center space-x-2 pb-3 border-b border-slate-200">
-          <Sliders className="w-4 h-4 text-slate-700" />
-          <h3 className="font-bold text-sm text-slate-900">IR Algorithm Tuning Parameters</h3>
+      <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
+        <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-200">
+          <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+            <Sliders className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm text-slate-900">IR Algorithm Tuning Parameters</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Fine-tune term saturation, length normalization, reciprocal rank fusion, and retrieval depth.
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div>
             <label htmlFor="bm25K1" className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1">
-              BM25 k1 Parameter (Term Saturation)
+              BM25 k1 (Term Saturation)
             </label>
             <input id="bm25K1" type="number"
               step="0.05"
@@ -415,7 +432,7 @@ export const SettingsPage: React.FC = () => {
 
           <div>
             <label htmlFor="bm25B" className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1">
-              BM25 b Parameter (Length Normalization)
+              BM25 b (Length Norm)
             </label>
             <input id="bm25B" type="number"
               step="0.05"
@@ -438,7 +455,7 @@ export const SettingsPage: React.FC = () => {
 
           <div>
             <label htmlFor="defaultTopK" className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1">
-              Default Top-K Retrieved Chunks
+              Default Top-K Chunks
             </label>
             <input id="defaultTopK" type="number"
               value={defaultTopK}
@@ -460,11 +477,11 @@ export const SettingsPage: React.FC = () => {
       </Card>
 
       {/* Developer API Documentation Card */}
-      <Card className="rounded-md p-6 border-slate-200 bg-white shadow-card space-y-4">
+      <Card className="rounded-md p-6 border-slate-200 bg-white shadow-subtle space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-clario-border">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-md bg-clario-navy/5 text-clario-navy">
-              <Terminal className="w-5 h-5" />
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+              <Terminal className="w-3.5 h-3.5" />
             </div>
             <div>
               <h3 className="font-bold text-sm text-clario-navy">REST API Documentation & Swagger UI</h3>
@@ -484,7 +501,7 @@ export const SettingsPage: React.FC = () => {
           </a>
         </div>
         <p className="text-xs text-slate-600 leading-relaxed">
-          Access the backend Swagger UI directly at <code className="font-mono text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">http://localhost:8000/docs</code> to inspect endpoints, test schemas, and integrate with external pipelines.
+          Access the backend Swagger UI directly at <code className="font-mono text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200">http://localhost:8000/docs</code> to inspect endpoints, test schemas, and integrate with external pipelines.
         </p>
       </Card>
     </div>

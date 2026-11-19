@@ -264,7 +264,7 @@ export const OverviewPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Total Documents</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Files className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -275,7 +275,7 @@ export const OverviewPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Indexed Ready</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileCheck2 className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -286,7 +286,7 @@ export const OverviewPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Searchable Passages</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -297,7 +297,7 @@ export const OverviewPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Analyses Run</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <SearchCheck className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -308,7 +308,7 @@ export const OverviewPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Conflicts Flagged</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -319,7 +319,7 @@ export const OverviewPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Avg Latency</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -356,7 +356,7 @@ export const OverviewPage: React.FC = () => {
                   className="w-full flex items-center justify-between p-3 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
+                    <div className="p-2 rounded-md bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
                       <MessageSquareQuote className="w-4 h-4" />
                     </div>
                     <div>
@@ -372,7 +372,7 @@ export const OverviewPage: React.FC = () => {
                   className="w-full flex items-center justify-between p-3 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
+                    <div className="p-2 rounded-md bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
                       <GitCompare className="w-4 h-4" />
                     </div>
                     <div>
@@ -388,7 +388,7 @@ export const OverviewPage: React.FC = () => {
                   className="w-full flex items-center justify-between p-3 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
+                    <div className="p-2 rounded-md bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
                       <Scale className="w-4 h-4" />
                     </div>
                     <div>
@@ -404,7 +404,7 @@ export const OverviewPage: React.FC = () => {
                   className="w-full flex items-center justify-between p-3 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group shadow-xs"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
+                    <div className="p-2 rounded-md bg-slate-100 text-slate-700 group-hover:bg-slate-200 transition-colors">
                       <FlaskConical className="w-4 h-4" />
                     </div>
                     <div>
@@ -759,14 +759,14 @@ export const OverviewPage: React.FC = () => {
 
             {/* Severity Stacked Metrics */}
             <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="p-2.5 rounded bg-slate-50 border border-slate-200">
+              <div className="p-2.5 rounded-md bg-slate-50 border border-slate-200">
                 <span className="text-[10px] uppercase font-bold text-slate-700 block">Critical & High</span>
                 <span className="text-lg font-extrabold text-slate-900">
                   {findings.filter(f => f.severity === 'critical' || f.severity === 'high').length}
                 </span>
                 <span className="text-[10px] text-slate-500 block">Mandatory review</span>
               </div>
-              <div className="p-2.5 rounded bg-slate-50 border border-slate-200">
+              <div className="p-2.5 rounded-md bg-slate-50 border border-slate-200">
                 <span className="text-[10px] uppercase font-bold text-slate-700 block">Medium & Low</span>
                 <span className="text-lg font-extrabold text-slate-900">
                   {findings.filter(f => f.severity === 'medium' || f.severity === 'low').length}

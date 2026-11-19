@@ -74,7 +74,7 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Total Word Volume
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileText className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -91,7 +91,7 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Unique Vocabulary
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <BookOpen className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -108,7 +108,7 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Readability Complexity
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Sliders className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -125,7 +125,7 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Average Sentence Length
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <TrendingUp className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -292,7 +292,7 @@ export const WordAnalysisVisualizer: React.FC<WordAnalysisVisualizerProps> = ({
               >
                 <span>{item.word}</span>
                 <span
-                  className={`text-[10px] font-mono px-1 rounded ${
+                  className={`text-[10px] font-mono px-1 rounded-md ${
                     isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
                   }`}
                 >

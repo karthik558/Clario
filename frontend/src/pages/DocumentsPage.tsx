@@ -176,7 +176,7 @@ export const DocumentsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Total Documents</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Files className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -191,7 +191,7 @@ export const DocumentsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Indexed Passages</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -206,7 +206,7 @@ export const DocumentsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Corpus Volume</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <HardDrive className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -221,7 +221,7 @@ export const DocumentsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">Indexing Health</span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             </div>
           </div>
@@ -333,7 +333,7 @@ export const DocumentsPage: React.FC = () => {
             <div className="flex items-center border border-slate-200 rounded-md p-0.5 bg-slate-50 shrink-0">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded text-xs transition-colors ${
+                className={`p-1.5 rounded-md text-xs transition-colors ${
                   viewMode === 'grid'
                     ? 'bg-white text-slate-900 shadow-xs font-semibold'
                     : 'text-slate-500 hover:text-slate-900'
@@ -345,7 +345,7 @@ export const DocumentsPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setViewMode('table')}
-                className={`p-1.5 rounded text-xs transition-colors ${
+                className={`p-1.5 rounded-md text-xs transition-colors ${
                   viewMode === 'table'
                     ? 'bg-white text-slate-900 shadow-xs font-semibold'
                     : 'text-slate-500 hover:text-slate-900'

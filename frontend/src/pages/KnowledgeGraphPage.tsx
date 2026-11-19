@@ -460,7 +460,7 @@ export const KnowledgeGraphPage: React.FC = () => {
           <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
             <div className="flex items-center justify-between text-clario-text-secondary mb-3">
               <span className="text-[10.5px] font-bold uppercase tracking-wider">Indexed Documents</span>
-              <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                 <FileText className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -473,7 +473,7 @@ export const KnowledgeGraphPage: React.FC = () => {
           <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
             <div className="flex items-center justify-between text-clario-text-secondary mb-3">
               <span className="text-[10.5px] font-bold uppercase tracking-wider">Semantic Topics</span>
-              <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                 <Layers className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -486,7 +486,7 @@ export const KnowledgeGraphPage: React.FC = () => {
           <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
             <div className="flex items-center justify-between text-clario-text-secondary mb-3">
               <span className="text-[10.5px] font-bold uppercase tracking-wider">Flagged Findings</span>
-              <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+              <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
                 <AlertTriangle className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -499,7 +499,7 @@ export const KnowledgeGraphPage: React.FC = () => {
           <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
             <div className="flex items-center justify-between text-clario-text-secondary mb-3">
               <span className="text-[10.5px] font-bold uppercase tracking-wider">Active Nodes</span>
-              <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+              <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                 <Network className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -678,7 +678,7 @@ export const KnowledgeGraphPage: React.FC = () => {
       {/* Main Canvas + Inspector Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* SVG Network Visualizer */}
-        <div className="lg:col-span-3 border border-slate-200 rounded-xl bg-white overflow-hidden shadow-xs relative h-[460px] sm:h-[540px] lg:h-[640px] select-none">
+        <div className="lg:col-span-3 border border-slate-200 rounded-md bg-white overflow-hidden shadow-xs relative h-[460px] sm:h-[540px] lg:h-[640px] select-none">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2">
               <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin" />
@@ -883,7 +883,7 @@ export const KnowledgeGraphPage: React.FC = () => {
           )}
 
           {/* Quick Graph Legend Overlay */}
-          <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg px-3 py-2 text-[10px] space-y-1 shadow-xs pointer-events-none text-slate-700">
+          <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-md px-3 py-2 text-[10px] space-y-1 shadow-xs pointer-events-none text-slate-700">
             <div className="font-semibold text-slate-900 uppercase tracking-wider text-[9px]">Topology Legend</div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5">

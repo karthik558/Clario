@@ -123,7 +123,7 @@ export const ObligationsPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Active Obligations
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -140,7 +140,7 @@ export const ObligationsPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               High Risk / Deadlines
             </span>
-            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -157,7 +157,7 @@ export const ObligationsPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Notice Windows
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Calendar className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -174,7 +174,7 @@ export const ObligationsPage: React.FC = () => {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Audited Documents
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileText className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -299,13 +299,13 @@ export const ObligationsPage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <span className="font-mono text-[11px] bg-slate-100 px-2 py-0.5 rounded font-medium text-slate-700">
+                      <span className="font-mono text-[11px] bg-slate-100 px-2 py-0.5 rounded-md font-medium text-slate-700">
                         {obl.due_date_or_window}
                       </span>
                     </div>
                   </div>
 
-                  <p className="text-xs font-mono text-slate-900 bg-slate-50 p-3 rounded border border-slate-200 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-xs font-mono text-slate-900 bg-slate-50 p-3 rounded-md border border-slate-200 leading-relaxed whitespace-pre-wrap">
                     "{obl.clause_quote}"
                   </p>
 

@@ -66,7 +66,7 @@ export function RenewalPlannerPage() {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Target Renewal Date
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Calendar className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -83,7 +83,7 @@ export function RenewalPlannerPage() {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Notice Window
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -100,7 +100,7 @@ export function RenewalPlannerPage() {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Notice Cut-Off Deadline
             </span>
-            <div className="p-1.5 rounded bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-md bg-rose-50 text-rose-600">
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -117,7 +117,7 @@ export function RenewalPlannerPage() {
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
               Calendar Sync
             </span>
-            <div className="p-1.5 rounded bg-slate-100 text-slate-700">
+            <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <Download className="w-3.5 h-3.5" />
             </div>
           </div>
