@@ -258,15 +258,6 @@ export const OverviewPage: React.FC = () => {
       {/* Top Action Header */}
       <PageHeader title="Overview" description="Track document activity, review findings, and return to recent work.">
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowAuditWizard(true)}
-            className="flex items-center gap-1.5 shadow-2xs text-slate-800"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
-            <span>Guided Audit Wizard</span>
-          </Button>
           <Button size="sm" onClick={() => navigate('/documents')}>
             <Upload className="w-3.5 h-3.5 mr-1.5" />
             Upload

@@ -23,7 +23,8 @@ import {
   CheckSquare,
   Square,
   Check,
-  ArrowUpRight
+  ArrowUpRight,
+  MessageSquare
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackgroundTasks } from '../context/BackgroundTaskContext';
@@ -285,18 +286,32 @@ export const ComparePage: React.FC = () => {
         title="Compare versions"
         description="Benchmark and compare two or multiple enterprise policies to review changes, risk differentials, and contradictions."
       >
-        {docAId && docBId && docAId !== docBId && (
+        {compareMode === 'pairwise' && docAId && docBId && docAId !== docBId && (
           <Link
-            className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
+            className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50 flex items-center gap-1.5 shadow-xs text-slate-800 transition-colors"
             to={{
               pathname: '/ask',
-              search: new URLSearchParams([
-                ['document', docAId],
-                ['document', docBId]
-              ]).toString()
+              search: `?document=${encodeURIComponent(docAId)}&document=${encodeURIComponent(docBId)}&q=${encodeURIComponent(
+                `Compare the key obligations, liability differences, and conflicting terms between ${documents.find((d) => d.id === docAId)?.title || 'Document A'} and ${documents.find((d) => d.id === docBId)?.title || 'Document B'}.`
+              )}`
             }}
           >
-            Ask AI about these files
+            <MessageSquare className="w-3.5 h-3.5 text-slate-600" />
+            <span>Ask AI about these files</span>
+          </Link>
+        )}
+        {compareMode === 'multi' && selectedMultiDocIds.length >= 2 && (
+          <Link
+            className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50 flex items-center gap-1.5 shadow-xs text-slate-800 transition-colors"
+            to={{
+              pathname: '/ask',
+              search: `?${selectedMultiDocIds.map((id: string) => `document=${encodeURIComponent(id)}`).join('&')}&q=${encodeURIComponent(
+                `Analyze and compare the variance in liability caps, indemnification terms, and key provisions across the ${selectedMultiDocIds.length} selected documents.`
+              )}`
+            }}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-slate-600" />
+            <span>Ask AI about these {selectedMultiDocIds.length} files</span>
           </Link>
         )}
       </PageHeader>

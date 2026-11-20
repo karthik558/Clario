@@ -91,6 +91,29 @@ export const AskPage: React.FC = () => {
     }
   }, [loadingHistory, handoff]);
 
+  // Handle URL query parameters (e.g. from Compare versions or Document Library)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const search = new URLSearchParams(window.location.search);
+    const docParams = [
+      ...search.getAll('document'),
+      ...search.getAll('doc'),
+      ...(search.get('docs')?.split(',') || [])
+    ].filter(Boolean);
+
+    if (docParams.length > 0) {
+      selection.select(docParams);
+    }
+
+    const qParam = search.get('q') || search.get('query');
+    if (qParam) {
+      setQuery(qParam);
+      setTimeout(() => {
+        questionInput.current?.focus();
+      }, 150);
+    }
+  }, []);
+
   const toggleCitations = (idx: number) => {
     setExpandedCitations(prev => ({
       ...prev,
@@ -303,15 +326,6 @@ export const AskPage: React.FC = () => {
         description="Ask questions across your documents and follow each answer back to its sources."
       >
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAuditWizard(true)}
-            className="text-xs text-slate-800 hover:text-slate-900 flex items-center gap-1.5 shadow-2xs"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
-            <span>Guided Audit Wizard</span>
-          </Button>
           {history.length > 0 && (
             <Button
               variant="outline"
@@ -1011,11 +1025,23 @@ export const AskPage: React.FC = () => {
             variant="primary"
             size="md"
             disabled={!query.trim() || loading || loadingHistory}
-            loading={loading}
-            className="h-[58px] px-5"
+            className="h-[58px] px-5 transition-all"
           >
-            <Send className="w-4 h-4 mr-1.5" />
-            Ask
+            {loading ? (
+              <span className="flex items-center space-x-2">
+                <span className="flex space-x-1 items-center" aria-hidden="true">
+                  <span className="w-1.5 h-1.5 bg-white/90 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1.5 h-1.5 bg-white/90 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1.5 h-1.5 bg-white/90 rounded-full animate-bounce" />
+                </span>
+                <span className="text-xs font-medium">Thinking…</span>
+              </span>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-1.5" />
+                <span>Ask</span>
+              </>
+            )}
           </Button>
         </form>
       </Card>
