@@ -23,7 +23,6 @@ import {
   CheckSquare,
   Square,
   Check,
-  Sparkles,
   ArrowUpRight
 } from 'lucide-react';
 import { api } from '../services/api';

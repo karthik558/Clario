@@ -234,7 +234,7 @@ export const ClauseLibraryPage: React.FC = () => {
           Standard Market Benchmarks & Detected Provisions
         </h2>
 
-        <div className="flex border-b border-slate-200 gap-2 overflow-x-auto pb-1">
+        <div className="flex flex-wrap border-b border-slate-200 gap-2 pb-1">
           {data?.benchmarks.map((b) => {
             const isActive = selectedCategory === b.category;
             return (

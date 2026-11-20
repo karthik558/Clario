@@ -13,7 +13,10 @@ import {
   Rows3,
   Keyboard,
   ShieldCheck,
-  Sliders
+  Sliders,
+  Calendar,
+  Network,
+  EyeOff
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { api } from '../../services/api';
@@ -280,7 +283,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-1">
                 Quick Actions
               </span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => { window.location.href = '/ask'; onClose(); }}
@@ -288,7 +291,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 >
                   <MessageSquareQuote className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
                   <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Ask Clario</span>
-                  <span className="text-[10px] text-slate-500">Query sources</span>
+                  <span className="text-[10px] text-slate-500">Query & verify sources</span>
                 </button>
                 <button
                   type="button"
@@ -296,8 +299,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   className="p-2.5 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300 text-left transition-colors flex flex-col justify-between group"
                 >
                   <GitCompare className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
-                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Compare</span>
-                  <span className="text-[10px] text-slate-500">Side-by-side diff</span>
+                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Compare Matrix</span>
+                  <span className="text-[10px] text-slate-500">Side-by-side & matrix</span>
                 </button>
                 <button
                   type="button"
@@ -305,23 +308,35 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   className="p-2.5 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300 text-left transition-colors flex flex-col justify-between group"
                 >
                   <ShieldCheck className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
-                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Redline</span>
-                  <span className="text-[10px] text-slate-500">Bargaining playbooks</span>
+                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Redline Studio</span>
+                  <span className="text-[10px] text-slate-500">Playbook fallbacks</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    const current = localStorage.getItem('clario_table_density') || 'comfortable';
-                    const next = current === 'comfortable' ? 'compact' : 'comfortable';
-                    localStorage.setItem('clario_table_density', next);
-                    window.dispatchEvent(new Event('storage'));
-                    onClose();
-                  }}
+                  onClick={() => { window.location.href = '/renewal-planner'; onClose(); }}
                   className="p-2.5 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300 text-left transition-colors flex flex-col justify-between group"
                 >
-                  <Rows3 className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
-                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Table Density</span>
-                  <span className="text-[10px] text-slate-500">Compact / Standard</span>
+                  <Calendar className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
+                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Renewal Planner</span>
+                  <span className="text-[10px] text-slate-500">Notice cutoff deadlines</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = '/graph'; onClose(); }}
+                  className="p-2.5 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300 text-left transition-colors flex flex-col justify-between group"
+                >
+                  <Network className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
+                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Knowledge Graph</span>
+                  <span className="text-[10px] text-slate-500">2D semantic clusters</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = '/redact'; onClose(); }}
+                  className="p-2.5 rounded-md border border-slate-200 bg-slate-50/60 hover:bg-slate-100 hover:border-slate-300 text-left transition-colors flex flex-col justify-between group"
+                >
+                  <EyeOff className="w-4 h-4 text-slate-500 group-hover:text-clario-navy mb-1.5 transition-colors" />
+                  <span className="font-semibold text-xs text-slate-900 group-hover:text-clario-navy">Redaction Studio</span>
+                  <span className="text-[10px] text-slate-500">PII & sanitization</span>
                 </button>
               </div>
             </div>

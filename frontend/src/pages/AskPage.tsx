@@ -20,7 +20,11 @@ import {
   SlidersHorizontal,
   Bot,
   User,
-  Layers
+  Layers,
+  ShieldCheck,
+  CheckCheck,
+  FileSearch,
+  GitCompare
 } from 'lucide-react';
 import { api } from '../services/api';
 import { AskResponse, CitationItem } from '../types';
@@ -29,6 +33,16 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
+import { GuidedAuditWizardModal } from '../components/audit/GuidedAuditWizardModal';
+
+const PROMPT_CAROUSEL = [
+  { label: 'Liability Super-Caps', query: 'What are the aggregate liability super-caps and indemnity carve-outs across the agreements?' },
+  { label: 'AI Model Training Rights', query: 'Do any of the agreements permit customer confidential data or inputs to be used for AI foundation model training?' },
+  { label: 'Breach SLA & Forensics', query: 'Compare the security incident notification SLAs and forensic timeline commitments.' },
+  { label: 'Termination Delta', query: 'What notice periods and cure windows are required for termination for convenience vs material breach?' },
+  { label: 'Mutual Indemnity', query: 'Is indemnification reciprocal, or are there unilateral customer indemnity obligations?' },
+  { label: 'Data Sovereignty', query: 'Where is customer confidential data stored and processed geographically?' },
+];
 
 export const AskPage: React.FC = () => {
   const handoff = useOutletContext<{ selection: ReturnType<typeof useAskSelection>; askDraft: string | null; setAskDraft: (value: string | null) => void } | null>();
@@ -49,6 +63,8 @@ export const AskPage: React.FC = () => {
   const selectedDocIds = selection.ids;
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [showAuditWizard, setShowAuditWizard] = useState(false);
+  const [answerViewMode, setAnswerViewMode] = useState<Record<number, 'synthesis' | 'verbatim'>>({});
 
   // Local AI Gateway & Engine States
   const [llmProvider, setLlmProvider] = useState<string>('ollama');
@@ -287,6 +303,15 @@ export const AskPage: React.FC = () => {
         description="Ask questions across your documents and follow each answer back to its sources."
       >
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAuditWizard(true)}
+            className="text-xs text-slate-800 hover:text-slate-900 flex items-center gap-1.5 shadow-2xs"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
+            <span>Guided Audit Wizard</span>
+          </Button>
           {history.length > 0 && (
             <Button
               variant="outline"
@@ -506,14 +531,28 @@ export const AskPage: React.FC = () => {
             <Badge variant="navy" size="sm">
               {selectedDocIds.length ? `${selectedDocIds.length} Selected` : 'All Documents'}
             </Badge>
-            {selectedDocIds.length === 2 && (
+            {selectedDocIds.length >= 2 && (
               <Button
+                variant="outline"
                 size="sm"
                 disabled={loading || loadingHistory}
-                onClick={() => handleAsk('Compare the two selected documents and summarize the key differences.')}
-                className="text-xs py-1 h-7"
+                onClick={() => {
+                  const targetUrl =
+                    selectedDocIds.length === 2
+                      ? `/compare?docA=${selectedDocIds[0]}&docB=${selectedDocIds[1]}`
+                      : `/compare?mode=matrix&docs=${selectedDocIds.join(',')}`;
+                  if (typeof window !== 'undefined') {
+                    window.location.assign(targetUrl);
+                  }
+                }}
+                className="flex items-center gap-1.5 text-xs h-7 px-2.5"
               >
-                Compare these two files
+                <GitCompare className="w-3.5 h-3.5 text-slate-700" />
+                <span>
+                  {selectedDocIds.length === 2
+                    ? 'Compare Side-by-Side (2)'
+                    : `Compare Matrix (${selectedDocIds.length})`}
+                </span>
               </Button>
             )}
           </div>
@@ -582,10 +621,39 @@ export const AskPage: React.FC = () => {
                 {/* Answer Header Bar */}
                 <div className="flex flex-wrap gap-3 items-center justify-between pb-3 border-b border-clario-border text-xs">
                   <div className="flex flex-wrap gap-2 items-center">
-                    <span className="font-semibold text-clario-navy">Clario Synthesized Answer</span>
+                    <span className="font-semibold text-clario-navy">Clario Answer</span>
                     <Badge variant={item.response.mode === 'safety_restricted' ? 'red' : 'sage'} size="sm">
                       {item.response.mode}
                     </Badge>
+
+                    {/* View Switcher: Synthesis vs Verbatim Proof Points */}
+                    {item.response.citations.length > 0 && (
+                      <div className="flex items-center border border-slate-200 rounded-md p-0.5 bg-slate-50 ml-1">
+                        <button
+                          type="button"
+                          onClick={() => setAnswerViewMode((prev) => ({ ...prev, [idx]: 'synthesis' }))}
+                          className={`px-2 py-0.5 rounded text-[10.5px] font-semibold transition-all ${
+                            (answerViewMode[idx] || 'synthesis') === 'synthesis'
+                              ? 'bg-white text-slate-900 shadow-2xs'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          Synthesis
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAnswerViewMode((prev) => ({ ...prev, [idx]: 'verbatim' }))}
+                          className={`px-2 py-0.5 rounded text-[10.5px] font-semibold transition-all flex items-center gap-1 ${
+                            answerViewMode[idx] === 'verbatim'
+                              ? 'bg-white text-slate-900 shadow-2xs'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          <CheckCheck className="w-3 h-3 text-emerald-600" />
+                          <span>Verbatim Proof</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center space-x-3 text-clario-text-secondary">
                     <span className="text-[11px] font-mono flex items-center space-x-1 text-clario-text-secondary">
@@ -648,10 +716,49 @@ export const AskPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Formatted Markdown Content */}
-                <div className="min-w-0 text-clario-text">
-                  <Markdown>{item.response.answer}</Markdown>
-                </div>
+                {/* Formatted Content: Either Markdown Synthesis or Verbatim Inspector */}
+                {answerViewMode[idx] === 'verbatim' ? (
+                  <div className="space-y-2.5 p-3.5 rounded-md bg-slate-50 border border-slate-200 text-xs">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5">
+                        <FileSearch className="w-3.5 h-3.5 text-slate-700" />
+                        <span>Verbatim Grounded Passage Evidence</span>
+                      </span>
+                      <span>{item.response.citations.length} Verified Excerpts</span>
+                    </div>
+                    {item.response.citations.map((c) => (
+                      <div key={c.citation_id} className="p-3 bg-white rounded-md border border-slate-200/90 space-y-1.5 shadow-2xs">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <div className="flex items-center gap-2">
+                            <span className="w-4 h-4 rounded-md bg-clario-navy text-white text-[10px] flex items-center justify-center font-bold">
+                              {c.citation_id}
+                            </span>
+                            <span className="font-semibold text-slate-900">{c.document_title}</span>
+                          </div>
+                          <Badge variant="sage" size="sm">Page {c.page_number}</Badge>
+                        </div>
+                        <p className="font-mono text-slate-800 text-[11.5px] leading-relaxed bg-slate-50 p-2.5 rounded border border-slate-100 select-text">
+                          "{c.snippet}"
+                        </p>
+                        <div className="flex items-center justify-between pt-1 text-[10.5px] text-slate-500">
+                          <span className="font-mono">{c.relevance_score > 0 ? `Confidence: ${c.relevance_score}` : 'Corpus context'}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCitation(c)}
+                            className="text-clario-navy hover:underline font-semibold flex items-center gap-1"
+                          >
+                            <span>Inspect Full Page</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="min-w-0 text-clario-text">
+                    <Markdown>{item.response.answer}</Markdown>
+                  </div>
+                )}
 
                 {/* Citations Grid */}
                 {item.response.citations.length > 0 && (
@@ -855,6 +962,27 @@ export const AskPage: React.FC = () => {
             </button>
           )}
         </div>
+        {/* Dynamic Legal Prompt Carousel */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1 flex items-center gap-1">
+            <SearchCheck className="w-3 h-3 text-slate-600" />
+            <span>Starters:</span>
+          </span>
+          {PROMPT_CAROUSEL.map((item, cIdx) => (
+            <button
+              key={cIdx}
+              type="button"
+              onClick={() => {
+                setQuery(item.query);
+                questionInput.current?.focus();
+              }}
+              className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 shrink-0 border border-slate-200 transition-colors shadow-2xs"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -901,6 +1029,13 @@ export const AskPage: React.FC = () => {
           onClose={() => setSelectedCitation(null)}
         />
       )}
+
+      {/* Guided Audit & Compliance Wizard */}
+      <GuidedAuditWizardModal
+        isOpen={showAuditWizard}
+        onClose={() => setShowAuditWizard(false)}
+        documents={documents}
+      />
     </div>
   );
 };

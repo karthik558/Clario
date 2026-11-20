@@ -22,7 +22,8 @@ import {
   Square,
   FileSpreadsheet,
   FileCode,
-  Rows3
+  Rows3,
+  SlidersHorizontal
 } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { workspaceDate } from '../utils/date';
@@ -43,6 +44,7 @@ export const DocumentsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [collectionFilter, setCollectionFilter] = useState('');
+  const [smartPreset, setSmartPreset] = useState<'all' | 'policies' | 'long' | 'short'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
     return (localStorage.getItem('clario_table_density') as 'comfortable' | 'compact') || 'comfortable';
@@ -188,18 +190,23 @@ export const DocumentsPage: React.FC = () => {
     [documents]
   );
 
-  const filteredDocuments = documents.filter((doc) =>
-    (!search || `${doc.title} ${doc.filename}`.toLowerCase().includes(search.toLowerCase())) &&
-    (!statusFilter || doc.status === statusFilter) &&
-    (!collectionFilter || doc.collection === collectionFilter)
-  );
+  const filteredDocuments = documents.filter((doc) => {
+    if (search && !`${doc.title} ${doc.filename}`.toLowerCase().includes(search.toLowerCase())) return false;
+    if (statusFilter && doc.status !== statusFilter) return false;
+    if (collectionFilter && doc.collection !== collectionFilter) return false;
+    if (smartPreset === 'policies' && !`${doc.title} ${doc.filename}`.toLowerCase().includes('policy')) return false;
+    if (smartPreset === 'long' && (doc.page_count || 0) < 20) return false;
+    if (smartPreset === 'short' && (doc.page_count || 0) >= 20) return false;
+    return true;
+  });
 
-  const isFiltering = Boolean(search || statusFilter || collectionFilter);
+  const isFiltering = Boolean(search || statusFilter || collectionFilter || smartPreset !== 'all');
 
   const clearFilters = () => {
     setSearch('');
     setStatusFilter('');
     setCollectionFilter('');
+    setSmartPreset('all');
   };
 
   return (
@@ -447,6 +454,58 @@ export const DocumentsPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Smart Presets Filter Row */}
+        <div className="flex items-center gap-1.5 pt-3 border-t border-slate-100 flex-wrap text-xs">
+          <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
+            <SlidersHorizontal className="w-3 h-3 text-slate-600" />
+            <span>Smart Filters:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setSmartPreset('all')}
+            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+              smartPreset === 'all'
+                ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+          >
+            All Files ({documents.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSmartPreset('policies')}
+            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+              smartPreset === 'policies'
+                ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+          >
+            Enterprise Policies
+          </button>
+          <button
+            type="button"
+            onClick={() => setSmartPreset('long')}
+            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+              smartPreset === 'long'
+                ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+          >
+            Comprehensive Agreements (&ge;20 Pages)
+          </button>
+          <button
+            type="button"
+            onClick={() => setSmartPreset('short')}
+            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+              smartPreset === 'short'
+                ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+          >
+            Schedules & Addenda (&lt;20 Pages)
+          </button>
         </div>
       </Card>
 

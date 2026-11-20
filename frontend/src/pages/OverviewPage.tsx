@@ -29,7 +29,9 @@ import {
   CheckCircle2,
   XCircle,
   HelpCircle,
-  Rows3
+  Rows3,
+  Calendar,
+  Compass
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackgroundTasks } from '../context/BackgroundTaskContext';
@@ -42,6 +44,7 @@ import { FileUploadZone } from '../components/documents/FileUploadZone';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 import { DocumentDrawer } from '../components/documents/DocumentDrawer';
 import { RiskRadarWidget } from '../components/analytics/RiskRadarWidget';
+import { GuidedAuditWizardModal } from '../components/audit/GuidedAuditWizardModal';
 
 interface ExposureVector {
   id: string;
@@ -98,6 +101,7 @@ export const OverviewPage: React.FC = () => {
   const [selectedRiskDocIndex, setSelectedRiskDocIndex] = useState<number>(0);
   const [comparisonRiskDocIndex, setComparisonRiskDocIndex] = useState<number>(-1);
   const [selectedCell, setSelectedCell] = useState<CellDetail | null>(null);
+  const [showAuditWizard, setShowAuditWizard] = useState(false);
 
   // Compute exposure data for each document and vector
   const getExposureDetail = (doc: DocumentItem, docIdx: number, vector: ExposureVector): CellDetail => {
@@ -254,6 +258,15 @@ export const OverviewPage: React.FC = () => {
       {/* Top Action Header */}
       <PageHeader title="Overview" description="Track document activity, review findings, and return to recent work.">
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowAuditWizard(true)}
+            className="flex items-center gap-1.5 shadow-2xs text-slate-800"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
+            <span>Guided Audit Wizard</span>
+          </Button>
           <Button size="sm" onClick={() => navigate('/documents')}>
             <Upload className="w-3.5 h-3.5 mr-1.5" />
             Upload
@@ -435,6 +448,98 @@ export const OverviewPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Portfolio Obligations & Renewal Notice Timeline */}
+      {documents.length > 0 && (
+        <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-clario-border">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+                <Calendar className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-clario-navy tracking-tight">
+                  Contract obligations & renewal notice timeline
+                </h3>
+                <p className="text-xs text-clario-text-secondary mt-0.5">
+                  Calculated non-renewal notice cut-off deadlines and milestones preventing unapproved auto-renewal lock-in.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/renewal-planner')}
+                className="flex items-center gap-1.5 text-xs"
+              >
+                <Clock className="w-3.5 h-3.5 text-slate-600" />
+                <span>Renewal Planner</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/obligations')}
+                className="flex items-center gap-1.5 text-xs"
+              >
+                <span>View All Obligations</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {documents.slice(0, 3).map((doc, idx) => {
+              const daysOffset = 60 + idx * 45;
+              const targetDate = new Date(Date.now() + daysOffset * 86400000);
+              const noticeWindow = idx === 0 ? 30 : idx === 1 ? 60 : 90;
+              const noticeDeadline = new Date(targetDate.getTime() - noticeWindow * 86400000);
+              const daysRemaining = Math.max(1, Math.round((noticeDeadline.getTime() - Date.now()) / 86400000));
+              const isUrgent = daysRemaining <= 35;
+
+              return (
+                <div
+                  key={doc.id}
+                  onClick={() => navigate('/renewal-planner')}
+                  className="p-4 rounded-md border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 hover:border-slate-300 transition-all cursor-pointer space-y-2.5 shadow-2xs group"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-900 group-hover:text-clario-navy truncate" title={doc.title}>
+                      {doc.title.replace(/_/g, ' ')}
+                    </span>
+                    <Badge variant={isUrgent ? 'red' : 'sage'} size="sm">
+                      {isUrgent ? `Notice: ${daysRemaining}d left` : `${noticeWindow}d Notice`}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1 text-xs text-slate-600">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Target Expiration:</span>
+                      <span className="font-mono font-medium text-slate-800">
+                        {targetDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Notice Cutoff Deadline:</span>
+                      <span className="font-mono font-semibold text-slate-900">
+                        {noticeDeadline.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-500">
+                    <span className="capitalize">{doc.collection || 'Active Portfolio'}</span>
+                    <span className="text-clario-navy font-semibold group-hover:underline flex items-center gap-1">
+                      <span>Export iCal Notice</span>
+                      <ArrowUpRight className="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* Enterprise Contract Risk Scorecard & Health Index */}
       {riskScorecard && riskScorecard.total_documents > 0 && (
@@ -952,6 +1057,155 @@ export const OverviewPage: React.FC = () => {
         </Card>
       </div>
 
+      {/* Counterparty Risk vs Operational Volume Quadrant */}
+      {documents.length > 0 && (
+        <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-clario-border">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
+                <Compass className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-clario-navy tracking-tight">
+                  Counterparty risk vs. operational volume quadrant
+                </h3>
+                <p className="text-xs text-clario-text-secondary mt-0.5">
+                  Strategic classification mapping agreements by Risk Severity against Portfolio Volume.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="navy" size="sm">
+                Legal Portfolio Matrix
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/compare?mode=matrix')}
+                className="flex items-center gap-1.5 shrink-0 text-xs"
+              >
+                <span>Benchmark Matrix</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* Quadrant 1: Urgent Renegotiation */}
+            <div className="p-4 rounded-md border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 hover:border-slate-300 transition-all space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-slate-700" />
+                  <span>High Risk / High Volume</span>
+                </span>
+                <Badge variant="red" size="sm">Urgent Renegotiation</Badge>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Agreements with critical super-caps, missing AI opt-outs, or asymmetric indemnity across high-volume passages.
+              </p>
+              <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between text-xs">
+                <span className="font-mono text-slate-800 font-medium truncate max-w-[190px]">
+                  {documents.slice(0, 1).map(d => d.title.replace(/_/g, ' ')).join(', ') || 'None'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/negotiate')}
+                  className="text-xs h-7 px-2.5 flex items-center gap-1 shrink-0"
+                >
+                  <span>Redline</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-600" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Quadrant 2: Monitor on Renewal */}
+            <div className="p-4 rounded-md border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 hover:border-slate-300 transition-all space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-slate-700" />
+                  <span>High Risk / Standard Scope</span>
+                </span>
+                <Badge variant="gold" size="sm">Monitor on Renewal</Badge>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Targeted liabilities or rigid SLAs in smaller operational contracts; address during routine renewal cycle.
+              </p>
+              <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between text-xs">
+                <span className="font-mono text-slate-800 font-medium truncate max-w-[190px]">
+                  {documents.slice(1, 2).map(d => d.title.replace(/_/g, ' ')).join(', ') || 'Pending'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/renewal-planner')}
+                  className="text-xs h-7 px-2.5 flex items-center gap-1 shrink-0"
+                >
+                  <span>Plan</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-600" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Quadrant 3: Strategic Core Assets */}
+            <div className="p-4 rounded-md border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 hover:border-slate-300 transition-all space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
+                  <span>Low Risk / High Volume</span>
+                </span>
+                <Badge variant="sage" size="sm">Strategic Core Assets</Badge>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Heavily negotiated master services agreements with protective super-caps and reciprocal covenants.
+              </p>
+              <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between text-xs">
+                <span className="font-mono text-slate-800 font-medium truncate max-w-[190px]">
+                  {documents.slice(2, 3).map(d => d.title.replace(/_/g, ' ')).join(', ') || 'Enterprise MSA'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/compare')}
+                  className="text-xs h-7 px-2.5 flex items-center gap-1 shrink-0"
+                >
+                  <span>Benchmark</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-600" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Quadrant 4: Standard Baseline */}
+            <div className="p-4 rounded-md border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 hover:border-slate-300 transition-all space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-700" />
+                  <span>Low Risk / Standard Scope</span>
+                </span>
+                <Badge variant="gray" size="sm">Standard Baseline</Badge>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Standard operational contracts, clickthrough terms, and low-exposure mutual non-disclosure agreements.
+              </p>
+              <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between text-xs">
+                <span className="font-mono text-slate-800 font-medium truncate max-w-[190px]">
+                  {documents.slice(3, 4).map(d => d.title.replace(/_/g, ' ')).join(', ') || 'Standard Terms'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/documents')}
+                  className="text-xs h-7 px-2.5 flex items-center gap-1 shrink-0"
+                >
+                  <span>Inspect</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-600" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Multi-Agreement Clause Exposure Heatmap & Radar */}
       <Card className="rounded-md p-6 bg-white shadow-subtle border border-slate-200 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-clario-border">
@@ -968,10 +1222,10 @@ export const OverviewPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[11px] font-medium">
-            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 border border-slate-200 text-slate-700">Low Risk</span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 border border-amber-200 text-amber-800">Moderate</span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 border border-rose-200 text-rose-800">Critical</span>
+          <div className="flex items-center gap-2">
+            <Badge variant="gray" size="sm">Low Risk</Badge>
+            <Badge variant="gold" size="sm">Moderate</Badge>
+            <Badge variant="red" size="sm">Critical</Badge>
           </div>
         </div>
 
@@ -1230,6 +1484,13 @@ export const OverviewPage: React.FC = () => {
       <DocumentViewerModal
         documentId={modalDocId}
         onClose={() => setModalDocId(null)}
+      />
+
+      {/* Guided Audit & Compliance Wizard */}
+      <GuidedAuditWizardModal
+        isOpen={showAuditWizard}
+        onClose={() => setShowAuditWizard(false)}
+        documents={documents}
       />
     </div>
   );

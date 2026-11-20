@@ -249,14 +249,14 @@ export const PolicyCheckerPage: React.FC = () => {
       {/* Target Scope Selector - Matching CompliancePage identically */}
       {documents.length > 0 && (
         <Card className="p-3 bg-white border border-slate-200 shadow-xs">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-            <span className="text-slate-500 font-semibold uppercase text-[10px] shrink-0 tracking-wider">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0 mr-1">
               Document Scope:
             </span>
             <button
               type="button"
               onClick={() => setSelectedDocIds([])}
-              className={`px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 ${
+              className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
                 selectedDocIds.length === 0
                   ? 'bg-slate-900 text-white font-medium'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -271,14 +271,14 @@ export const PolicyCheckerPage: React.FC = () => {
                   key={d.id}
                   type="button"
                   onClick={() => handleToggleDoc(d.id)}
-                  className={`px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-md text-xs transition-colors flex items-center gap-1.5 ${
                     isSelected
                       ? 'bg-slate-900 text-white font-medium'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   <FileText className="w-3 h-3" />
-                  <span className="truncate max-w-[180px]">{d.title || d.filename}</span>
+                  <span className="truncate max-w-[200px]">{d.title || d.filename}</span>
                 </button>
               );
             })}

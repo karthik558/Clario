@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/layout/PageHeader';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Scale,
@@ -19,7 +19,9 @@ import {
   ChevronRight,
   Cpu,
   Target,
-  Briefcase
+  Briefcase,
+  GitPullRequest,
+  CheckCheck
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackgroundTasks } from '../context/BackgroundTaskContext';
@@ -186,6 +188,16 @@ export const NegotiatePage: React.FC = () => {
   const [copiedEmail, setCopiedEmail] = useState(false);
 
   const [findings, setFindings] = useState<FindingItem[]>([]);
+
+  const uniqueFindings = useMemo<FindingItem[]>(() => {
+    const seen = new Set<string>();
+    return findings.filter((f: FindingItem) => {
+      const key = f.title.trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [findings]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedFindingId, setSelectedFindingId] = useState<string>('');
 
@@ -204,7 +216,36 @@ export const NegotiatePage: React.FC = () => {
   const [savedNotes, setSavedNotes] = useState(false);
   const [exportingDocx, setExportingDocx] = useState(false);
   const [useAi, setUseAi] = useState(false);
+  const [diffViewMode, setDiffViewMode] = useState<'clean' | 'markup'>('markup');
+  const [stampedMessage, setStampedMessage] = useState<string | null>(null);
   const location = useLocation();
+
+  const deviationPercent = React.useMemo(() => {
+    const base = (statementA || statementB).trim();
+    const proposed = result?.proposed_clause || '';
+    if (!base || !proposed) return 0;
+    const bWords = base.toLowerCase().split(/\s+/).filter(Boolean);
+    const pWords = proposed.toLowerCase().split(/\s+/).filter(Boolean);
+    const bSet = new Set(bWords);
+    const pSet = new Set(pWords);
+    const intersect = [...bSet].filter((w) => pSet.has(w)).length;
+    const union = new Set([...bWords, ...pWords]).size;
+    if (!union) return 0;
+    const sim = intersect / union;
+    return Math.max(0, Math.min(100, Math.round((1 - sim) * 100)));
+  }, [statementA, statementB, result?.proposed_clause]);
+
+  const handleStampTier = (tier: PlaybookTier) => {
+    if (!result) return;
+    setResult({
+      ...result,
+      proposed_clause: tier.clause,
+      rationale: `Stamped from Playbook Tier ${tier.tier} (${tier.name}): ${tier.rationale}`,
+    });
+    setResultSubTab('redline');
+    setStampedMessage(`Stamped Tier ${tier.tier} (${tier.name}) into active redline!`);
+    setTimeout(() => setStampedMessage(null), 3000);
+  };
 
   useEffect(() => {
     if (location.hash) {
@@ -411,7 +452,7 @@ Legal & Commercial Deal Desk`;
               className="w-full text-xs bg-white border border-slate-200 rounded-md px-3 py-2 text-slate-800 font-medium shadow-xs"
             >
               <option value="">-- Choose from Flagged Findings --</option>
-              {findings.map((f) => (
+              {uniqueFindings.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.title} ({f.severity.toUpperCase()})
                 </option>
@@ -714,11 +755,70 @@ Legal & Commercial Deal Desk`;
                 {/* TAB 1: Harmonized Provision */}
                 {resultSubTab === 'redline' && (
                   <div className="space-y-4">
+                    {stampedMessage && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                        <CheckCheck className="w-4 h-4 text-emerald-600" />
+                        <span>{stampedMessage}</span>
+                      </div>
+                    )}
+
+                    {/* Clause Deviation Meter */}
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-md space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-800">Clause Deviation vs. Counterparty Base</span>
+                        <Badge variant={deviationPercent <= 25 ? 'sage' : deviationPercent <= 55 ? 'gold' : 'red'} size="sm">
+                          {deviationPercent}% Drift
+                        </Badge>
+                      </div>
+                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden flex">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            deviationPercent <= 25 ? 'bg-emerald-600' : deviationPercent <= 55 ? 'bg-amber-500' : 'bg-rose-600'
+                          }`}
+                          style={{ width: `${Math.max(6, deviationPercent)}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[10.5px] text-slate-500">
+                        <span>0% Baseline</span>
+                        <span className="font-medium text-slate-700">
+                          {deviationPercent <= 25
+                            ? 'Standard Alignment (Minor Polish)'
+                            : deviationPercent <= 55
+                            ? 'Balanced Compromise (Substantive Adjustments)'
+                            : 'Major Restructure (Substantive Redline)'}
+                        </span>
+                        <span>100% Full Rewrite</span>
+                      </div>
+                    </div>
+
                     <div>
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                          Proposed Redline Amendment
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                            Proposed Redline Amendment
+                          </span>
+                          <div className="flex items-center border border-slate-200 rounded-md p-0.5 bg-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => setDiffViewMode('clean')}
+                              className={`px-2 py-0.5 rounded text-[10.5px] font-semibold transition-all ${
+                                diffViewMode === 'clean' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                              }`}
+                            >
+                              Clean Text
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDiffViewMode('markup')}
+                              className={`px-2 py-0.5 rounded text-[10.5px] font-semibold transition-all ${
+                                diffViewMode === 'markup' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                              }`}
+                            >
+                              Tracked Changes
+                            </button>
+                          </div>
+                        </div>
+
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -740,9 +840,22 @@ Legal & Commercial Deal Desk`;
                           </button>
                         </div>
                       </div>
-                      <div className="p-4 rounded-md border border-slate-200 bg-slate-50 text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-slate-200">
-                        {result.proposed_clause}
-                      </div>
+
+                      {diffViewMode === 'clean' ? (
+                        <div className="p-4 rounded-md border border-slate-200 bg-slate-50 text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-slate-200">
+                          {result.proposed_clause}
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-md border border-slate-200 bg-white text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-slate-200 space-y-2">
+                          <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100 text-[10.5px]">
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">+ Harmonized Additions</span>
+                            <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 font-semibold line-through">- Legacy Strikethroughs</span>
+                          </div>
+                          <p className="leading-relaxed select-text">
+                            {result.proposed_clause}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -806,9 +919,20 @@ Legal & Commercial Deal Desk`;
 
                     {/* Selected Tier Provision Box */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <strong className="text-slate-800">{currentTier.name}</strong>
-                        <span className="text-slate-500 text-[11px]">{currentTier.giveawayRisk}</span>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div>
+                          <strong className="text-slate-800">{currentTier.name}</strong>
+                          <span className="text-slate-500 text-[11px] ml-2">({currentTier.giveawayRisk})</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStampTier(currentTier)}
+                          className="text-xs flex items-center gap-1.5 text-slate-800 hover:text-slate-900 border-slate-300 hover:bg-slate-100 shadow-2xs"
+                        >
+                          <GitPullRequest className="w-3.5 h-3.5 text-slate-700" />
+                          <span>Stamp Tier {currentTier.tier} as Active Redline</span>
+                        </Button>
                       </div>
                       <div className="p-3.5 rounded-md border border-slate-200 bg-slate-50 font-mono text-xs text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-slate-200">
                         {currentTier.clause}
@@ -875,34 +999,25 @@ Rationale: ${currentTier.rationale}`}
               <div className="flex flex-col items-center justify-center text-center py-24 px-6 text-slate-500 my-auto">
                 <Scale className="w-12 h-12 text-slate-300 mb-3 stroke-[1.2]" />
                 <h4 className="text-sm font-bold text-slate-700 mb-1">Ready to Bridge Opposing Terms</h4>
-                <p className="text-xs text-slate-500 max-w-sm leading-relaxed mb-4">
+                <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
                   Select a detected finding from the header, choose your target bargaining stance on the left, and click <strong>Generate Harmonized Redline</strong>.
                 </p>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-                  <span>Supports automated Microsoft Word (.docx) track changes export</span>
-                </div>
               </div>
             )}
 
             {/* Bottom Actions */}
-            {result && (
-              <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between">
-                <span className="text-[11px] text-slate-500">
-                  Ready to incorporate into contractual rider
-                </span>
-                {selectedFindingId && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={savedNotes}
-                    onClick={handleSaveToFinding}
-                    className="text-xs rounded-md"
-                  >
-                    <BookmarkCheck className="w-3.5 h-3.5 mr-1.5 text-slate-700" />
-                    <span>{savedNotes ? 'Saved to Audit Notes' : 'Save to Finding'}</span>
-                  </Button>
-                )}
+            {result && selectedFindingId && (
+              <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={savedNotes}
+                  onClick={handleSaveToFinding}
+                  className="text-xs rounded-md"
+                >
+                  <BookmarkCheck className="w-3.5 h-3.5 mr-1.5 text-slate-700" />
+                  <span>{savedNotes ? 'Saved to Audit Notes' : 'Save to Finding'}</span>
+                </Button>
               </div>
             )}
           </Card>

@@ -523,7 +523,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               type="button"
               aria-pressed={selectedDocIds.length === 0}
               onClick={selectAllDocuments}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 selectedDocIds.length === 0
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
@@ -539,7 +539,7 @@ export const KnowledgeGraphPage: React.FC = () => {
                   type="button"
                   aria-pressed={isSelected}
                   onClick={() => toggleDocumentScope(d.id)}
-                  className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 shrink-0 border ${
+                  className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 border ${
                     isSelected
                       ? 'bg-slate-900 text-white font-medium border-slate-900 shadow-xs'
                       : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
