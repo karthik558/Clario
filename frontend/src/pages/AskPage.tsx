@@ -608,10 +608,10 @@ export const AskPage: React.FC = () => {
       <div className="space-y-6">
         {history.map((item, idx) => (
           <div key={idx} className="space-y-3 animate-in fade-in">
-            {/* User Inquiry: Right-aligned "My Play" Bubbly Card */}
+            {/* User Inquiry: Right-aligned "You" Card */}
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5 mb-1.5 pr-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <span>My Play</span>
+                <span>You</span>
                 <div className="w-6 h-6 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center shadow-xs border border-slate-700">
                   <User className="w-3.5 h-3.5" />
                 </div>
@@ -623,13 +623,13 @@ export const AskPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Clario Answer: Left-aligned "Clario Play" Bubbly Card */}
+            {/* Clario Answer: Left-aligned "Clario" Card */}
             <div className="flex flex-col items-start w-full">
               <div className="flex items-center gap-1.5 mb-1.5 pl-1 text-[11px] font-bold text-clario-navy uppercase tracking-wider">
                 <div className="w-6 h-6 rounded-full bg-clario-navy text-white flex items-center justify-center shadow-xs">
                   <Bot className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span>Clario Play</span>
+                <span>Clario</span>
               </div>
               <Card className="w-full rounded-md p-6 space-y-4 border border-slate-200/90 shadow-subtle bg-white">
                 {/* Answer Header Bar */}
@@ -844,10 +844,10 @@ export const AskPage: React.FC = () => {
         {/* Realtime Streaming Turn */}
         {streaming && pendingQuery && (
           <div className="space-y-3 animate-in fade-in">
-            {/* User Inquiry: Right-aligned "My Play" Bubble */}
+            {/* User Inquiry: Right-aligned "You" Bubble */}
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5 mb-1.5 pr-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <span>My Play</span>
+                <span>You</span>
                 <div className="w-6 h-6 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center shadow-xs border border-slate-700">
                   <User className="w-3.5 h-3.5" />
                 </div>
@@ -859,13 +859,13 @@ export const AskPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Clario Answer: Left-aligned "Clario Play" Bubble */}
+            {/* Clario Answer: Left-aligned "Clario" Bubble */}
             <div className="flex flex-col items-start w-full">
               <div className="flex items-center gap-1.5 mb-1.5 pl-1 text-[11px] font-bold text-clario-navy uppercase tracking-wider">
                 <div className="w-6 h-6 rounded-full bg-clario-navy text-white flex items-center justify-center shadow-xs">
                   <Bot className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span>Clario Play</span>
+                <span>Clario</span>
               </div>
               <Card className="w-full rounded-md p-6 space-y-4 border border-slate-200/90 shadow-subtle bg-white">
                 <div className="flex items-center justify-between pb-3 border-clario-border text-xs">
@@ -905,7 +905,7 @@ export const AskPage: React.FC = () => {
           <div className="space-y-3 animate-in fade-in">
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5 mb-1.5 pr-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <span>My Play</span>
+                <span>You</span>
                 <div className="w-6 h-6 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center shadow-xs border border-slate-700">
                   <User className="w-3.5 h-3.5" />
                 </div>
@@ -923,7 +923,7 @@ export const AskPage: React.FC = () => {
                   <div className="w-6 h-6 rounded-full bg-clario-navy text-white flex items-center justify-center shadow-xs">
                     <Bot className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <span>Clario Play</span>
+                  <span>Clario</span>
                 </div>
                 <div className="w-full rounded-md p-5 border border-slate-200/90 shadow-subtle bg-white flex items-center gap-3 text-sm text-slate-600">
                   <span className="w-4 h-4 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin shrink-0" />
@@ -940,7 +940,7 @@ export const AskPage: React.FC = () => {
               <div className="w-6 h-6 rounded-full bg-clario-navy text-white flex items-center justify-center shadow-xs">
                 <Bot className="w-3.5 h-3.5 text-white" />
               </div>
-              <span>Clario Play</span>
+              <span>Clario</span>
             </div>
             <div className="w-full rounded-md p-5 border border-slate-200/90 shadow-subtle bg-white flex items-center gap-3 text-sm text-slate-600">
               <span className="w-4 h-4 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin shrink-0" />

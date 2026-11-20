@@ -69,7 +69,7 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
           {sentQuestion && (
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5 mb-1 pr-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                <span>My Play</span>
+                <span>You</span>
                 <div className="w-5 h-5 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center shadow-xs border border-slate-700">
                   <User size={12} />
                 </div>
@@ -85,7 +85,7 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
                 <div className="w-5 h-5 rounded-full bg-clario-navy text-white flex items-center justify-center shadow-xs">
                   <Bot size={12} />
                 </div>
-                <span>Clario Play</span>
+                <span>Clario</span>
               </div>
               <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3.5 text-sm text-slate-800 shadow-xs w-full space-y-2">
                 <Markdown>{answer.answer}</Markdown>
