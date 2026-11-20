@@ -51,7 +51,13 @@ export const AskPage: React.FC = () => {
   const questionInput = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
-  const [streamingMode, setStreamingMode] = useState(false);
+  const [streamingMode, setStreamingMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('clario_ask_stream') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [streamAnswer, setStreamAnswer] = useState('');
   const [streamThinking, setStreamThinking] = useState('');
   const [streamCitations, setStreamCitations] = useState<CitationItem[]>([]);
@@ -74,6 +80,7 @@ export const AskPage: React.FC = () => {
   const [savingThinking, setSavingThinking] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [thinkingMode, setThinkingMode] = useState<boolean>(true);
+  const [answerLength, setAnswerLength] = useState<'concise' | 'standard' | 'comprehensive'>('standard');
 
   const [error, setError] = useState('');
   const [pendingQuery, setPendingQuery] = useState('');
@@ -148,6 +155,9 @@ export const AskPage: React.FC = () => {
       if (s.thinking_mode !== undefined) {
         setThinkingMode(s.thinking_mode);
       }
+      if (s.answer_length) {
+        setAnswerLength(s.answer_length);
+      }
       if (s.llm_provider) {
         setLlmProvider(s.llm_provider);
       }
@@ -192,6 +202,15 @@ export const AskPage: React.FC = () => {
       setThinkingMode(!next);
     } finally {
       setSavingThinking(false);
+    }
+  };
+
+  const handleSetAnswerLength = async (length: 'concise' | 'standard' | 'comprehensive') => {
+    setAnswerLength(length);
+    try {
+      await api.updateSettings({ answer_length: length });
+    } catch (err) {
+      console.error('Failed to update answer length setting', err);
     }
   };
 
@@ -414,13 +433,13 @@ export const AskPage: React.FC = () => {
       {/* Local AI Gateway & Engine Toolbar */}
       <Card className="p-0 overflow-hidden">
         <details className="group">
-          <summary className="cursor-pointer text-sm font-medium text-slate-700 flex items-center justify-between p-4 hover:bg-slate-50 transition-colors select-none [&::-webkit-details-marker]:hidden list-none">
+          <summary className="cursor-pointer text-sm font-medium text-slate-700 flex items-center justify-between p-4 bg-white transition-colors select-none [&::-webkit-details-marker]:hidden list-none outline-none focus:outline-none">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-clario-navy" />
               <span className="font-semibold text-clario-navy text-xs uppercase tracking-wider">Answer settings</span>
             </div>
             <div className="flex items-center gap-2 text-xs font-normal text-slate-500">
-              <span className="hidden sm:inline">{llmProvider === 'ollama' ? 'Ollama' : 'LM Studio'} • {localModel || 'Auto'} • Thinking {thinkingMode ? 'ON' : 'OFF'}</span>
+              <span className="hidden sm:inline">{llmProvider === 'ollama' ? 'Ollama' : 'LM Studio'} • {localModel || 'Auto'} • Thinking {thinkingMode ? 'ON' : 'OFF'} • {answerLength === 'concise' ? 'Concise (Fast)' : answerLength === 'comprehensive' ? 'Comprehensive' : 'Standard'}</span>
               <ChevronRight className="w-4 h-4 text-slate-400 group-open:rotate-90 transition-transform" />
             </div>
           </summary>
@@ -476,7 +495,11 @@ export const AskPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setStreamingMode((prev) => !prev)}
+                  onClick={() => {
+                    const next = !streamingMode;
+                    setStreamingMode(next);
+                    try { localStorage.setItem('clario_ask_stream', String(next)); } catch {}
+                  }}
                   className={`px-2.5 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-colors ${
                     streamingMode
                       ? 'bg-teal-50 text-teal-900 border-teal-700 ring-1 ring-teal-700'
@@ -486,6 +509,52 @@ export const AskPage: React.FC = () => {
                 >
                   <Radio className={`w-3.5 h-3.5 ${streamingMode ? 'text-teal-700' : 'text-slate-400'}`} />
                   <span>Stream answers: {streamingMode ? 'ON' : 'OFF'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Answer Length & Generation Speed */}
+            <div className="flex items-center gap-2 flex-wrap pt-2.5 border-t border-slate-100 text-xs">
+              <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+                Response Length:
+              </span>
+              <div className="inline-flex rounded-md border border-slate-200 p-0.5 bg-slate-50 text-xs shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleSetAnswerLength('concise')}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    answerLength === 'concise'
+                      ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Ultra-concise, fast generation with brief answers"
+                >
+                  Concise (Fast)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetAnswerLength('standard')}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    answerLength === 'standard'
+                      ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Balanced default answer length"
+                >
+                  Standard (Default)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetAnswerLength('comprehensive')}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    answerLength === 'comprehensive'
+                      ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Exhaustive, in-depth legal analysis"
+                >
+                  Comprehensive (Deep)
                 </button>
               </div>
             </div>
@@ -559,7 +628,7 @@ export const AskPage: React.FC = () => {
                     window.location.assign(targetUrl);
                   }
                 }}
-                className="flex items-center gap-1.5 text-xs h-7 px-2.5"
+                className="flex items-center gap-1.5 text-xs h-8 px-3 font-medium"
               >
                 <GitCompare className="w-3.5 h-3.5 text-slate-700" />
                 <span>

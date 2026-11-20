@@ -16,7 +16,9 @@ import {
   Layers,
   Table,
   Check,
-  AlertCircle
+  AlertCircle,
+  Brain,
+  SlidersHorizontal
 } from 'lucide-react';
 import { api } from '../services/api';
 import { SystemSettings, OllamaStatus, DBTableInfo } from '../types';
@@ -41,6 +43,10 @@ export const SettingsPage: React.FC = () => {
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null);
   const [checkingOllama, setCheckingOllama] = useState(false);
 
+  // AI Tuning State
+  const [thinkingMode, setThinkingMode] = useState(true);
+  const [answerLength, setAnswerLength] = useState<'concise' | 'standard' | 'comprehensive'>('standard');
+
   // Database Explorer State
   const [dbTables, setDbTables] = useState<DBTableInfo[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('documents');
@@ -59,6 +65,8 @@ export const SettingsPage: React.FC = () => {
       const data = await api.getSettings();
       setSettings(data);
       setLlmProvider(data.llm_provider || 'extractive');
+      if (data.thinking_mode !== undefined) setThinkingMode(data.thinking_mode);
+      if (data.answer_length) setAnswerLength(data.answer_length);
       if (data.ollama_base_url) setOllamaUrl(data.ollama_base_url);
       if (data.ollama_model) setOllamaModel(data.ollama_model);
       setBm25K1(data.bm25_k1);
@@ -145,6 +153,8 @@ export const SettingsPage: React.FC = () => {
         llm_provider: llmProvider,
         ollama_base_url: ollamaUrl,
         ollama_model: ollamaModel,
+        thinking_mode: thinkingMode,
+        answer_length: answerLength,
         bm25_k1: bm25K1,
         bm25_b: bm25B,
         rrf_k: rrfK,
@@ -317,6 +327,95 @@ export const SettingsPage: React.FC = () => {
             <p className="text-xs">These are setup instructions. Commands are run in your own terminal.</p>
           </div>
         </details>
+
+        {/* Global AI Synthesis Profile */}
+        <div className="border-t border-slate-200 pt-4 space-y-3">
+          <div>
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <Brain className="w-3.5 h-3.5 text-clario-navy" />
+              Global AI Synthesis & Reasoning Profile
+            </h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Configure universal generation speed, reasoning depth, and response verbosity across Ask Clario, Red Team Critique, and Negotiation.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            {/* Thinking Mode */}
+            <div className="p-3.5 rounded-md border border-slate-200 bg-slate-50/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-800">Global Thinking Mode</span>
+                <button
+                  type="button"
+                  onClick={() => setThinkingMode(!thinkingMode)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-colors ${
+                    thinkingMode
+                      ? 'bg-navy-50 text-navy-900 border-navy-800 ring-1 ring-navy-800 font-semibold'
+                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <Brain className={`w-3.5 h-3.5 ${thinkingMode ? 'text-navy-900' : 'text-slate-400'}`} />
+                  <span>{thinkingMode ? 'ON' : 'OFF'}</span>
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                When enabled, AI models synthesize and display explicit step-by-step audit reasoning chains across all pages.
+              </p>
+            </div>
+
+            {/* Response Length & Generation Speed */}
+            <div className="p-3.5 rounded-md border border-slate-200 bg-slate-50/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-800">Response Length & Speed</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1 p-0.5 rounded-md border border-slate-200 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setAnswerLength('concise')}
+                  className={`py-1 px-1.5 rounded-md text-[11px] font-medium text-center transition-all ${
+                    answerLength === 'concise'
+                      ? 'bg-clario-navy text-white font-semibold shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Fastest generation time with short, punchy answers"
+                >
+                  Concise
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAnswerLength('standard')}
+                  className={`py-1 px-1.5 rounded-md text-[11px] font-medium text-center transition-all ${
+                    answerLength === 'standard'
+                      ? 'bg-clario-navy text-white font-semibold shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Balanced default answer length"
+                >
+                  Standard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAnswerLength('comprehensive')}
+                  className={`py-1 px-1.5 rounded-md text-[11px] font-medium text-center transition-all ${
+                    answerLength === 'comprehensive'
+                      ? 'bg-clario-navy text-white font-semibold shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Exhaustive, in-depth legal analysis"
+                >
+                  Deep
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                {answerLength === 'concise'
+                  ? 'Ultra-concise output (220 tokens max) to drastically reduce AI generation time.'
+                  : answerLength === 'comprehensive'
+                  ? 'Exhaustive multi-section breakdown with comprehensive clause citations.'
+                  : 'Balanced synthesis (default) optimizing quality and generation speed.'}
+              </p>
+            </div>
+          </div>
+        </div>
 
         <div className="flex justify-end">
           <Button variant="primary" size="md" onClick={handleSave} loading={saving} disabled={loading}>

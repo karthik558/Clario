@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     LOCAL_AI_API_KEY: str = ""
     LOCAL_AI_PROVIDER: str = "ollama"
     THINKING_MODE: bool = True
+    ANSWER_LENGTH: str = "standard"
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-flash"

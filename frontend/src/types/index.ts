@@ -248,6 +248,7 @@ export interface SystemSettings {
   local_ai_model?: string;
   local_ai_provider?: string;
   thinking_mode?: boolean;
+  answer_length?: 'concise' | 'standard' | 'comprehensive';
   gemini_api_key?: string;
   openai_api_key?: string;
   gemini_api_key_configured: boolean;

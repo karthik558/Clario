@@ -1,6 +1,7 @@
 import re
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.models.entities import Document, DocumentChunk, Finding
 from app.services.ai_generator import AIGenerator
 
@@ -515,10 +516,22 @@ Respond strictly with a concise JSON object:
         }
         role_desc = role_map.get(persona_id, "Senior Enterprise Corporate Counsel")
 
+        ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
+        if ans_len == "concise":
+            len_guideline = "Provide a crisp, ultra-concise 1-sentence protective clause and 1 sentence rationale. Minimize verbosity for fast execution."
+            token_limit = 250
+        elif ans_len == "comprehensive":
+            len_guideline = "Provide a comprehensive, robust multi-sentence covenant with complete indemnification and warranty terms."
+            token_limit = 800
+        else:
+            len_guideline = "Provide a balanced, enforceable protective contractual clause."
+            token_limit = 500
+
         ai_prompt = f"""You are the {role_desc}.
 Vulnerability Identified: {point}
 Contract Risk Detail: {detail}
 Document Context: {document_title or "Commercial Agreement"}
+Instruction: {len_guideline}
 
 Draft a precise, enforceable, protective counter-clause that senior counsel can insert directly into a redline to neutralize this risk.
 Return a valid JSON object:
@@ -530,7 +543,7 @@ Return a valid JSON object:
         ai_data = AIGenerator.generate_json(
             prompt=ai_prompt,
             system_prompt="You are Clario's Red Team Counter-Clause Drafting Engine. Respond strictly in JSON.",
-            max_tokens=600,
+            max_tokens=token_limit,
             temperature=0.15,
             timeout=25.0
         )

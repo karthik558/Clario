@@ -40,13 +40,41 @@ export function AskSources({ documents, selection, error, disabled }: {
   disabled: boolean;
 }) {
   const { ids, select } = selection;
-  return <fieldset disabled={disabled} className="flex flex-wrap gap-2 text-xs">
-    <legend className="mb-2 font-semibold">{ids.length ? `${ids.length} document${ids.length === 1 ? '' : 's'} selected` : 'Sources · Entire workspace'}</legend>
-    {error && <span role="alert">{error}</span>}
-    <button aria-pressed={!ids.length} onClick={() => select([])} className="rounded-md border px-3 py-1.5 aria-pressed:bg-clario-navy aria-pressed:text-white">Entire Workspace</button>
-    {documents.map(doc => <button key={doc.id} title={doc.title} aria-pressed={ids.includes(doc.id)}
-      onClick={() => select(ids.includes(doc.id) ? ids.filter(id => id !== doc.id) : [...ids, doc.id])}
-      className="max-w-full truncate rounded-md border px-3 py-1.5 aria-pressed:bg-clario-navy aria-pressed:text-white">{doc.title}</button>)}
-    {ids.filter(id => !documents.some(doc => doc.id === id)).map(id => <button key={id} onClick={() => select(ids.filter(other => other !== id))} className="rounded-md border px-2">Remove unavailable source</button>)}
+  return <fieldset disabled={disabled} className="flex flex-wrap items-center gap-2 text-xs">
+    <legend className="mb-2 font-semibold text-slate-700">{ids.length ? `${ids.length} document${ids.length === 1 ? '' : 's'} selected` : 'Sources · Entire workspace'}</legend>
+    {error && <span role="alert" className="text-rose-600 text-xs w-full mb-1">{error}</span>}
+    <button
+      type="button"
+      aria-pressed={!ids.length}
+      onClick={() => select([])}
+      className="inline-flex items-center justify-center h-8 px-3 rounded-md text-xs font-medium border transition-colors shadow-2xs whitespace-nowrap bg-white text-slate-700 border-slate-200 hover:bg-slate-50 aria-pressed:bg-clario-navy aria-pressed:text-white aria-pressed:border-clario-navy"
+    >
+      Entire Workspace
+    </button>
+    {documents.map(doc => {
+      const isSelected = ids.includes(doc.id);
+      return (
+        <button
+          key={doc.id}
+          type="button"
+          title={doc.title}
+          aria-pressed={isSelected}
+          onClick={() => select(isSelected ? ids.filter(id => id !== doc.id) : [...ids, doc.id])}
+          className="inline-flex items-center justify-center h-8 px-3 rounded-md text-xs font-medium border transition-colors shadow-2xs truncate max-w-[260px] bg-white text-slate-700 border-slate-200 hover:bg-slate-50 aria-pressed:bg-clario-navy aria-pressed:text-white aria-pressed:border-clario-navy"
+        >
+          {doc.title}
+        </button>
+      );
+    })}
+    {ids.filter(id => !documents.some(doc => doc.id === id)).map(id => (
+      <button
+        key={id}
+        type="button"
+        onClick={() => select(ids.filter(other => other !== id))}
+        className="inline-flex items-center justify-center h-8 px-3 rounded-md text-xs font-medium border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+      >
+        Remove unavailable source
+      </button>
+    ))}
   </fieldset>;
 }

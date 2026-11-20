@@ -22,6 +22,7 @@ class SettingsUpdateRequest(BaseModel):
     local_ai_provider: Optional[str] = None
     local_ai_api_key: Optional[str] = None
     thinking_mode: Optional[bool] = None
+    answer_length: Optional[Literal["concise", "standard", "comprehensive"]] = None
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     bm25_k1: Optional[float] = Field(default=None, gt=0, le=10, allow_inf_nan=False)
@@ -58,6 +59,7 @@ def get_system_settings():
         "local_ai_model": settings.LOCAL_AI_MODEL,
         "local_ai_provider": settings.LOCAL_AI_PROVIDER,
         "thinking_mode": settings.THINKING_MODE,
+        "answer_length": getattr(settings, "ANSWER_LENGTH", "standard"),
         "gemini_api_key_configured": bool(settings.GEMINI_API_KEY),
         "openai_api_key_configured": bool(settings.OPENAI_API_KEY),
         "bm25_k1": settings.BM25_K1,
@@ -89,6 +91,7 @@ def update_system_settings(data: SettingsUpdateRequest, db: Session = Depends(ge
             "local_ai_model": settings.LOCAL_AI_MODEL,
             "local_ai_provider": settings.LOCAL_AI_PROVIDER,
             "thinking_mode": settings.THINKING_MODE,
+            "answer_length": getattr(settings, "ANSWER_LENGTH", "standard"),
             "gemini_api_key_configured": bool(settings.GEMINI_API_KEY),
             "openai_api_key_configured": bool(settings.OPENAI_API_KEY),
             "bm25_k1": settings.BM25_K1,

@@ -74,6 +74,8 @@ export const CritiquePage: React.FC = () => {
   const [draftingOptionKey, setDraftingOptionKey] = useState<string | null>(null);
   const [streamingDraftKey, setStreamingDraftKey] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState<string>('');
+  const [globalThinking, setGlobalThinking] = useState(true);
+  const [globalAnswerLength, setGlobalAnswerLength] = useState('standard');
   const [aiDraftedFlags, setAiDraftedFlags] = useState<Record<string, boolean>>(() => {
     try {
       const stored = localStorage.getItem(CRITIQUE_AI_FLAGS_KEY);
@@ -243,6 +245,11 @@ export const CritiquePage: React.FC = () => {
         api.getDocuments().catch(() => [])
       ]);
 
+      api.getSettings().then(s => {
+        if (s.thinking_mode !== undefined) setGlobalThinking(s.thinking_mode);
+        if (s.answer_length) setGlobalAnswerLength(s.answer_length);
+      }).catch(() => {});
+
       if (critRes) {
         setData(prev => {
           if (!prev) {
@@ -399,6 +406,16 @@ export const CritiquePage: React.FC = () => {
         description="Adversarial multi-council audit examining contractual terms from legal, financial, security, compliance, and operational perspectives."
       >
         <div className="flex flex-wrap items-center gap-2">
+          <span title="Global AI settings configured in Settings and Ask Clario" className="hidden sm:inline-flex">
+            <Badge
+              variant="gray"
+              size="md"
+              className="text-[11px]"
+            >
+              Thinking: {globalThinking ? 'ON' : 'OFF'} • {globalAnswerLength === 'concise' ? 'Concise (Fast)' : globalAnswerLength === 'comprehensive' ? 'Deep' : 'Standard'}
+            </Badge>
+          </span>
+
           {/* AI Generation Toggle */}
           <Button
             size="sm"

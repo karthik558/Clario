@@ -410,10 +410,20 @@ class AskService:
             if not answer.strip():
                 raise ValueError("Empty model response")
         except Exception as exc:
-            if request.require_ai:
-                raise ModelUnavailable(f"{provider} could not generate an answer. Check the model connection in Settings and retry.") from exc
-            answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
-            mode = "extractive_synthesis" if provider == "extractive" else f"extractive_synthesis ({provider} unavailable)"
+            raw_answer = None
+            if provider != "ollama":
+                try:
+                    raw_answer = AskService._generate_ollama_answer(request.query, citations)
+                    mode = f"ollama_local ({settings.OLLAMA_MODEL})"
+                    answer, thinking_process = AskService._extract_thinking(raw_answer)
+                except Exception:
+                    raw_answer = None
+
+            if not raw_answer:
+                if request.require_ai:
+                    raise ModelUnavailable(f"{provider} could not generate an answer. Check the model connection in Settings and retry.") from exc
+                answer = AskService._extractive_synthesis(request.query, citations, has_conflict, conflict_notes)
+                mode = "extractive_synthesis" if provider == "extractive" else f"extractive_synthesis ({provider} unavailable)"
 
         show_thinking = request.thinking_mode if request.thinking_mode is not None else settings.THINKING_MODE
         # If thinking mode was requested but model did not output <think> tags, construct chain-of-evidence synthesis
@@ -478,10 +488,21 @@ class AskService:
             for c in top_citations
         ])
 
+        ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
+        if ans_len == "concise":
+            len_instruction = "- Provide an ultra-concise, fast answer. Limit to 1-2 punchy sentences or maximum 2 short bullet points without conversational preamble."
+            num_tokens = 220
+        elif ans_len == "comprehensive":
+            len_instruction = "- Provide an exhaustive, in-depth legal analysis with thorough clause breakdowns and complete contractual cross-references."
+            num_tokens = 850
+        else:
+            len_instruction = "- Synthesize the answer clearly with concise, structured bullet points."
+            num_tokens = 450
+
         system_prompt = (
             "You are Clario, an elite document intelligence research assistant. "
             "Answer the user's question directly, accurately, and concisely using ONLY the retrieved document context below.\n"
-            "- Synthesize the answer clearly with concise, structured bullet points.\n"
+            f"{len_instruction}\n"
             "- When comparing documents or identifying differences, contrast the clauses across the retrieved documents directly, noting document titles and exact figures, terms, and timelines.\n"
             "- Cite factual claims with bracketed numbers corresponding to the context like [1], [2].\n"
             "- Keep the response direct, clear, and factual without conversational filler or unverified assumptions."
@@ -504,7 +525,7 @@ Direct Cited Answer:"""
                 "stream": False,
                 "options": {
                     "temperature": 0.1,
-                    "num_predict": 450,
+                    "num_predict": num_tokens,
                     "top_p": 0.9,
                     "stop": ["User Question:", "Retrieved Document Context:"]
                 }
@@ -532,10 +553,21 @@ Direct Cited Answer:"""
             for c in top_citations
         ])
 
+        ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
+        if ans_len == "concise":
+            len_instruction = "- Provide an ultra-concise answer in at most 1-2 bullet points or short sentences. Be immediate and direct."
+            max_tokens = 220
+        elif ans_len == "comprehensive":
+            len_instruction = "- Provide an in-depth legal analysis with detailed bullet points and thorough contractual comparisons."
+            max_tokens = 900
+        else:
+            len_instruction = "- Clearly list each distinct fact or difference with bullet points."
+            max_tokens = 500
+
         system_prompt = (
             "You are Clario, an elite document intelligence research assistant. "
             "Answer the user's question directly, accurately, and concisely using ONLY the retrieved document context below.\n"
-            "- Clearly list each distinct fact or difference with bullet points.\n"
+            f"{len_instruction}\n"
             "- Cite key claims with bracketed numbers like [1], [2].\n"
             "- Keep the response direct and factual."
         )
@@ -552,7 +584,7 @@ Direct Cited Answer:"""
                 {"role": "user", "content": f"Retrieved Context:\n{context_str}\n\nQuestion: {query}"}
             ],
             "temperature": 0.1,
-            "max_tokens": 500
+            "max_tokens": max_tokens
         }
 
         with httpx.Client(timeout=120.0) as client:
@@ -635,16 +667,19 @@ Direct Cited Answer:"""
         url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
         top_citations = citations[:5]
         context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:1500]}" for c in top_citations])
+        ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
+        stream_tokens = 220 if ans_len == "concise" else (850 if ans_len == "comprehensive" else 450)
+        len_hint = " Keep it ultra-concise in 1-2 short bullet points." if ans_len == "concise" else ""
         system_prompt = (
             "You are Clario, an elite document intelligence research assistant. "
-            "Answer directly and accurately using ONLY the retrieved context below. Cite claims like [1], [2]."
+            f"Answer directly and accurately using ONLY the retrieved context below.{len_hint} Cite claims like [1], [2]."
         )
         prompt = f"{system_prompt}\n\nRetrieved Context:\n{context_str}\n\nUser Question: {request.query}\n\nDirect Cited Answer:"
         model = request.local_model or settings.OLLAMA_MODEL
 
         try:
             with httpx.Client(timeout=120.0) as client:
-                with client.stream("POST", url, json={"model": model, "prompt": prompt, "stream": True, "options": {"temperature": 0.1, "num_predict": 450}}) as resp:
+                with client.stream("POST", url, json={"model": model, "prompt": prompt, "stream": True, "options": {"temperature": 0.1, "num_predict": stream_tokens}}) as resp:
                     resp.raise_for_status()
                     for line in resp.iter_lines():
                         if line:
@@ -658,11 +693,8 @@ Direct Cited Answer:"""
             if not full_text.strip():
                 raise ValueError("Model returned no answer")
         except Exception:
-            if request.require_ai:
-                yield 'event: error\ndata: {"detail":"Ollama could not finish the answer. Check the model connection and retry."}\n\n'
-                return
             provider = "extractive"
-            # Fallback to extractive streaming
+            # Fallback to extractive streaming so the user always receives the cited answer
             full_text = AskService._extractive_synthesis(request.query, citations, False, None)
             yield f"event: token\ndata: {json.dumps({'text': full_text})}\n\n"
         synth_ms = round((time.perf_counter() - t0) * 1000, 2)

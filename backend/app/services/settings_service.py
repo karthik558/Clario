@@ -14,6 +14,7 @@ SETTINGS_FIELDS = (
     "local_ai_provider",
     "local_ai_api_key",
     "thinking_mode",
+    "answer_length",
     "bm25_k1",
     "bm25_b",
     "rrf_k",
