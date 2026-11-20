@@ -120,63 +120,89 @@ export const CritiquePage: React.FC = () => {
     try {
       setDraftingOptionKey(key);
 
-      const res = await startTask<{ point: string; counter_clause: string; rationale: string; mode: string }>({
+      await startTask<{ point: string; counter_clause: string; rationale: string; mode: string }>({
         title: point,
         category: 'counter',
         targetScope: selectedDocTitle,
         route: targetRoute,
-        initialStage: `Synthesizing defense for ${point}...`,
-        executor: async (updateProgress) => {
-          updateProgress(35, `Drafting ${personaId} defense covenants...`, `Analyzing ${point} in ${selectedDocTitle}`);
-          const draftRes = await api.draftCounterClause(point, detail, personaId, selectedDocTitle);
-          updateProgress(90, 'Enforcing protective covenants...', 'Validating bilateral liability protections');
+        initialStage: `Analyzing vulnerability for ${point}...`,
+        executor: async (updateProgress, signal) => {
+          updateProgress(10, `Reviewing vulnerability context...`, `Analyzing ${point} in ${selectedDocTitle}`);
+
+          // Smoothly tick progress from 10% upward while awaiting AI generation
+          let currentPct = 10;
+          const progressInterval = setInterval(() => {
+            if (currentPct < 65) {
+              currentPct += 5;
+              updateProgress(
+                currentPct,
+                `Synthesizing ${personaId.replace(/_/g, ' ')} defense covenants...`,
+                `Drafting protective covenants for ${point}`
+              );
+            }
+          }, 300);
+
+          let draftRes;
+          try {
+            draftRes = await api.draftCounterClause(point, detail, personaId, selectedDocTitle);
+          } finally {
+            clearInterval(progressInterval);
+          }
+
+          if (draftRes && draftRes.counter_clause && !signal.aborted) {
+            updateProgress(70, 'Drafting counter-clause in real-time...', 'Streaming protective terms');
+            setStreamingDraftKey(key);
+            setStreamingText('');
+
+            // Stream text word-by-word with realistic live typing
+            const words = draftRes.counter_clause.trim().split(/\s+/);
+            let accumulated = '';
+            for (let w = 0; w < words.length; w++) {
+              if (signal.aborted) break;
+              accumulated += (w === 0 ? '' : ' ') + words[w];
+              setStreamingText(accumulated);
+              const streamPercent = Math.min(99, Math.round(70 + ((w + 1) / words.length) * 28));
+              updateProgress(streamPercent, `Writing counter-clause (${w + 1}/${words.length} words)...`);
+              await new Promise((resolve) => setTimeout(resolve, 20));
+            }
+
+            // Commit final state to React state and localStorage
+            setData(prev => {
+              if (!prev) return prev;
+              const nextPersonas = prev.personas.map(p => {
+                if (p.persona_id !== personaId) return p;
+                const nextFlags = p.red_flags.map((item, fIdx) => {
+                  if (fIdx === idx || item.point === point) {
+                    return {
+                      ...item,
+                      counter_clause: draftRes.counter_clause
+                    };
+                  }
+                  return item;
+                });
+                return { ...p, red_flags: nextFlags };
+              });
+              const nextData = { ...prev, personas: nextPersonas };
+              saveCritiqueToStorage(nextData, selectedDocIds);
+              return nextData;
+            });
+
+            setAiDraftedFlags(prev => {
+              const updated = { ...prev, [key]: true };
+              try {
+                localStorage.setItem(CRITIQUE_AI_FLAGS_KEY, JSON.stringify(updated));
+              } catch {
+                // ignore
+              }
+              return updated;
+            });
+
+            updateProgress(100, 'Defense clause drafted successfully', 'Completed');
+          }
+
           return draftRes;
         },
       });
-
-      if (res && res.counter_clause) {
-        setStreamingDraftKey(key);
-        setStreamingText('');
-        // Stream text word-by-word with realistic live typing
-        const words = res.counter_clause.trim().split(/\s+/);
-        let accumulated = '';
-        for (let w = 0; w < words.length; w++) {
-          accumulated += (w === 0 ? '' : ' ') + words[w];
-          setStreamingText(accumulated);
-          await new Promise((resolve) => setTimeout(resolve, 24));
-        }
-
-        // Commit final state to React state and localStorage
-        setData(prev => {
-          if (!prev) return prev;
-          const nextPersonas = prev.personas.map(p => {
-            if (p.persona_id !== personaId) return p;
-            const nextFlags = p.red_flags.map((item, fIdx) => {
-              if (fIdx === idx || item.point === point) {
-                return {
-                  ...item,
-                  counter_clause: res.counter_clause
-                };
-              }
-              return item;
-            });
-            return { ...p, red_flags: nextFlags };
-          });
-          const nextData = { ...prev, personas: nextPersonas };
-          saveCritiqueToStorage(nextData, selectedDocIds);
-          return nextData;
-        });
-
-        setAiDraftedFlags(prev => {
-          const updated = { ...prev, [key]: true };
-          try {
-            localStorage.setItem(CRITIQUE_AI_FLAGS_KEY, JSON.stringify(updated));
-          } catch {
-            // ignore
-          }
-          return updated;
-        });
-      }
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
         console.error('Failed to draft counter-clause with AI', err);
@@ -263,16 +289,32 @@ export const CritiquePage: React.FC = () => {
         route: '/critique#audit-consensus',
         initialStage: 'Binding document scope and loading passages...',
         executor: async (updateProgress) => {
-          updateProgress(20, 'Analyzing Legal Counsel & CFO liabilities...', `Auditing ${selectedDocTitle} for liability super-caps and auto-renewals`);
-          if (aiMode) {
-            updateProgress(55, 'Synthesizing CISO, CCO & COO covenants with AI...', 'Drafting 48h breach SLAs, regulatory audit rights, and uptime commitments');
+          updateProgress(10, 'Analyzing Legal Counsel & CFO liabilities...', `Auditing ${selectedDocTitle}`);
+
+          let currentPct = 10;
+          const timer = setInterval(() => {
+            if (currentPct < 85) {
+              currentPct += 6;
+              updateProgress(
+                currentPct,
+                aiMode ? 'Synthesizing 5-council audit with AI...' : 'Auditing liabilities, SLAs & covenants...',
+                `Cross-referencing liability caps and breach notification timelines`
+              );
+            }
+          }, 300);
+
+          let critiqueRes;
+          try {
+            critiqueRes = await api.evaluateCritique(
+              docIds.length > 0 ? docIds : undefined,
+              clauseText.trim() || undefined,
+              aiMode
+            );
+          } finally {
+            clearInterval(timer);
           }
-          const critiqueRes = await api.evaluateCritique(
-            docIds.length > 0 ? docIds : undefined,
-            clauseText.trim() || undefined,
-            aiMode
-          );
-          updateProgress(95, 'Consolidating composite executive consensus...', 'Aggregating risk ratings across all 5 councils');
+
+          updateProgress(96, 'Consolidating composite executive consensus...', 'Aggregating risk ratings across all 5 councils');
           return critiqueRes;
         },
       });
