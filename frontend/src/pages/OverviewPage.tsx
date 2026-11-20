@@ -490,7 +490,7 @@ export const OverviewPage: React.FC = () => {
           {/* Active Document Risk Cards & Radar Visualization */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch pt-1">
             {/* Document Cards List */}
-            <div className={`${riskScorecard.documents?.[0]?.pillars?.length >= 3 ? 'lg:col-span-6' : 'lg:col-span-12'} flex flex-col gap-2.5 max-h-[380px] overflow-y-auto pr-1.5`}>
+            <div className={`${riskScorecard.documents?.[0]?.pillars?.length >= 3 ? 'lg:col-span-6' : 'lg:col-span-12'} flex flex-col gap-2.5 max-h-[380px] overflow-y-auto p-1.5 pr-2`}>
               {riskScorecard.documents?.map((doc: any, dIdx: number) => {
                 const isSelected = selectedRiskDocIndex === dIdx;
                 const isCompared = comparisonRiskDocIndex === dIdx;
@@ -500,7 +500,7 @@ export const OverviewPage: React.FC = () => {
                     onClick={() => setSelectedRiskDocIndex(dIdx)}
                     className={`p-3.5 rounded-md border transition-all flex flex-col justify-between shadow-xs cursor-pointer ${
                       isSelected
-                        ? 'border-clario-navy bg-clario-navy/5 ring-1 ring-clario-navy'
+                        ? 'border-clario-navy bg-clario-navy/5 ring-1 ring-clario-navy ring-inset'
                         : isCompared
                         ? 'border-slate-400 bg-slate-50'
                         : 'border-slate-200 bg-white hover:border-slate-300'
