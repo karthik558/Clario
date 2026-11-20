@@ -189,7 +189,7 @@ Respond strictly with a concise JSON object:
                     "focus": p.get("focus", "Governance Scrutiny"),
                     "verdict": p.get("verdict", "Caution Advised"),
                     "risk_score": int(p.get("risk_score", 50)),
-                    "red_flags": clean_flags
+                    "red_flags": CritiqueService._deduplicate_flags(clean_flags, max_items=4)
                 })
 
         return {
@@ -201,6 +201,40 @@ Respond strictly with a concise JSON object:
             "mode": "ai_multi_persona_synthesis",
             "personas": valid_personas
         }
+
+    @staticmethod
+    def _deduplicate_flags(flags: List[Dict[str, Any]], max_items: int = 4) -> List[Dict[str, Any]]:
+        seen_keys = set()
+        deduped = []
+        severity_priority = {"Critical": 3, "High": 2, "Medium": 1, "Low": 0}
+
+        # Sort by severity priority so Critical and High risks take precedence
+        sorted_flags = sorted(
+            flags,
+            key=lambda x: severity_priority.get(str(x.get("severity", "Medium")).capitalize(), 1),
+            reverse=True
+        )
+
+        for f in sorted_flags:
+            raw_title = str(f.get("point", "")).strip()
+            # Normalize title to compare semantic duplicates
+            norm_title = re.sub(r'[^a-z0-9]', '', raw_title.lower())
+            if len(norm_title) < 4:
+                norm_title = re.sub(r'[^a-z0-9]', '', str(f.get("detail", ""))[:40].lower())
+
+            if norm_title in seen_keys:
+                continue
+
+            # Check if any existing key is an exact prefix or substring of another
+            if any(norm_title in existing or existing in norm_title for existing in seen_keys if len(existing) > 10 and len(norm_title) > 10):
+                continue
+
+            seen_keys.add(norm_title)
+            deduped.append(f)
+            if len(deduped) >= max_items:
+                break
+
+        return deduped
 
     @staticmethod
     def _evaluate_heuristic(
@@ -220,28 +254,28 @@ Respond strictly with a concise JSON object:
                     "counter_clause": "Add mutual liability super-cap and bilateral indemnification covenants."
                 })
 
-        if not legal_red_flags:
-            if re.search(r'(?:aggregate|cumulative)\s+liability\s+(?:is\s+)?(?:capped|limited)|sole\s+remedy|waive[sd]?\s+(?:all\s+)?consequential\s+damages|capped\s+at\s+(?:fifty|\$100|nominal)', corpus_lower):
-                legal_red_flags.append({
-                    "severity": "High",
-                    "point": "Asymmetric Liability Ceiling",
-                    "detail": "Damages are restricted by unilateral liability caps or exclusive remedy limitations.",
-                    "counter_clause": "Add mutual super-cap for confidentiality breaches and set mutual overall liability ceiling to trailing fees."
-                })
-            if re.search(r'exclusive\s+(?:jurisdiction|venue)\s+(?:shall\s+be|in)|binding\s+arbitration\s+in', corpus_lower):
-                legal_red_flags.append({
-                    "severity": "Medium",
-                    "point": "Disadvantageous Forum Selection",
-                    "detail": "Exclusive venue designated in non-neutral territory creating dispute resolution friction.",
-                    "counter_clause": "Amend jurisdiction to mutual neutral forum or standard commercial arbitration."
-                })
-            if re.search(r'unilateral(?:ly)?\s+modify|update\s+(?:these\s+)?terms\s+without\s+notice|sole\s+discretion\s+to\s+amend', corpus_lower):
-                legal_red_flags.append({
-                    "severity": "High",
-                    "point": "Unilateral Modification Clause",
-                    "detail": "Agreement permits counterparty to update terms or acceptable use policies without affirmative consent.",
-                    "counter_clause": "Require 30 days prior written notice and express customer termination right without penalty."
-                })
+        if re.search(r'(?:aggregate|cumulative)\s+liability\s+(?:is\s+)?(?:capped|limited)|sole\s+remedy|waive[sd]?\s+(?:all\s+)?consequential\s+damages|capped\s+at\s+(?:fifty|\$100|nominal)', corpus_lower):
+            legal_red_flags.append({
+                "severity": "High",
+                "point": "Asymmetric Liability Ceiling",
+                "detail": "Damages are restricted by unilateral liability caps or exclusive remedy limitations.",
+                "counter_clause": "Add mutual super-cap for confidentiality breaches and set mutual overall liability ceiling to trailing fees."
+            })
+        if re.search(r'exclusive\s+(?:jurisdiction|venue)\s+(?:shall\s+be|in)|binding\s+arbitration\s+in', corpus_lower):
+            legal_red_flags.append({
+                "severity": "Medium",
+                "point": "Disadvantageous Forum Selection",
+                "detail": "Exclusive venue designated in non-neutral territory creating dispute resolution friction.",
+                "counter_clause": "Amend jurisdiction to mutual neutral forum or standard commercial arbitration."
+            })
+        if re.search(r'unilateral(?:ly)?\s+modify|update\s+(?:these\s+)?terms\s+without\s+notice|sole\s+discretion\s+to\s+amend', corpus_lower):
+            legal_red_flags.append({
+                "severity": "High",
+                "point": "Unilateral Modification Clause",
+                "detail": "Agreement permits counterparty to update terms or acceptable use policies without affirmative consent.",
+                "counter_clause": "Require 30 days prior written notice and express customer termination right without penalty."
+            })
+        legal_red_flags = CritiqueService._deduplicate_flags(legal_red_flags, max_items=4)
 
         # 2. Financial Persona Evaluation (CFO)
         finance_red_flags = []
@@ -254,28 +288,28 @@ Respond strictly with a concise JSON object:
                     "counter_clause": "Eliminate auto-renewal lock-in and cap annual price escalation."
                 })
 
-        if not finance_red_flags:
-            if re.search(r'auto(?:matic)?(?:ally)?\s+renew|renewal\s+for\s+(?:an\s+additional|\d+)\s+(?:months?|year)|prior\s+notice\s+of\s+non-renewal', corpus_lower):
-                finance_red_flags.append({
-                    "severity": "Critical",
-                    "point": "Automatic Annual Renewal Lock-in",
-                    "detail": "Agreement auto-renews for successor multi-month periods unless formal non-renewal notice is delivered.",
-                    "counter_clause": "Require affirmative opt-in renewal notice or reduce non-renewal window to 30 calendar days."
-                })
-            if re.search(r'price\s+increase|annual\s+escalator|adjust\s+(?:the\s+)?fees?\s+(?:upon|at)|subsequent\s+term\s+pricing', corpus_lower):
-                finance_red_flags.append({
-                    "severity": "High",
-                    "point": "Uncapped Price Escalators Upon Renewal",
-                    "detail": "Discretion reserved to adjust standard pricing or fees upon successive terms.",
-                    "counter_clause": "Cap annual renewal price increases to the lesser of 3% or CPI (Consumer Price Index)."
-                })
-            if re.search(r'late\s+(?:payment\s+)?fee|interest\s+at\s+(?:the\s+rate\s+of\s+)?\d+%(?:\s+per\s+month)?|penalty\s+for\s+late\s+payment', corpus_lower):
-                finance_red_flags.append({
-                    "severity": "Medium",
-                    "point": "Aggressive Late Payment Penalties",
-                    "detail": "Overdue invoices incur compound interest or immediate suspension of service.",
-                    "counter_clause": "Require 15-day formal cure notice prior to late interest accrual or service suspension."
-                })
+        if re.search(r'auto(?:matic)?(?:ally)?\s+renew|renewal\s+for\s+(?:an\s+additional|\d+)\s+(?:months?|year)|prior\s+notice\s+of\s+non-renewal', corpus_lower):
+            finance_red_flags.append({
+                "severity": "Critical",
+                "point": "Automatic Annual Renewal Lock-in",
+                "detail": "Agreement auto-renews for successor multi-month periods unless formal non-renewal notice is delivered.",
+                "counter_clause": "Require affirmative opt-in renewal notice or reduce non-renewal window to 30 calendar days."
+            })
+        if re.search(r'price\s+increase|annual\s+escalator|adjust\s+(?:the\s+)?fees?\s+(?:upon|at)|subsequent\s+term\s+pricing', corpus_lower):
+            finance_red_flags.append({
+                "severity": "High",
+                "point": "Uncapped Price Escalators Upon Renewal",
+                "detail": "Discretion reserved to adjust standard pricing or fees upon successive terms.",
+                "counter_clause": "Cap annual renewal price increases to the lesser of 3% or CPI (Consumer Price Index)."
+            })
+        if re.search(r'late\s+(?:payment\s+)?fee|interest\s+at\s+(?:the\s+rate\s+of\s+)?\d+%(?:\s+per\s+month)?|penalty\s+for\s+late\s+payment', corpus_lower):
+            finance_red_flags.append({
+                "severity": "Medium",
+                "point": "Aggressive Late Payment Penalties",
+                "detail": "Overdue invoices incur compound interest or immediate suspension of service.",
+                "counter_clause": "Require 15-day formal cure notice prior to late interest accrual or service suspension."
+            })
+        finance_red_flags = CritiqueService._deduplicate_flags(finance_red_flags, max_items=4)
 
         # 3. CISO Persona Evaluation
         ciso_red_flags = []
@@ -288,28 +322,28 @@ Respond strictly with a concise JSON object:
                     "counter_clause": "Mandate strict data eradication and 72-hour security incident notification."
                 })
 
-        if not ciso_red_flags:
-            if re.search(r'(?:model|algorithm)\s+(?:training|retraining)\s+on\s+customer|telemetry\s+retention|prompt\s+(?:data\s+)?retention', corpus_lower):
-                ciso_red_flags.append({
-                    "severity": "High",
-                    "point": "Ambiguous Model Telemetry Retention",
-                    "detail": "Customer prompt metadata and interaction telemetry retained without verified deletion schedules.",
-                    "counter_clause": "Mandate verifiable Zero Data Retention (ZDR) architecture."
-                })
-            if re.search(r'sub-?processors?\s+without\s+(?:prior\s+)?(?:notice|consent)|substitute\s+sub-?processors?', corpus_lower):
-                ciso_red_flags.append({
-                    "severity": "Critical",
-                    "point": "Subprocessor Delegation Without Prior Veto",
-                    "detail": "Subprocessors may be engaged or substituted without affirmative customer approval.",
-                    "counter_clause": "Establish affirmative 30-day prior written notice with customer right to object or terminate."
-                })
-            if re.search(r'breach\s+notification|security\s+incident\s+(?:reporting|escalation)|notify\s+of\s+(?:any\s+)?security\s+breach', corpus_lower):
-                ciso_red_flags.append({
-                    "severity": "High",
-                    "point": "Security Incident Notification Timeline",
-                    "detail": "Security incident notice window is not bound to a strict emergency timeline.",
-                    "counter_clause": "Strict contractual requirement for notice within 48 to 72 hours of confirmed security incident."
-                })
+        if re.search(r'(?:model|algorithm)\s+(?:training|retraining)\s+on\s+customer|telemetry\s+retention|prompt\s+(?:data\s+)?retention', corpus_lower):
+            ciso_red_flags.append({
+                "severity": "High",
+                "point": "Ambiguous Model Telemetry Retention",
+                "detail": "Customer prompt metadata and interaction telemetry retained without verified deletion schedules.",
+                "counter_clause": "Mandate verifiable Zero Data Retention (ZDR) architecture."
+            })
+        if re.search(r'sub-?processors?\s+without\s+(?:prior\s+)?(?:notice|consent)|substitute\s+sub-?processors?', corpus_lower):
+            ciso_red_flags.append({
+                "severity": "Critical",
+                "point": "Subprocessor Delegation Without Prior Veto",
+                "detail": "Subprocessors may be engaged or substituted without affirmative customer approval.",
+                "counter_clause": "Establish affirmative 30-day prior written notice with customer right to object or terminate."
+            })
+        if re.search(r'breach\s+notification|security\s+incident\s+(?:reporting|escalation)|notify\s+of\s+(?:any\s+)?security\s+breach', corpus_lower):
+            ciso_red_flags.append({
+                "severity": "High",
+                "point": "Security Incident Notification Timeline",
+                "detail": "Security incident notice window is not bound to a strict emergency timeline.",
+                "counter_clause": "Strict contractual requirement for notice within 48 to 72 hours of confirmed security incident."
+            })
+        ciso_red_flags = CritiqueService._deduplicate_flags(ciso_red_flags, max_items=4)
 
         # 4. Chief Compliance Officer (CCO) Persona Evaluation
         cco_red_flags = []
@@ -322,28 +356,28 @@ Respond strictly with a concise JSON object:
                     "counter_clause": "Incorporate standardized Data Protection Addendum (DPA) with explicit annual third-party audit verification."
                 })
 
-        if not cco_red_flags:
-            if re.search(r'no\s+audit\s+rights|sole\s+expense\s+of\s+customer\s+audit|audit\s+limited\s+to\s+once\s+every\s+(?:two|three)\s+years', corpus_lower):
-                cco_red_flags.append({
-                    "severity": "High",
-                    "point": "Restricted Regulatory Audit Rights",
-                    "detail": "Customer or supervisory authority inspection rights are unduly constrained or shifted fully to customer expense.",
-                    "counter_clause": "Grant customer and regulatory authorities annual inspection rights with SOC 2 Type II audit report delivery."
-                })
-            elif re.search(r'cross-?border\s+transfer|transfer\s+of\s+personal\s+data\s+outside|international\s+data\s+transfer', corpus_lower):
-                cco_red_flags.append({
-                    "severity": "Critical",
-                    "point": "Unregulated Cross-Border Data Flows",
-                    "detail": "Customer personal data transferred across borders without incorporated Standard Contractual Clauses (SCCs).",
-                    "counter_clause": "Incorporate EU Standard Contractual Clauses (SCCs) and UK International Data Transfer Addendum."
-                })
-            else:
-                cco_red_flags.append({
-                    "severity": "Medium",
-                    "point": "Absence of Express Statutory Indemnity",
-                    "detail": "Agreement lacks dedicated indemnity protecting customer against supervisory regulatory fines arising from vendor defaults.",
-                    "counter_clause": "Vendor shall defend and indemnify customer against all administrative fines and civil penalties resulting from vendor data breaches."
-                })
+        if re.search(r'no\s+audit\s+rights|sole\s+expense\s+of\s+customer\s+audit|audit\s+limited\s+to\s+once\s+every\s+(?:two|three)\s+years', corpus_lower):
+            cco_red_flags.append({
+                "severity": "High",
+                "point": "Restricted Regulatory Audit Rights",
+                "detail": "Customer or supervisory authority inspection rights are unduly constrained or shifted fully to customer expense.",
+                "counter_clause": "Grant customer and regulatory authorities annual inspection rights with SOC 2 Type II audit report delivery."
+            })
+        elif re.search(r'cross-?border\s+transfer|transfer\s+of\s+personal\s+data\s+outside|international\s+data\s+transfer', corpus_lower):
+            cco_red_flags.append({
+                "severity": "Critical",
+                "point": "Unregulated Cross-Border Data Flows",
+                "detail": "Customer personal data transferred across borders without incorporated Standard Contractual Clauses (SCCs).",
+                "counter_clause": "Incorporate EU Standard Contractual Clauses (SCCs) and UK International Data Transfer Addendum."
+            })
+        else:
+            cco_red_flags.append({
+                "severity": "Medium",
+                "point": "Absence of Express Statutory Indemnity",
+                "detail": "Agreement lacks dedicated indemnity protecting customer against supervisory regulatory fines arising from vendor defaults.",
+                "counter_clause": "Vendor shall defend and indemnify customer against all administrative fines and civil penalties resulting from vendor data breaches."
+            })
+        cco_red_flags = CritiqueService._deduplicate_flags(cco_red_flags, max_items=4)
 
         # 5. Chief Operating Officer (COO) Persona Evaluation
         coo_red_flags = []
@@ -356,28 +390,28 @@ Respond strictly with a concise JSON object:
                     "counter_clause": "Institute 99.9% availability SLA with tiered financial service credits and termination rights for chronic outages."
                 })
 
-        if not coo_red_flags:
-            if re.search(r'as\s+is|as\s+available|no\s+(?:warranty\s+of\s+)?uninterrupted|best\s+efforts\s+availability', corpus_lower):
-                coo_red_flags.append({
-                    "severity": "High",
-                    "point": "Disclaimed Operational Availability",
-                    "detail": "Services provided without formal Service Level Agreement (SLA) or enforceable uptime commitments.",
-                    "counter_clause": "Provide 99.9% monthly uptime guarantee backed by tiered service fee credits for non-compliance."
-                })
-            if re.search(r'no\s+transition\s+assistance|immediate\s+cessation\s+upon\s+termination|data\s+destroyed\s+(?:within\s+)?(?:\d+\s+days\s+of|immediately\s+upon)\s+termination', corpus_lower):
-                coo_red_flags.append({
-                    "severity": "Critical",
-                    "point": "Abrupt Termination & Zero Exit Assistance",
-                    "detail": "Lack of disengagement assistance or orderly transition period creates severe vendor operational lock-in.",
-                    "counter_clause": "Vendor must provide 60-day post-termination transition support at standard rates and export all customer data in structured formats."
-                })
-            else:
-                coo_red_flags.append({
-                    "severity": "Medium",
-                    "point": "Unspecified Disaster Recovery / RTO SLAs",
-                    "detail": "Recovery Time Objective (RTO) and Recovery Point Objective (RPO) SLAs are absent from contractual exhibits.",
-                    "counter_clause": "Contractually commit to a 4-hour RTO and 1-hour RPO with annual disaster recovery drill validation."
-                })
+        if re.search(r'as\s+is|as\s+available|no\s+(?:warranty\s+of\s+)?uninterrupted|best\s+efforts\s+availability', corpus_lower):
+            coo_red_flags.append({
+                "severity": "High",
+                "point": "Disclaimed Operational Availability",
+                "detail": "Services provided without formal Service Level Agreement (SLA) or enforceable uptime commitments.",
+                "counter_clause": "Provide 99.9% monthly uptime guarantee backed by tiered service fee credits for non-compliance."
+            })
+        if re.search(r'no\s+transition\s+assistance|immediate\s+cessation\s+upon\s+termination|data\s+destroyed\s+(?:within\s+)?(?:\d+\s+days\s+of|immediately\s+upon)\s+termination', corpus_lower):
+            coo_red_flags.append({
+                "severity": "Critical",
+                "point": "Abrupt Termination & Zero Exit Assistance",
+                "detail": "Lack of disengagement assistance or orderly transition period creates severe vendor operational lock-in.",
+                "counter_clause": "Vendor must provide 60-day post-termination transition support at standard rates and export all customer data in structured formats."
+            })
+        else:
+            coo_red_flags.append({
+                "severity": "Medium",
+                "point": "Unspecified Disaster Recovery / RTO SLAs",
+                "detail": "Recovery Time Objective (RTO) and Recovery Point Objective (RPO) SLAs are absent from contractual exhibits.",
+                "counter_clause": "Contractually commit to a 4-hour RTO and 1-hour RPO with annual disaster recovery drill validation."
+            })
+        coo_red_flags = CritiqueService._deduplicate_flags(coo_red_flags, max_items=4)
 
         legal_score = min(100, len(legal_red_flags) * 32)
         finance_score = min(100, len(finance_red_flags) * 32)

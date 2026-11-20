@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/layout/PageHeader';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   Scale,
@@ -24,20 +24,65 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 
+const getCritiqueCacheKey = (docIds: string[]) => {
+  const sorted = [...docIds].sort().join(',');
+  return `clario_critique_cache_${sorted || 'all'}`;
+};
+const CRITIQUE_AI_FLAGS_KEY = 'clario_critique_ai_drafted';
+const CRITIQUE_USE_AI_KEY = 'clario_critique_use_ai';
+
+const saveCritiqueToStorage = (critiqueData: CritiqueResponse | null, docIds: string[]) => {
+  if (!critiqueData) return;
+  try {
+    localStorage.setItem(getCritiqueCacheKey(docIds), JSON.stringify(critiqueData));
+  } catch {
+    // Non-fatal if storage is unavailable
+  }
+};
+
 export const CritiquePage: React.FC = () => {
   const navigate = useNavigate();
   const { startTask, activeTasks, getLatestTask, setIsDrawerOpen } = useBackgroundTasks();
-  const [data, setData] = useState<CritiqueResponse | null>(null);
+  const [data, setData] = useState<CritiqueResponse | null>(() => {
+    try {
+      const stored = localStorage.getItem('clario_critique_cache_all');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed.personas) && parsed.personas.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
-  const [useAi, setUseAi] = useState<boolean>(false);
+  const [useAi, setUseAi] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(CRITIQUE_USE_AI_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [customClause, setCustomClause] = useState('');
   const [loading, setLoading] = useState(true);
   const [evaluating, setEvaluating] = useState(false);
   const [activePersonaTab, setActivePersonaTab] = useState<string>('general_counsel');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [draftingOptionKey, setDraftingOptionKey] = useState<string | null>(null);
-  const [aiDraftedFlags, setAiDraftedFlags] = useState<Record<string, boolean>>({});
+  const [streamingDraftKey, setStreamingDraftKey] = useState<string | null>(null);
+  const [streamingText, setStreamingText] = useState<string>('');
+  const [aiDraftedFlags, setAiDraftedFlags] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem(CRITIQUE_AI_FLAGS_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch {
+      // ignore
+    }
+    return {};
+  });
 
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -74,6 +119,7 @@ export const CritiquePage: React.FC = () => {
     const targetRoute = `/critique?council=${personaId}#flag-${personaId}-${idx}`;
     try {
       setDraftingOptionKey(key);
+
       const res = await startTask<{ point: string; counter_clause: string; rationale: string; mode: string }>({
         title: point,
         category: 'counter',
@@ -87,23 +133,49 @@ export const CritiquePage: React.FC = () => {
           return draftRes;
         },
       });
+
       if (res && res.counter_clause) {
+        setStreamingDraftKey(key);
+        setStreamingText('');
+        // Stream text word-by-word with realistic live typing
+        const words = res.counter_clause.trim().split(/\s+/);
+        let accumulated = '';
+        for (let w = 0; w < words.length; w++) {
+          accumulated += (w === 0 ? '' : ' ') + words[w];
+          setStreamingText(accumulated);
+          await new Promise((resolve) => setTimeout(resolve, 24));
+        }
+
+        // Commit final state to React state and localStorage
         setData(prev => {
           if (!prev) return prev;
           const nextPersonas = prev.personas.map(p => {
             if (p.persona_id !== personaId) return p;
-            const nextFlags = [...p.red_flags];
-            if (nextFlags[idx]) {
-              nextFlags[idx] = {
-                ...nextFlags[idx],
-                counter_clause: res.counter_clause
-              };
-            }
+            const nextFlags = p.red_flags.map((item, fIdx) => {
+              if (fIdx === idx || item.point === point) {
+                return {
+                  ...item,
+                  counter_clause: res.counter_clause
+                };
+              }
+              return item;
+            });
             return { ...p, red_flags: nextFlags };
           });
-          return { ...prev, personas: nextPersonas };
+          const nextData = { ...prev, personas: nextPersonas };
+          saveCritiqueToStorage(nextData, selectedDocIds);
+          return nextData;
         });
-        setAiDraftedFlags(prev => ({ ...prev, [key]: true }));
+
+        setAiDraftedFlags(prev => {
+          const updated = { ...prev, [key]: true };
+          try {
+            localStorage.setItem(CRITIQUE_AI_FLAGS_KEY, JSON.stringify(updated));
+          } catch {
+            // ignore
+          }
+          return updated;
+        });
       }
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
@@ -111,22 +183,64 @@ export const CritiquePage: React.FC = () => {
       }
     } finally {
       setDraftingOptionKey(null);
+      setStreamingDraftKey(null);
+      setStreamingText('');
     }
   };
 
-  const fetchCritique = async (docIds?: string[], aiMode: boolean = useAi) => {
+  const fetchCritique = async (docIds: string[] = selectedDocIds, aiMode: boolean = useAi) => {
+    const cacheKey = getCritiqueCacheKey(docIds);
     try {
       setLoading(true);
+
+      // Check localStorage for persisted critique data first
+      try {
+        const stored = localStorage.getItem(cacheKey);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && Array.isArray(parsed.personas) && parsed.personas.length > 0) {
+            setData(parsed);
+          }
+        }
+      } catch {
+        // ignore
+      }
+
       // Restore latest completed task result if available
       const cached = getLatestTask('critique');
       if (cached && cached.status === 'completed' && cached.result) {
         setData(cached.result);
       }
+
       const [critRes, docs] = await Promise.all([
         api.evaluateCritique(docIds && docIds.length > 0 ? docIds : undefined, undefined, aiMode).catch(() => null),
         api.getDocuments().catch(() => [])
       ]);
-      if (critRes) setData(critRes);
+
+      if (critRes) {
+        setData(prev => {
+          if (!prev) {
+            saveCritiqueToStorage(critRes, docIds);
+            return critRes;
+          }
+          // Preserve any counter clauses that the user generated with AI
+          const mergedPersonas = critRes.personas.map(newP => {
+            const oldP = prev.personas.find(p => p.persona_id === newP.persona_id);
+            if (!oldP) return newP;
+            const mergedFlags = newP.red_flags.map((newF, fIdx) => {
+              const oldF = oldP.red_flags.find(of => of.point === newF.point) || oldP.red_flags[fIdx];
+              if (oldF && oldF.counter_clause && aiDraftedFlags[`${newP.persona_id}-${fIdx}`]) {
+                return { ...newF, counter_clause: oldF.counter_clause };
+              }
+              return newF;
+            });
+            return { ...newP, red_flags: mergedFlags };
+          });
+          const merged = { ...critRes, personas: mergedPersonas };
+          saveCritiqueToStorage(merged, docIds);
+          return merged;
+        });
+      }
       setDocuments(docs);
     } catch (err) {
       console.error('Failed to load critique evaluation', err);
@@ -162,7 +276,10 @@ export const CritiquePage: React.FC = () => {
           return critiqueRes;
         },
       });
-      setData(res);
+      if (res) {
+        setData(res);
+        saveCritiqueToStorage(res, docIds);
+      }
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
         console.error('Evaluation failed', err);
@@ -181,6 +298,11 @@ export const CritiquePage: React.FC = () => {
   const handleToggleAi = () => {
     const nextAi = !useAi;
     setUseAi(nextAi);
+    try {
+      localStorage.setItem(CRITIQUE_USE_AI_KEY, String(nextAi));
+    } catch {
+      // ignore
+    }
     handleEvaluate(selectedDocIds, nextAi, customClause);
   };
 
@@ -213,6 +335,19 @@ export const CritiquePage: React.FC = () => {
   const personaCiso = data?.personas.find((p) => p.persona_id === 'ciso');
   const personaCco = data?.personas.find((p) => p.persona_id === 'cco');
   const personaCoo = data?.personas.find((p) => p.persona_id === 'coo');
+
+  const distinctRedFlags = useMemo(() => {
+    if (!activePersona || !activePersona.red_flags) return [];
+    const seen = new Set<string>();
+    return activePersona.red_flags.filter((flag) => {
+      const key = (flag.point || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        return true;
+      }
+      return false;
+    });
+  }, [activePersona]);
 
   return (
     <div className="space-y-6">
@@ -524,71 +659,91 @@ export const CritiquePage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {activePersona.red_flags.map((flag, idx) => (
-              <Card
-                key={idx}
-                id={`flag-${activePersona.persona_id}-${idx}`}
-                className="p-5 bg-white border border-slate-200 shadow-xs space-y-3 scroll-mt-6 transition-all duration-300"
-              >
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={flag.severity === 'Critical' ? 'red' : flag.severity === 'High' ? 'gold' : 'navy'} size="sm">
-                      {flag.severity.toUpperCase()}
-                    </Badge>
-                    <h3 className="font-bold text-xs text-slate-900">{flag.point}</h3>
-                  </div>
-                </div>
+            {distinctRedFlags.map((flag, idx) => {
+              const flagKey = `${activePersona.persona_id}-${idx}`;
+              const isDrafting = draftingOptionKey === flagKey;
+              const isStreaming = streamingDraftKey === flagKey;
+              const displayClause = isStreaming ? streamingText : flag.counter_clause;
+              const isAiGenerated = !!aiDraftedFlags[flagKey];
 
-                <p className="text-xs text-slate-700 leading-relaxed">{flag.detail}</p>
-
-                <div className="bg-slate-50 p-3.5 rounded-md border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
+              return (
+                <Card
+                  key={idx}
+                  id={`flag-${activePersona.persona_id}-${idx}`}
+                  className="p-5 bg-white border border-slate-200 shadow-xs space-y-3 scroll-mt-6 transition-all duration-300"
+                >
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-800">
-                        Recommended Strategic Counter-Clause
-                      </span>
-                      {aiDraftedFlags[`${activePersona.persona_id}-${idx}`] && (
-                        <Badge variant="navy" size="sm">
-                          AI Generated
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        disabled={draftingOptionKey === `${activePersona.persona_id}-${idx}`}
-                        onClick={() => handleDraftOptionWithAi(activePersona.persona_id, flag.point, flag.detail, idx)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-xs"
-                        title="Generate or rewrite an AI defense counter-clause specifically for this risk"
-                      >
-                        <Cpu className="w-3 h-3 text-slate-500" />
-                        <span>{draftingOptionKey === `${activePersona.persona_id}-${idx}` ? 'Generating with AI...' : 'Generate with AI'}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyClause(flag.counter_clause, `${activePersona.persona_id}-${idx}`)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
-                      >
-                        {copiedId === `${activePersona.persona_id}-${idx}` ? (
-                          <>
-                            <Check className="w-3 h-3 text-slate-700" />
-                            <span>Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3 text-slate-500" />
-                            <span>Copy Clause</span>
-                          </>
-                        )}
-                      </button>
+                      <Badge variant={flag.severity === 'Critical' ? 'red' : flag.severity === 'High' ? 'gold' : 'navy'} size="sm">
+                        {flag.severity.toUpperCase()}
+                      </Badge>
+                      <h3 className="font-bold text-xs text-slate-900">{flag.point}</h3>
                     </div>
                   </div>
-                  <p className="text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap">
-                    "{flag.counter_clause}"
-                  </p>
-                </div>
-              </Card>
-            ))}
+
+                  <p className="text-xs text-slate-700 leading-relaxed">{flag.detail}</p>
+
+                  <div className="bg-slate-50 p-3.5 rounded-md border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-800">
+                          Recommended Strategic Counter-Clause
+                        </span>
+                        {isAiGenerated && (
+                          <Badge variant="navy" size="md">
+                            AI Generated
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={isDrafting || isStreaming}
+                          onClick={() => handleDraftOptionWithAi(activePersona.persona_id, flag.point, flag.detail, idx)}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
+                          title="Generate or rewrite an AI defense counter-clause specifically for this risk"
+                        >
+                          {isDrafting || isStreaming ? (
+                            <Loader2 className="w-3 h-3 text-slate-500 animate-spin" />
+                          ) : (
+                            <Cpu className="w-3 h-3 text-slate-500" />
+                          )}
+                          <span>
+                            {isDrafting || isStreaming
+                              ? 'Generating...'
+                              : 'Generate with AI'}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isStreaming}
+                          onClick={() => handleCopyClause(displayClause, flagKey)}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors"
+                        >
+                          {copiedId === flagKey ? (
+                            <>
+                              <Check className="w-3 h-3 text-slate-700" />
+                              <span>Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-slate-500" />
+                              <span>Copy Clause</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs font-mono text-slate-900 leading-relaxed whitespace-pre-wrap">
+                      "{displayClause}"
+                      {isStreaming && (
+                        <span className="inline-block w-1 h-3.5 bg-slate-700 animate-pulse ml-0.5 align-middle" />
+                      )}
+                    </p>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}
