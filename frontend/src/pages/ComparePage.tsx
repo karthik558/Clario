@@ -85,8 +85,22 @@ export const ComparePage: React.FC = () => {
           // Pre-populate multi-document selection with all available docs
           setSelectedMultiDocIds(docs.map((d) => d.id));
 
-          const urlDocA = getSearchParam('doc_a');
-          const urlDocB = getSearchParam('doc_b');
+          const urlMode = getSearchParam('mode');
+          const urlDocs = getSearchParam('docs');
+          const urlDocA = getSearchParam('doc_a') || getSearchParam('docA');
+          const urlDocB = getSearchParam('doc_b') || getSearchParam('docB');
+
+          if (urlMode === 'multi') {
+            setCompareMode('multi');
+            let targetIds = docs.map((d) => d.id);
+            if (urlDocs) {
+              const parsed = urlDocs.split(',').filter((id) => docs.some((d) => d.id === id));
+              if (parsed.length >= 2) targetIds = parsed;
+            }
+            setSelectedMultiDocIds(targetIds);
+            handleMultiCompare(targetIds);
+            return;
+          }
 
           let aId = '';
           let bId = '';

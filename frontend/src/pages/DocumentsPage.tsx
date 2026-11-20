@@ -154,7 +154,9 @@ export const DocumentsPage: React.FC = () => {
 
   const handleBulkCompare = () => {
     if (selectedDocIds.length === 2) {
-      window.location.href = `/compare?docA=${selectedDocIds[0]}&docB=${selectedDocIds[1]}`;
+      window.location.href = `/compare?doc_a=${selectedDocIds[0]}&doc_b=${selectedDocIds[1]}`;
+    } else if (selectedDocIds.length >= 3) {
+      window.location.href = `/compare?mode=multi&docs=${selectedDocIds.join(',')}`;
     }
   };
 
@@ -765,9 +767,6 @@ export const DocumentsPage: React.FC = () => {
       {selectedDocIds.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white rounded-md shadow-2xl px-4 py-2.5 flex items-center gap-3 border border-slate-700 animate-in slide-in-from-bottom-4 text-xs font-sans">
           <div className="flex items-center gap-2 pr-3 border-r border-slate-700">
-            <span className="w-5 h-5 rounded-md bg-clario-navy flex items-center justify-center font-bold text-[11px] text-white">
-              {selectedDocIds.length}
-            </span>
             <span className="font-medium text-slate-200">
               {selectedDocIds.length === 1 ? '1 document selected' : `${selectedDocIds.length} documents selected`}
             </span>
@@ -789,14 +788,22 @@ export const DocumentsPage: React.FC = () => {
               <FileSpreadsheet className="w-3.5 h-3.5 text-slate-300" />
               <span>Export CSV</span>
             </button>
-            {selectedDocIds.length === 2 && (
+            {selectedDocIds.length >= 2 && (
               <button
                 onClick={handleBulkCompare}
                 className="px-2.5 py-1.5 rounded-md bg-clario-navy hover:bg-slate-800 text-white transition-colors flex items-center gap-1.5 font-semibold border border-slate-600"
-                title="Compare the 2 selected documents side by side"
+                title={
+                  selectedDocIds.length === 2
+                    ? 'Compare the 2 selected documents side by side'
+                    : `Compare ${selectedDocIds.length} selected documents in benchmark matrix`
+                }
               >
                 <GitCompare className="w-3.5 h-3.5 text-slate-200" />
-                <span>Compare Side-by-Side</span>
+                <span>
+                  {selectedDocIds.length === 2
+                    ? 'Compare Side-by-Side'
+                    : `Compare Matrix (${selectedDocIds.length})`}
+                </span>
               </button>
             )}
             <button
