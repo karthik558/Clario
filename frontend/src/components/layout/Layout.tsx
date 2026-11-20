@@ -36,8 +36,50 @@ export const Layout: React.FC = () => {
     }
   }, []);
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('clario_sidebar_collapsed');
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    } catch {
+      // Non-fatal if storage is unavailable
+    }
+    return false;
+  });
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('clario_sidebar_collapsed', String(next));
+      } catch {
+        // Non-fatal if storage is unavailable
+      }
+      return next;
+    });
+  };
+
+  const [mobileNavOpen, setMobileNavOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('clario_sidebar_mobile_open');
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    } catch {
+      // Non-fatal if storage is unavailable
+    }
+    return false;
+  });
+
+  const handleSetMobileNavOpen = (open: boolean) => {
+    setMobileNavOpen(open);
+    try {
+      localStorage.setItem('clario_sidebar_mobile_open', String(open));
+    } catch {
+      // Non-fatal if storage is unavailable
+    }
+  };
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<Pick<SearchResultItem, 'document_id' | 'chunk_id' | 'page_number'> | null>(null);
@@ -107,9 +149,9 @@ export const Layout: React.FC = () => {
       {/* Sidebar */}
       <Sidebar
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onToggle={handleToggleSidebar}
         mobileOpen={mobileNavOpen}
-        onCloseMobile={() => setMobileNavOpen(false)}
+        onCloseMobile={() => handleSetMobileNavOpen(false)}
       />
 
       {/* Main Content Area */}
@@ -120,7 +162,7 @@ export const Layout: React.FC = () => {
       >
         <Header
           onOpenSearch={() => setSearchModalOpen(true)}
-          onOpenNavigation={() => setMobileNavOpen(true)}
+          onOpenNavigation={() => handleSetMobileNavOpen(true)}
         />
 
         <main className="mx-auto max-w-[100rem] flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">

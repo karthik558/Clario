@@ -86,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {mobileOpen && <button aria-label="Close navigation backdrop" onClick={onCloseMobile} className="fixed inset-0 z-30 bg-black/50 lg:hidden" />}
       <aside ref={sidebarRef} id="workspace-navigation" aria-label="Workspace navigation" className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-open' : ''}`}>
-        <div className={`flex h-16 shrink-0 items-center ${collapsed ? 'justify-center px-2 py-3.5' : 'justify-between px-5 py-3.5 gap-4'} border-b border-white/10`}>
+        <div className={`flex h-16 shrink-0 items-center ${collapsed ? 'justify-center px-3 py-3.5' : 'justify-between px-5 py-3.5 gap-4'} border-b border-white/10`}>
           <Link
             to="/"
             onClick={onCloseMobile}
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             aria-expanded={!collapsed}
             aria-controls="workspace-navigation"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden lg:flex p-1.5 rounded-md text-slate-400 hover:bg-white/10 hover:text-white transition-colors shrink-0"
+            className={`hidden lg:flex items-center justify-center rounded-md text-slate-400 hover:bg-white/10 hover:text-white transition-colors shrink-0 ${collapsed ? 'w-full min-h-9' : 'p-1.5'}`}
           >
             {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
           </button>
@@ -142,18 +142,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Real-time Background Tasks Pill / Trigger */}
-        <div className={`shrink-0 border-t border-white/10 ${collapsed ? 'py-2 px-1 text-center' : 'p-2.5'}`}>
+        <div className={`shrink-0 border-t border-white/10 ${collapsed ? 'py-2 px-3 text-center' : 'p-2.5'}`}>
           {activeTasks.length > 0 ? (
             collapsed ? (
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="relative p-2.5 rounded-md bg-slate-800 border border-slate-700 text-slate-200 mx-auto block hover:bg-slate-700 transition-all shadow-xs"
+                className="relative w-full min-h-9 flex items-center justify-center rounded-md text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
                 title={`A Task is Running: ${activeTasks[0].title} (${activeTasks[0].progress}%)`}
                 aria-label="A task is running"
               >
-                <Cpu className="w-4 h-4 animate-spin text-slate-300" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-400" />
+                <div className="relative flex items-center justify-center">
+                  <Cpu className="w-[17px] h-[17px] animate-spin text-slate-300" />
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-400" />
+                </div>
               </button>
             ) : (
               <button
@@ -194,11 +196,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="p-2 rounded-md hover:bg-white/10 text-slate-300 mx-auto block"
+                className="w-full min-h-9 flex items-center justify-center rounded-md text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
                 title={`${tasks.length} task(s) ready`}
                 aria-label="Tasks"
               >
-                <CheckCircle2 className="w-4 h-4 text-slate-300" />
+                <CheckCircle2 className="w-[17px] h-[17px] text-slate-300" />
               </button>
             ) : (
               <button
@@ -220,11 +222,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={() => setIsDrawerOpen(true)}
-              className="p-2 rounded-md hover:bg-white/10 text-slate-400 mx-auto block"
+              className="w-full min-h-9 flex items-center justify-center rounded-md text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
               title="Background Tasks"
               aria-label="Background Tasks"
             >
-              <Cpu className="w-4 h-4 opacity-70 hover:opacity-100 transition-opacity" />
+              <Cpu className="w-[17px] h-[17px] opacity-70 hover:opacity-100 transition-opacity" />
             </button>
           ) : (
             <button
@@ -244,15 +246,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        <div className={`shrink-0 border-t border-white/10 ${collapsed ? 'py-4 px-2 flex justify-center items-center' : 'px-4 py-3.5'} text-xs text-slate-400`}>
+        <div className={`shrink-0 border-t border-white/10 ${collapsed ? 'py-3 px-3 flex justify-center items-center' : 'px-4 py-3.5'} text-xs text-slate-400`}>
           {collapsed ? (
             <Link
               to="/home"
-              className="flex items-center justify-center p-2 rounded-md hover:bg-white/10 transition-colors"
+              className="flex items-center justify-center w-full min-h-9 rounded-md text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
               title="Clario"
               aria-label="Clario"
             >
-              <img src="/favicon.svg" alt="Clario" className="w-5 h-5 opacity-80 hover:opacity-100 transition-opacity" />
+              <img src="/favicon.svg" alt="Clario" className="w-[18px] h-[18px] opacity-80 hover:opacity-100 transition-opacity" />
             </Link>
           ) : (
             <a

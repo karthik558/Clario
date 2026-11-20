@@ -31,6 +31,21 @@ describe('Workspace interactions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Expand sidebar' }));
     expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toHaveAttribute('aria-expanded', 'true');
   });
+  it('persists sidebar state and restores it on reload', () => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    localStorage.clear();
+    const { unmount } = render(<MemoryRouter><Layout /></MemoryRouter>);
+    expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+    expect(localStorage.getItem('clario_sidebar_collapsed')).toBe('true');
+    unmount();
+
+    // Re-render simulates page refresh
+    render(<MemoryRouter><Layout /></MemoryRouter>);
+    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toHaveAttribute('aria-expanded', 'false');
+    localStorage.clear();
+  });
   it('uses the clicked search mode and selects the source result', async () => {
     const result = { chunk_id: 'chunk-a', document_id: 'a', document_title: 'Policy A', page_number: 1, score: 1, snippet: 'Retention is 30 days.' };
     const search = vi.spyOn(api, 'search').mockResolvedValue({ results: [result], latency_ms: 1 });
