@@ -792,35 +792,37 @@ export const ComparePage: React.FC = () => {
               <div className="flex items-center gap-3 text-xs flex-wrap">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-slate-500 font-medium">Spotlight:</span>
-                  <select
-                    value={spotlightRiskDocIndex}
+                  <Select
+                    aria-label="Spotlight document"
+                    value={String(spotlightRiskDocIndex)}
                     onChange={(e) => setSpotlightRiskDocIndex(Number(e.target.value))}
-                    className="text-xs bg-white border border-slate-200 rounded px-2.5 py-1 text-slate-800 font-medium"
+                    className="text-xs h-8 min-w-[200px] py-1 px-2.5 bg-white border border-slate-200 rounded-md font-medium text-slate-800"
                   >
                     {multiComparison.documents.map((d, idx) => (
-                      <option key={d.document_id} value={idx}>
+                      <option key={d.document_id} value={String(idx)}>
                         {d.document_title.replace(/_/g, ' ')} ({d.composite_score}/100)
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-slate-500 font-medium">Benchmark vs:</span>
-                  <select
-                    value={spotlightCompareDocIndex}
+                  <Select
+                    aria-label="Benchmark document vs"
+                    value={String(spotlightCompareDocIndex)}
                     onChange={(e) => setSpotlightCompareDocIndex(Number(e.target.value))}
-                    className="text-xs bg-white border border-slate-200 rounded px-2.5 py-1 text-slate-800 font-medium"
+                    className="text-xs h-8 min-w-[180px] py-1 px-2.5 bg-white border border-slate-200 rounded-md font-medium text-slate-800"
                   >
-                    <option value={-1}>None (Standalone)</option>
+                    <option value="-1">None (Standalone)</option>
                     {multiComparison.documents.map((d, idx) => {
                       if (idx === spotlightRiskDocIndex) return null;
                       return (
-                        <option key={d.document_id} value={idx}>
+                        <option key={d.document_id} value={String(idx)}>
                           {d.document_title.replace(/_/g, ' ')} ({d.composite_score}/100)
                         </option>
                       );
                     })}
-                  </select>
+                  </Select>
                 </div>
               </div>
             </div>

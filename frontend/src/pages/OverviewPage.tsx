@@ -573,22 +573,22 @@ export const OverviewPage: React.FC = () => {
                   {riskScorecard.documents?.length > 1 && (
                     <div className="flex items-center gap-1.5 text-xs">
                       <span className="text-[10px] text-slate-500 font-medium shrink-0">Benchmark vs:</span>
-                      <select
+                      <Select
                         aria-label="Benchmark document selection"
-                        value={comparisonRiskDocIndex}
+                        value={String(comparisonRiskDocIndex)}
                         onChange={(e) => setComparisonRiskDocIndex(Number(e.target.value))}
-                        className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-800 font-medium focus:outline-none"
+                        className="text-[11px] h-7 min-w-[150px] py-1 px-2.5 bg-white border border-slate-200 rounded-md font-medium text-slate-800"
                       >
-                        <option value={-1}>None (Standalone)</option>
+                        <option value="-1">None (Standalone)</option>
                         {riskScorecard.documents.map((d: any, idx: number) => {
                           if (idx === selectedRiskDocIndex) return null;
                           return (
-                            <option key={d.document_id} value={idx}>
+                            <option key={d.document_id} value={String(idx)}>
                               {d.document_title.replace(/_/g, ' ')}
                             </option>
                           );
                         })}
-                      </select>
+                      </Select>
                     </div>
                   )}
                 </div>
