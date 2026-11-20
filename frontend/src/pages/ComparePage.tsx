@@ -629,7 +629,6 @@ export const ComparePage: React.FC = () => {
               <Card key={pl.pillar_id} className="p-3.5 border border-slate-200 bg-white">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-bold text-slate-900 truncate">{pl.pillar_name}</span>
-                  <Badge variant="navy" size="sm">Pillar Leader</Badge>
                 </div>
                 <div className="space-y-1 text-[11px] text-slate-600">
                   <div className="flex items-center justify-between">
@@ -1058,9 +1057,6 @@ export const ComparePage: React.FC = () => {
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Comparative Risk Topology
                     </span>
-                    <Badge variant="gray" size="sm">
-                      Overlay Benchmark
-                    </Badge>
                   </div>
                   <div className="flex-1 flex items-center justify-center my-auto">
                     <RiskRadarWidget

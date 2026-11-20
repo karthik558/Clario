@@ -228,7 +228,7 @@ export const SearchLabPage: React.FC = () => {
                       <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
                       <h3 className="font-semibold text-xs text-slate-900">A. BM25 Lexical</h3>
                     </div>
-                    <Badge variant="navy" size="md">k1=1.5, b=0.75</Badge>
+                    <span className="text-[10px] text-slate-500 font-mono">k1=1.5, b=0.75</span>
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                     {comparison.bm25_results.length === 0 ? (
@@ -266,7 +266,7 @@ export const SearchLabPage: React.FC = () => {
                       <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
                       <h3 className="font-semibold text-xs text-slate-900">B. Dense Semantic Vector</h3>
                     </div>
-                    <Badge variant="gray" size="md">Cosine Sim</Badge>
+                    <span className="text-[10px] text-slate-500 font-mono">Cosine Sim</span>
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                     {comparison.vector_results.length === 0 ? (
@@ -304,7 +304,7 @@ export const SearchLabPage: React.FC = () => {
                       <SearchCheck className="w-4 h-4 text-slate-900" />
                       <h3 className="font-semibold text-xs text-slate-900">C. Hybrid Reciprocal Fusion</h3>
                     </div>
-                    <Badge variant="navy" size="md">RRF (k=60)</Badge>
+                    <span className="text-[10px] text-slate-500 font-mono">RRF (k=60)</span>
                   </div>
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
                     {comparison.hybrid_results.length === 0 ? (

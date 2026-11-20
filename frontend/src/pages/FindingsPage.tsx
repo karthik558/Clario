@@ -328,9 +328,6 @@ export const FindingsPage: React.FC = () => {
               {/* Finding Title & Status Controls */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-clario-border">
                 <div className="flex items-center space-x-2.5">
-                  <Badge variant={getCategoryBadgeVariant(f.category)} size="md">
-                    {f.category.replace('_', ' ').toUpperCase()}
-                  </Badge>
                   <h3 className="font-semibold text-sm text-clario-navy">{f.title}</h3>
                   <Badge variant={f.severity === 'critical' || f.severity === 'high' ? 'red' : f.severity === 'medium' ? 'gold' : 'sage'} size="md">
                     {f.severity.toUpperCase()}

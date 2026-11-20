@@ -374,9 +374,6 @@ export const PolicyCheckerPage: React.FC = () => {
                     <Badge variant={statusVariant} size="md">
                       {statusLabel}
                     </Badge>
-                    <Badge variant="navy" size="md">
-                      {rule.category}
-                    </Badge>
                     <Badge variant="gray" size="md">
                       {rule.severity}
                     </Badge>

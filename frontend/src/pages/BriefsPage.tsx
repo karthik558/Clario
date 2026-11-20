@@ -329,23 +329,6 @@ export const BriefsPage: React.FC = () => {
                 <span>Reset</span>
               </button>
             )}
-
-            {selectedDocIds.length === 2 && (
-              <Badge variant="navy" size="md" className="ml-auto flex items-center gap-1">
-                <GitCompare className="w-3 h-3" />
-                <span>Comparative Reconciliation Mode (2 Documents)</span>
-              </Badge>
-            )}
-            {selectedDocIds.length > 2 && (
-              <Badge variant="navy" size="md" className="ml-auto">
-                Portfolio Comparison ({selectedDocIds.length} Documents)
-              </Badge>
-            )}
-            {selectedDocIds.length === 1 && (
-              <Badge variant="navy" size="md" className="ml-auto">
-                Single Document Focus
-              </Badge>
-            )}
           </div>
         </Card>
       )}

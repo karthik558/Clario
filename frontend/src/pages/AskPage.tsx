@@ -611,9 +611,6 @@ export const AskPage: React.FC = () => {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="navy" size="md">
-              {selectedDocIds.length ? `${selectedDocIds.length} Selected` : 'All Documents'}
-            </Badge>
             {selectedDocIds.length >= 2 && (
               <Button
                 variant="outline"

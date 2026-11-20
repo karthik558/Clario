@@ -406,16 +406,6 @@ export const CritiquePage: React.FC = () => {
         description="Adversarial multi-council audit examining contractual terms from legal, financial, security, compliance, and operational perspectives."
       >
         <div className="flex flex-wrap items-center gap-2">
-          <span title="Global AI settings configured in Settings and Ask Clario" className="hidden sm:inline-flex">
-            <Badge
-              variant="gray"
-              size="md"
-              className="text-[11px]"
-            >
-              Thinking: {globalThinking ? 'ON' : 'OFF'} • {globalAnswerLength === 'concise' ? 'Concise (Fast)' : globalAnswerLength === 'comprehensive' ? 'Deep' : 'Standard'}
-            </Badge>
-          </span>
-
           {/* AI Generation Toggle */}
           <Button
             size="sm"
@@ -627,23 +617,9 @@ export const CritiquePage: React.FC = () => {
       {data && data.personas.length > 0 && (
         <div id="audit-consensus" className="p-4 rounded-md bg-white border-l-4 border-l-clario-navy border border-slate-200 shadow-xs space-y-2 scroll-mt-6 transition-all duration-300">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-clario-navy">
-                Executive Audit Consensus — {selectedDocTitle}
-              </span>
-              {data.mode === 'ai_multi_persona_synthesis' ? (
-                <Badge variant="navy" size="md">
-                  Deep AI Multi-Persona Synthesis
-                </Badge>
-              ) : (
-                <Badge variant="gray" size="md">
-                  Heuristic Grounded Audit
-                </Badge>
-              )}
-            </div>
-            <Badge variant={data.composite_risk_score >= 50 ? 'red' : 'sage'} size="md">
-              {data.composite_risk_score >= 50 ? 'Action Required' : 'Acceptable Baseline'}
-            </Badge>
+            <span className="text-xs font-bold uppercase tracking-wider text-clario-navy">
+              Executive Audit Consensus — {selectedDocTitle}
+            </span>
           </div>
           <p className="text-xs text-slate-800 leading-relaxed font-medium">
             {data.overall_assessment}

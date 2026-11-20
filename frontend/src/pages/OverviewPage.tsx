@@ -1021,7 +1021,6 @@ export const OverviewPage: React.FC = () => {
                   Knowledge Topology
                 </h4>
               </div>
-              <Badge variant="gray" size="sm">2D Semantic Graph</Badge>
             </div>
 
             <p className="text-xs text-clario-text-secondary mb-2">
@@ -1066,9 +1065,6 @@ export const OverviewPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="navy" size="md">
-                Legal Portfolio Matrix
-              </Badge>
               <Button
                 variant="outline"
                 size="sm"
@@ -1213,10 +1209,10 @@ export const OverviewPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="gray" size="md">Low Risk</Badge>
-            <Badge variant="gold" size="md">Moderate</Badge>
-            <Badge variant="red" size="md">Critical</Badge>
+          <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-400 inline-block" />Low</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />Moderate</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />Critical</span>
           </div>
         </div>
 
