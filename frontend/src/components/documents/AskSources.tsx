@@ -53,16 +53,20 @@ export function AskSources({ documents, selection, error, disabled }: {
     </button>
     {documents.map(doc => {
       const isSelected = ids.includes(doc.id);
+      const cleanTitle = doc.title.replace(/_/g, ' ');
       return (
         <button
           key={doc.id}
           type="button"
-          title={doc.title}
+          title={cleanTitle}
+          aria-label={doc.title}
           aria-pressed={isSelected}
           onClick={() => select(isSelected ? ids.filter(id => id !== doc.id) : [...ids, doc.id])}
-          className="inline-flex items-center justify-center h-8 px-3 rounded-md text-xs font-medium border transition-colors shadow-2xs truncate max-w-[260px] bg-white text-slate-700 border-slate-200 hover:bg-slate-50 aria-pressed:bg-clario-navy aria-pressed:text-white aria-pressed:border-clario-navy"
+          className="inline-flex items-center justify-center h-8 px-3 rounded-md text-xs font-medium border transition-colors shadow-2xs max-w-[220px] sm:max-w-[260px] min-w-0 overflow-hidden bg-white text-slate-700 border-slate-200 hover:bg-slate-50 aria-pressed:bg-clario-navy aria-pressed:text-white aria-pressed:border-clario-navy"
         >
-          {doc.title}
+          <span className="truncate min-w-0 block text-left">
+            {cleanTitle}
+          </span>
         </button>
       );
     })}

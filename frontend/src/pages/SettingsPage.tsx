@@ -1,6 +1,6 @@
 import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Settings,
   Cpu,
@@ -42,6 +42,15 @@ export const SettingsPage: React.FC = () => {
   const [ollamaModel, setOllamaModel] = useState('llama3.2');
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null);
   const [checkingOllama, setCheckingOllama] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+
+  const availableModels = useMemo<string[]>(() => {
+    const detected: string[] = ollamaStatus?.models || [];
+    const set = new Set<string>(detected);
+    if (!set.has('gemma3:latest')) set.add('gemma3:latest');
+    if (!set.has('llama3.2')) set.add('llama3.2');
+    return Array.from(set);
+  }, [ollamaStatus]);
 
   // AI Tuning State
   const [thinkingMode, setThinkingMode] = useState(true);
@@ -139,6 +148,37 @@ export const SettingsPage: React.FC = () => {
     fetchSettings();
   }, []);
 
+  const handleSaveModel = async (modelToSave?: string) => {
+    const model = (modelToSave || ollamaModel || '').trim();
+    if (!model) {
+      setError('Please select or enter a valid model name.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setSuccessMsg(null);
+    try {
+      await api.updateSettings({
+        llm_provider: 'ollama',
+        ollama_base_url: ollamaUrl,
+        ollama_model: model,
+        local_ai_model: model,
+      });
+      setLlmProvider('ollama');
+      setOllamaModel(model);
+      setSuccessMsg(`Model successfully saved as "${model}". Header indicator synchronized.`);
+      window.dispatchEvent(
+        new CustomEvent('clario:settings-updated', {
+          detail: { llm_provider: 'ollama', ollama_model: model },
+        })
+      );
+    } catch {
+      setError('Failed to update model. Please verify the Ollama daemon connection.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ollamaModel.trim() || !/^https?:\/\/[^\s]+$/.test(ollamaUrl) || !Number.isFinite(bm25K1) || bm25K1 <= 0 || bm25K1 > 10 || !Number.isFinite(bm25B) || bm25B < 0 || bm25B > 1 || !Number.isInteger(rrfK) || rrfK < 1 || rrfK > 1000 || !Number.isInteger(defaultTopK) || defaultTopK < 1 || defaultTopK > 50) {
@@ -161,6 +201,11 @@ export const SettingsPage: React.FC = () => {
         default_top_k: defaultTopK,
       });
       setSuccessMsg('Configuration saved to the database. New answers will use this engine.');
+      window.dispatchEvent(
+        new CustomEvent('clario:settings-updated', {
+          detail: { llm_provider: llmProvider, ollama_model: ollamaModel },
+        })
+      );
       fetchSettings();
     } catch (err) {
       setError('Configuration was not saved. Check the model name, server URL, and numeric ranges.');
@@ -300,20 +345,65 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="ollamaModel" className="block text-[11px] font-bold text-clario-navy uppercase tracking-wider mb-1.5">
-              Model Name / Custom Model
-            </label>
-            <input id="ollamaModel" aria-label="Model name or custom model" value={ollamaModel} onChange={e => setOllamaModel(e.target.value)} placeholder="llama3.2 or your custom model" className="w-full text-xs font-mono bg-white border border-slate-200 text-slate-900 rounded-md px-3 py-2.5" />
-            {ollamaStatus && ollamaStatus.models.length > 0 && (
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="modelSelect" className="block text-[11px] font-bold text-clario-navy uppercase tracking-wider">
+                Model Selection
+              </label>
+              <span className="text-[10px] text-slate-500 font-medium">Ollama & Local AI</span>
+            </div>
+
+            <div className="flex items-center gap-2">
               <Select
+                id="modelSelect"
                 aria-label="Installed Ollama models"
-                value={ollamaStatus.models.includes(ollamaModel) ? ollamaModel : ''}
-                onChange={e => { if (e.target.value) setOllamaModel(e.target.value); }}
-                className="w-full mt-2 border border-slate-200 bg-white text-slate-800 px-3 py-2 text-xs rounded-md"
+                value={availableModels.includes(ollamaModel) && !showCustomInput ? ollamaModel : '__custom__'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '__custom__') {
+                    setShowCustomInput(true);
+                  } else {
+                    setShowCustomInput(false);
+                    setOllamaModel(val);
+                  }
+                }}
+                className="flex-1 text-xs font-semibold bg-white border border-slate-200 rounded-md px-3 py-2 text-slate-900 focus:outline-none focus:border-slate-900 shadow-xs"
               >
-                <option value="">Choose an installed model</option>
-                {ollamaStatus.models.map(model => <option key={model} value={model}>{model}</option>)}
+                <optgroup label="Available Models">
+                  {availableModels.map((m) => (
+                    <option key={m} value={m}>
+                      {m === 'gemma3:latest' ? 'gemma3:latest (Installed)' : m}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Manual Entry">
+                  <option value="__custom__">Custom model name…</option>
+                </optgroup>
               </Select>
+
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => handleSaveModel()}
+                disabled={saving || !ollamaModel.trim()}
+                className="h-8 px-3 text-xs font-semibold shrink-0"
+              >
+                Save
+              </Button>
+            </div>
+
+            {/* Custom model text input if custom is chosen or model is external/custom */}
+            {(showCustomInput || !availableModels.includes(ollamaModel)) && (
+              <div className="pt-2">
+                <input
+                  id="ollamaModel"
+                  aria-label="Model name or custom model"
+                  value={ollamaModel}
+                  onChange={(e) => setOllamaModel(e.target.value)}
+                  placeholder="Enter custom model (e.g. gemma3:latest)"
+                  className="w-full text-xs font-mono bg-white border border-slate-200 text-slate-900 rounded-md px-3 py-2 shadow-xs"
+                />
+              </div>
             )}
           </div>
         </div>

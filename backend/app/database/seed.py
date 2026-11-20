@@ -52,7 +52,7 @@ def seed_sample_documents():
 
     # Automatically scan for initial contradiction candidates to populate Findings!
     docs = db.query(Document).filter(Document.status == "READY").all()
-    if len(docs) >= 2 and seeded_new:
+    if len(docs) >= 2 and (seeded_new or db.query(Finding).count() == 0):
         for i in range(len(docs)):
             for j in range(i + 1, len(docs)):
                 doc_a, doc_b = docs[i], docs[j]

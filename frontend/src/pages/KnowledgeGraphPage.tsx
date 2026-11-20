@@ -255,7 +255,10 @@ export const KnowledgeGraphPage: React.FC = () => {
       if (docAId && docBId && docCenters[docAId] && docCenters[docBId] && docAId !== docBId) {
         bilateralFindings.push(f);
       } else {
-        const pId = docAId || docBId || getDocParentId(f);
+        const pId =
+          (docAId && docCenters[docAId] ? docAId : null) ||
+          (docBId && docCenters[docBId] ? docBId : null) ||
+          getDocParentId(f);
         if (pId && docCenters[pId]) {
           if (!docFindings[pId]) docFindings[pId] = [];
           docFindings[pId].push(f);
@@ -381,6 +384,18 @@ export const KnowledgeGraphPage: React.FC = () => {
       (e) => e.source === selectedNodeId || e.target === selectedNodeId
     );
   }, [selectedNodeId, filteredEdges]);
+
+  const connectedFindings = useMemo(() => {
+    if (!selectedNodeId || !data) return [];
+    const directOtherIds = new Set<string>();
+    filteredEdges.forEach((e) => {
+      if (e.source === selectedNodeId) directOtherIds.add(e.target);
+      if (e.target === selectedNodeId) directOtherIds.add(e.source);
+    });
+    return data.nodes.filter(
+      (n) => n.type === 'finding' && (directOtherIds.has(n.id) || n.id === selectedNodeId)
+    );
+  }, [selectedNodeId, filteredEdges, data]);
 
   // Canvas pan handlers
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
@@ -606,20 +621,21 @@ export const KnowledgeGraphPage: React.FC = () => {
             </button>
             {documents.map((d) => {
               const isSelected = selectedDocIds.includes(d.id);
+              const cleanTitle = d.title.replace(/_/g, ' ');
               return (
                 <button
                   key={d.id}
                   type="button"
                   aria-pressed={isSelected}
                   onClick={() => toggleDocumentScope(d.id)}
-                  className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 border ${
+                  className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 overflow-hidden border ${
                     isSelected
                       ? 'bg-slate-900 text-white font-medium border-slate-900 shadow-xs'
                       : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
                   }`}
-                  title={`${d.title} (${d.file_type.toUpperCase()})`}
+                  title={`${cleanTitle} (${d.file_type.toUpperCase()})`}
                 >
-                  <span className="truncate min-w-0 block flex-1 text-left">{d.title}</span>
+                  <span className="truncate min-w-0 block flex-1 text-left">{cleanTitle}</span>
                   <span
                     className={`text-[10px] font-mono shrink-0 ${
                       isSelected ? 'text-slate-300' : 'text-slate-500'
@@ -1065,6 +1081,36 @@ export const KnowledgeGraphPage: React.FC = () => {
                   </Button>
                 )}
 
+                {/* Associated Contradictions List for Document or Topic */}
+                {connectedFindings.length > 0 && selectedNode.type !== 'finding' && (
+                  <div className="p-2.5 rounded-md border border-rose-200 bg-rose-50/60 space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                      Associated Contradictions ({connectedFindings.length})
+                    </span>
+                    <div className="space-y-1 max-h-44 overflow-y-auto pr-0.5">
+                      {connectedFindings.map((cf) => (
+                        <button
+                          key={cf.id}
+                          type="button"
+                          onClick={() => setSelectedNodeId(cf.id)}
+                          className="w-full text-left p-2 rounded-md bg-white hover:bg-rose-100/70 border border-rose-200/80 transition-colors flex items-center justify-between text-xs group shadow-xs"
+                        >
+                          <div className="truncate mr-2 min-w-0">
+                            <span className="font-semibold text-rose-950 truncate block text-[11px]">
+                              {cf.label}
+                            </span>
+                            <span className="text-[10px] text-rose-700 truncate block">
+                              {cf.metadata?.description || cf.metadata?.category || 'Contradiction flagged'}
+                            </span>
+                          </div>
+                          <ArrowRight className="w-3.5 h-3.5 text-rose-400 group-hover:text-rose-700 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Connected Edges */}
                 <div>
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">
@@ -1076,23 +1122,40 @@ export const KnowledgeGraphPage: React.FC = () => {
                         edge.source === selectedNode.id ? edge.target : edge.source;
                       const otherNode = nodeMap.get(otherId);
                       if (!otherNode) return null;
+                      const isContradiction = edge.type === 'contradicts' || otherNode.type === 'finding';
 
                       return (
                         <button
                           key={edge.id}
                           type="button"
                           onClick={() => setSelectedNodeId(otherId)}
-                          className="w-full text-left p-2 rounded-md border border-slate-100 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors flex items-center justify-between text-xs"
+                          className={`w-full text-left p-2 rounded-md border transition-colors flex items-center justify-between text-xs ${
+                            isContradiction
+                              ? 'border-rose-200 bg-rose-50/50 hover:bg-rose-100/60'
+                              : 'border-slate-100 hover:border-slate-300 bg-slate-50 hover:bg-slate-100'
+                          }`}
                         >
                           <div className="truncate mr-2">
-                            <span className="text-[10px] uppercase text-slate-400 block">
+                            <span
+                              className={`text-[10px] uppercase font-semibold block ${
+                                isContradiction ? 'text-rose-600' : 'text-slate-400'
+                              }`}
+                            >
                               {edge.type}
                             </span>
-                            <span className="font-medium text-slate-800 truncate block">
+                            <span
+                              className={`font-medium truncate block ${
+                                isContradiction ? 'text-rose-950 font-semibold' : 'text-slate-800'
+                              }`}
+                            >
                               {otherNode.label}
                             </span>
                           </div>
-                          <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <ArrowRight
+                            className={`w-3.5 h-3.5 shrink-0 ${
+                              isContradiction ? 'text-rose-500' : 'text-slate-400'
+                            }`}
+                          />
                         </button>
                       );
                     })}

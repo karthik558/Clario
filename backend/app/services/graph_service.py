@@ -27,12 +27,13 @@ class GraphService:
             )
 
         active_doc_ids = {d.id for d in docs}
-        finding_query = db.query(Finding).filter(
-            Finding.doc_a_id.in_(active_doc_ids)
-        )
         if document_ids:
-            finding_query = finding_query.filter(
+            finding_query = db.query(Finding).filter(
                 or_(Finding.doc_a_id.in_(document_ids), Finding.doc_b_id.in_(document_ids))
+            )
+        else:
+            finding_query = db.query(Finding).filter(
+                or_(Finding.doc_a_id.in_(active_doc_ids), Finding.doc_b_id.in_(active_doc_ids))
             )
         findings = finding_query.all()
 
@@ -126,6 +127,7 @@ class GraphService:
             if fid not in node_ids:
                 node_ids.add(fid)
                 severity_color = "#E11D48" if f.severity in ("critical", "high") else "#F59E0B"
+                primary_doc_id = f.doc_a_id if (not document_ids or f.doc_a_id in document_ids) else f.doc_b_id
                 nodes.append(GraphNode(
                     id=fid,
                     label=f.title,
@@ -136,9 +138,17 @@ class GraphService:
                         "finding_id": f.id,
                         "severity": f.severity,
                         "status": f.status,
+                        "category": f.category or "Contractual Variance",
                         "description": f.description,
+                        "doc_a_id": f.doc_a_id,
                         "doc_a_title": f.doc_a_title,
-                        "doc_b_title": f.doc_b_title
+                        "doc_a_page": f.doc_a_page,
+                        "doc_a_quote": f.doc_a_quote,
+                        "doc_b_id": f.doc_b_id,
+                        "doc_b_title": f.doc_b_title,
+                        "doc_b_page": f.doc_b_page,
+                        "doc_b_quote": f.doc_b_quote,
+                        "document_id": primary_doc_id,
                     }
                 ))
 
@@ -167,6 +177,28 @@ class GraphService:
                         dashed=True,
                         weight=2.0
                     ))
+
+                # Edge from finding to matching Topics in Doc A or Doc B
+                for n in nodes:
+                    if n.type == "topic":
+                        t_doc_id = n.metadata.get("document_id")
+                        if t_doc_id in (f.doc_a_id, f.doc_b_id):
+                            t_label_lower = n.label.lower()
+                            f_cat_lower = (f.category or "").lower()
+                            f_title_lower = f.title.lower()
+                            keywords = ["liability", "retention", "training", "termination", "indemni", "ip", "intellectual", "confidential", "warranty", "audit", "governing", "payment", "data", "provisions"]
+                            matches = any(k in t_label_lower and (k in f_cat_lower or k in f_title_lower) for k in keywords)
+                            if matches or f_cat_lower in t_label_lower or t_label_lower in f_cat_lower:
+                                edges.append(GraphEdge(
+                                    id=f"edge_topic_{n.id}_{fid}",
+                                    source=n.id,
+                                    target=fid,
+                                    label="Contradiction",
+                                    type="contradicts",
+                                    color="#E11D48",
+                                    dashed=True,
+                                    weight=1.5
+                                ))
 
         # 4. Sample Key Chunk Nodes (Slate)
         for d in docs:

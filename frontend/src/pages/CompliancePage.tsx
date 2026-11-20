@@ -203,18 +203,21 @@ export const CompliancePage: React.FC = () => {
             </button>
             {documents.map((d) => {
               const isSelected = selectedDocIds.includes(d.id);
+              const cleanTitle = d.title.replace(/_/g, ' ');
               return (
                 <button
                   key={d.id}
+                  type="button"
+                  title={cleanTitle}
                   onClick={() => toggleDocSelection(d.id)}
-                  className={`px-2.5 py-1 rounded-md text-xs transition-colors flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[240px] min-w-0 overflow-hidden ${
                     isSelected
                       ? 'bg-slate-900 text-white font-medium'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  <FileText className="w-3 h-3" />
-                  <span className="truncate max-w-[200px]">{d.title}</span>
+                  <FileText className="w-3 h-3 shrink-0" />
+                  <span className="truncate min-w-0 block text-left">{cleanTitle}</span>
                 </button>
               );
             })}
