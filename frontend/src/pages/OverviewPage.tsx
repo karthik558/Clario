@@ -968,19 +968,10 @@ export const OverviewPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-[11px] font-medium text-slate-600">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-              <span>Low Risk</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-              <span>Moderate</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
-              <span>Critical</span>
-            </span>
+          <div className="flex items-center gap-2 text-[11px] font-medium">
+            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 border border-slate-200 text-slate-700">Low Risk</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 border border-amber-200 text-amber-800">Moderate</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 border border-rose-200 text-rose-800">Critical</span>
           </div>
         </div>
 
@@ -1016,23 +1007,18 @@ export const OverviewPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setSelectedCell(detail)}
-                            className={`w-full py-1.5 px-2 rounded-md border text-[11px] font-medium transition-all text-left truncate flex items-center justify-between gap-1 shadow-2xs ${
+                            className={`w-full py-1.5 px-2.5 rounded-md border text-[11px] font-medium transition-all text-left truncate flex items-center justify-between gap-1 shadow-2xs ${
                               isSelected
-                                ? 'border-clario-navy bg-clario-navy/5 text-clario-navy font-bold ring-2 ring-clario-navy'
-                                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:border-slate-300'
+                                ? 'border-clario-navy bg-clario-navy/10 text-clario-navy font-bold ring-2 ring-clario-navy'
+                                : detail.rating === 'critical'
+                                ? 'bg-rose-50/80 border-rose-200 text-rose-900 hover:bg-rose-100/80'
+                                : detail.rating === 'moderate'
+                                ? 'bg-amber-50/80 border-amber-200 text-amber-900 hover:bg-amber-100/80'
+                                : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:bg-slate-100'
                             }`}
                             title={`${doc.title} - ${vector.name}: ${detail.summary}`}
                           >
                             <span className="truncate">{detail.summary}</span>
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                detail.rating === 'critical'
-                                  ? 'bg-rose-500'
-                                  : detail.rating === 'moderate'
-                                  ? 'bg-amber-500'
-                                  : 'bg-emerald-500'
-                              }`}
-                            />
                           </button>
                         </td>
                       );
@@ -1168,7 +1154,7 @@ export const OverviewPage: React.FC = () => {
                 <th className={`${density === 'compact' ? 'py-2 px-2.5' : 'pb-3 px-3'}`}>Format</th>
                 <th className={`${density === 'compact' ? 'py-2 px-2.5' : 'pb-3 px-3'}`}>Collection</th>
                 <th className={`${density === 'compact' ? 'py-2 px-2.5' : 'pb-3 px-3'}`}>Passages</th>
-                <th className={`${density === 'compact' ? 'py-2 px-2.5' : 'pb-3 px-3'}`}>Status</th>
+                <th className={`${density === 'compact' ? 'py-2 px-2.5' : 'pb-3 px-3'}`}>Pages</th>
                 <th className={`${density === 'compact' ? 'py-2 px-3' : 'pb-3 px-3'} text-right`}>Actions</th>
               </tr>
             </thead>
@@ -1203,13 +1189,8 @@ export const OverviewPage: React.FC = () => {
                       <span>{doc.chunk_count} chunks</span>
                     </div>
                   </td>
-                  <td className={`${density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'}`}>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${doc.status === 'READY' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                      <Badge variant={doc.status === 'READY' ? 'sage' : 'gold'} size="sm">
-                        {doc.status}
-                      </Badge>
-                    </div>
+                  <td className={`${density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'} font-mono text-slate-600 text-[11px]`}>
+                    <span>{doc.page_count ? `${doc.page_count} ${doc.page_count === 1 ? 'page' : 'pages'}` : '—'}</span>
                   </td>
                   <td className={`${density === 'compact' ? 'py-1.5 px-3' : 'py-3 px-3'} text-right space-x-2`} onClick={(e) => e.stopPropagation()}>
                     <button
