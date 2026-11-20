@@ -9,12 +9,11 @@ import {
   Building,
   Briefcase,
   Layers,
-  Calendar,
-  AlertCircle,
   CheckCircle2,
-  ChevronRight,
   RefreshCw,
-  Cpu
+  Cpu,
+  GitCompare,
+  X
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackgroundTasks } from '../context/BackgroundTaskContext';
@@ -31,7 +30,20 @@ export const BriefsPage: React.FC = () => {
   const { startTask, getLatestTask } = useBackgroundTasks();
   const [brief, setBrief] = useState<BriefResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('board_executive');
+
+  // Parse doc selection from URL params (e.g. from ComparePage or DocumentsPage)
+  const initialDocs = (() => {
+    const docA = searchParams.get('docA') || searchParams.get('doc_a');
+    const docB = searchParams.get('docB') || searchParams.get('doc_b');
+    if (docA && docB) return [docA, docB];
+    const docs = searchParams.get('docs') || searchParams.get('doc_ids');
+    if (docs) return docs.split(',').filter(Boolean);
+    return [];
+  })();
+
+  const initialTemplate = searchParams.get('template') || (initialDocs.length === 2 ? 'comparative_analysis' : 'board_executive');
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>(initialDocs);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(initialTemplate);
   const [templates, setTemplates] = useState<Array<{ id: string; name: string; description: string }>>([]);
   const [useAi, setUseAi] = useState(false);
   const [audioSummary, setAudioSummary] = useState<AudioSummaryResponse | null>(null);
@@ -63,7 +75,7 @@ export const BriefsPage: React.FC = () => {
 
   const fetchAudioSummary = async () => {
     try {
-      const audio = await api.getAudioSummary();
+      const audio = await api.getAudioSummary(selectedDocIds.length ? selectedDocIds : undefined);
       setAudioSummary(audio);
     } catch {
       // Non-fatal if audio summary generation is skipped
@@ -79,16 +91,23 @@ export const BriefsPage: React.FC = () => {
         setBrief(cached.result);
       }
       const [briefRes, docs, availableTemplates, audioRes] = await Promise.all([
-        cached?.result ? Promise.resolve(cached.result) : api.generateBrief('board_executive', undefined, undefined, false),
+        cached?.result
+          ? Promise.resolve(cached.result)
+          : api.generateBrief(
+              initialTemplate,
+              initialDocs.length > 0 ? initialDocs : undefined,
+              undefined,
+              false
+            ),
         api.getDocuments(),
         api.getBriefTemplates(),
-        api.getAudioSummary().catch(() => null)
+        api.getAudioSummary(initialDocs.length > 0 ? initialDocs : undefined).catch(() => null)
       ]);
       if (briefRes) setBrief(briefRes);
       setDocuments(docs);
       setTemplates(availableTemplates);
       if (audioRes) setAudioSummary(audioRes);
-    } catch (err) {
+    } catch {
       setError('Could not load the workspace briefing.');
     } finally {
       setLoading(false);
@@ -99,25 +118,53 @@ export const BriefsPage: React.FC = () => {
     fetchInitialBrief();
   }, []);
 
-  const handleGenerate = async (templateId?: string, aiMode?: boolean) => {
+  const handleGenerate = async (templateId?: string, aiMode?: boolean, docIdsOverride?: string[]) => {
     const tId = templateId || selectedTemplate;
     const effectiveAi = typeof aiMode === 'boolean' ? aiMode : useAi;
-    const templateName = templates.find(t => t.id === tId)?.name || 'Executive Brief';
+    const effectiveDocs = docIdsOverride !== undefined ? docIdsOverride : selectedDocIds;
+    const templateName = templates.find((t) => t.id === tId)?.name || 'Executive Brief';
+    const isComparative = effectiveDocs.length === 2 || tId === 'comparative_analysis';
+    const scopeLabel =
+      effectiveDocs.length === 0
+        ? 'All Workspace Documents'
+        : effectiveDocs.length === 2
+        ? 'Bilateral Comparison'
+        : `${effectiveDocs.length} Selected Documents`;
+
     try {
       setGenerating(true);
       setError('');
       const res = await startTask<BriefResponse>({
-        title: effectiveAi ? `AI ${templateName} Synthesis` : `${templateName} Compilation`,
+        title: isComparative
+          ? 'Comparative Variance Synthesis'
+          : effectiveAi
+          ? `AI ${templateName} Synthesis`
+          : `${templateName} Compilation`,
         category: 'brief',
-        targetScope: 'Workspace Documents',
+        targetScope: scopeLabel,
         route: `/briefs?template=${tId}#memorandum-preview`,
         initialStage: 'Compiling executive portfolio & contract telemetry...',
         executor: async (updateProgress) => {
-          updateProgress(25, 'Aggregating financial exposures and liability caps...', `Analyzing exposure across ${documents.length || 'workspace'} active contracts`);
+          updateProgress(
+            25,
+            isComparative
+              ? 'Reconciling cross-counterparty terms & exposure ceilings...'
+              : 'Aggregating financial exposures and liability caps...',
+            `Analyzing exposure across ${effectiveDocs.length || documents.length || 'workspace'} active contracts`
+          );
           if (effectiveAi) {
-            updateProgress(60, 'Synthesizing strategic recommendations with AI...', 'Running executive risk assessment and board talking points');
+            updateProgress(
+              60,
+              'Synthesizing strategic recommendations with AI...',
+              'Running executive risk assessment and discrepancy reconciliation'
+            );
           }
-          const briefRes = await api.generateBrief(tId, undefined, undefined, effectiveAi);
+          const briefRes = await api.generateBrief(
+            tId,
+            effectiveDocs.length ? effectiveDocs : undefined,
+            undefined,
+            effectiveAi
+          );
           updateProgress(95, 'Finalizing action items & legal compliance audit...', 'Formatting executive briefing summary');
           return briefRes;
         }
@@ -134,6 +181,24 @@ export const BriefsPage: React.FC = () => {
     }
   };
 
+  const handleToggleDoc = (docId: string | null) => {
+    let next: string[];
+    if (docId === null) {
+      next = [];
+    } else {
+      next = selectedDocIds.includes(docId)
+        ? selectedDocIds.filter((id) => id !== docId)
+        : [...selectedDocIds, docId];
+    }
+    setSelectedDocIds(next);
+    // When exactly 2 documents are selected, automatically switch to comparative analysis
+    const targetTemplate = next.length === 2 && selectedTemplate === 'board_executive' ? 'comparative_analysis' : selectedTemplate;
+    if (targetTemplate !== selectedTemplate) {
+      setSelectedTemplate(targetTemplate);
+    }
+    handleGenerate(targetTemplate, useAi, next);
+  };
+
   const handleCopy = () => {
     if (!brief) return;
     const text = `# ${brief.title}\nDate: ${brief.generated_date}\n\n## Executive Summary\n${brief.executive_summary}\n\n## Key Recommendation\n${brief.key_recommendation}\n\n## Financial Exposure\n${brief.financial_exposure.map(f => `- **${f.label}**: ${f.detail}`).join('\n')}\n\n## Legal & Compliance Risks\n${brief.legal_risks.map(r => `- **${r.item}** (${r.status}): ${r.assessment}`).join('\n')}\n\n## Action Items\n${brief.action_items.map(a => `- ${a}`).join('\n')}`;
@@ -147,6 +212,17 @@ export const BriefsPage: React.FC = () => {
       {/* Page Header */}
       <PageHeader title="Executive briefs" description="Prepare a decision-ready summary of the documents under review.">
         <div className="flex flex-wrap items-center gap-2">
+          {/* Executive PDF Download Link */}
+          <a
+            href={api.getBriefPdfUrl(selectedTemplate, selectedDocIds.length ? selectedDocIds : undefined)}
+            download={`Executive_Brief_${selectedTemplate}_${new Date().toISOString().slice(0, 10)}.pdf`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-xs"
+            title="Download Clean Executive PDF Memorandum"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-700" />
+            <span>Download PDF</span>
+          </a>
+
           <Button
             variant="outline"
             size="sm"
@@ -194,13 +270,94 @@ export const BriefsPage: React.FC = () => {
         </div>
       </PageHeader>
 
-      {error && <p role="alert" className="rounded-md border bg-white p-4 text-sm">{error} <button className="underline" onClick={fetchInitialBrief}>Reload</button></p>}
+      {error && (
+        <p role="alert" className="rounded-md border bg-white p-4 text-sm text-rose-700">
+          {error}{' '}
+          <button className="underline font-medium" onClick={fetchInitialBrief}>
+            Reload
+          </button>
+        </p>
+      )}
+
+      {/* Document Scope Selector Bar */}
+      {documents.length > 0 && (
+        <Card className="p-3 bg-white border border-slate-200 shadow-xs">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0 mr-1">
+              Document Scope:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleToggleDoc(null)}
+              className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
+                selectedDocIds.length === 0
+                  ? 'bg-slate-900 text-white font-medium'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              All Workspace ({documents.length})
+            </button>
+            {documents.map((d) => {
+              const isDocSelected = selectedDocIds.includes(d.id);
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => handleToggleDoc(d.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs transition-colors flex items-center gap-1.5 ${
+                    isDocSelected
+                      ? 'bg-slate-900 text-white font-medium'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <FileText className="w-3 h-3 shrink-0" />
+                  <span className="truncate max-w-[200px]">{d.title}</span>
+                </button>
+              );
+            })}
+
+            {selectedDocIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleToggleDoc(null)}
+                className="px-2 py-1 rounded-md text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1"
+                title="Reset selection to All Workspace"
+              >
+                <X className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            )}
+
+            {selectedDocIds.length === 2 && (
+              <Badge variant="navy" size="sm" className="ml-auto flex items-center gap-1">
+                <GitCompare className="w-3 h-3" />
+                <span>Comparative Reconciliation Mode (2 Documents)</span>
+              </Badge>
+            )}
+            {selectedDocIds.length > 2 && (
+              <Badge variant="navy" size="sm" className="ml-auto">
+                Portfolio Comparison ({selectedDocIds.length} Documents)
+              </Badge>
+            )}
+            {selectedDocIds.length === 1 && (
+              <Badge variant="navy" size="sm" className="ml-auto">
+                Single Document Focus
+              </Badge>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Template Chooser Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {templates.map((tmpl) => {
           const isSelected = selectedTemplate === tmpl.id;
-          const Icon = ({board_executive: Building, ma_due_diligence: Briefcase}[tmpl.id] || Layers);
+          const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+            board_executive: Building,
+            ma_due_diligence: Briefcase,
+            comparative_analysis: GitCompare
+          };
+          const Icon = iconMap[tmpl.id] || Layers;
           return (
             <button
               key={tmpl.id}
@@ -284,8 +441,45 @@ export const BriefsPage: React.FC = () => {
               <span>
                 <strong>Flagged Exposures:</strong> {brief.critical_findings_count} Critical / High
               </span>
+              {selectedDocIds.length === 2 && (
+                <>
+                  <span>•</span>
+                  <span className="text-clario-navy font-medium">Bilateral Comparison Mode</span>
+                </>
+              )}
             </div>
+
+            {/* Audited Documents Tags */}
+            {brief.audited_documents.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[11px] text-slate-400 font-medium mr-1">Corpus Scope:</span>
+                {brief.audited_documents.map((doc, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-700 font-medium"
+                  >
+                    <FileText className="w-2.5 h-2.5 text-slate-500" />
+                    <span className="truncate max-w-[220px]">{doc}</span>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Comparative Analysis Callout Banner when comparing 2 documents */}
+          {(selectedDocIds.length === 2 || selectedTemplate === 'comparative_analysis') && (
+            <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 text-xs flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <GitCompare className="w-4 h-4 text-slate-700 shrink-0" />
+                <span className="font-semibold text-slate-800">
+                  Cross-Document Variance & Discrepancy Reconciliation Active
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-500">
+                Auditing counterparty liability caps, warranty gaps, and regulatory variance
+              </span>
+            </div>
+          )}
 
           {/* Executive Summary */}
           <div className="space-y-2">

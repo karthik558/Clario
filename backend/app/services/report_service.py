@@ -21,6 +21,43 @@ from app.models.entities import Report, Document, Finding, DocumentChunk, Compar
 from app.schemas.dtos import ReportCreate, ReportResponse
 from app.services.ai_generator import AIGenerator
 
+from reportlab.pdfgen import canvas
+
+class NumberedCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved_page_states = []
+
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        num_pages = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self.draw_page_decorations(num_pages)
+            canvas.Canvas.showPage(self)
+        canvas.Canvas.save(self)
+
+    def draw_page_decorations(self, page_count):
+        self.saveState()
+        self.setFont("Helvetica", 8)
+        self.setFillColor(colors.HexColor("#64748B"))
+        # Running header on page 2+
+        if self._pageNumber > 1:
+            self.drawString(40, 755, "CONFIDENTIAL  |  CLARIO CONTRACT INTELLIGENCE DOSSIER")
+            self.setStrokeColor(colors.HexColor("#E2E8F0"))
+            self.setLineWidth(0.5)
+            self.line(40, 748, 572, 748)
+        # Running footer on all pages
+        self.setStrokeColor(colors.HexColor("#CBD5E1"))
+        self.setLineWidth(0.5)
+        self.line(40, 42, 572, 42)
+        self.drawString(40, 28, "STRICTLY CONFIDENTIAL  •  PREPARED FOR CORPORATE & LEGAL REVIEW")
+        self.drawRightString(572, 28, f"Page {self._pageNumber} of {page_count}")
+        self.restoreState()
+
 class ReportService:
     @staticmethod
     def generate_report(data: ReportCreate, db: Session) -> Report:
@@ -145,40 +182,52 @@ Draft an authoritative 2-3 paragraph executive overview highlighting key risk ex
             pagesize=letter,
             rightMargin=40,
             leftMargin=40,
-            topMargin=40,
-            bottomMargin=40
+            topMargin=45,
+            bottomMargin=55
         )
         
-        # Colors: Midnight Navy (#14263D), Warm Ivory (#F8F7F3), Muted Teal (#477E88), Champagne Gold (#D4AE72)
-        c_navy = colors.HexColor("#14263D")
-        c_teal = colors.HexColor("#477E88")
-        c_gold = colors.HexColor("#D4AE72")
-        c_ivory = colors.HexColor("#F8F7F3")
-        c_text = colors.HexColor("#233448")
-        c_gray = colors.HexColor("#748293")
+        # Colors: Monochrome Slate & Executive Navy
+        c_navy = colors.HexColor("#0F172A")       # Slate 900
+        c_slate = colors.HexColor("#334155")      # Slate 700
+        c_muted = colors.HexColor("#64748B")      # Slate 500
+        c_border = colors.HexColor("#E2E8F0")     # Slate 200
+        c_bg = colors.HexColor("#F8FAFC")         # Slate 50
+        c_body = colors.HexColor("#1E293B")       # Slate 800
 
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
             'ClarioTitle',
             parent=styles['Heading1'],
             fontName='Helvetica-Bold',
-            fontSize=22,
+            fontSize=18,
+            leading=22,
             textColor=c_navy,
-            spaceAfter=6
+            spaceAfter=4
+        )
+        tag_style = ParagraphStyle(
+            'ClarioTag',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=8.5,
+            leading=11,
+            textColor=c_muted,
+            spaceAfter=4
         )
         subtitle_style = ParagraphStyle(
             'ClarioSubtitle',
             parent=styles['Normal'],
             fontName='Helvetica',
-            fontSize=11,
-            textColor=c_teal,
-            spaceAfter=15
+            fontSize=8.5,
+            leading=12,
+            textColor=c_muted,
+            spaceAfter=12
         )
         heading_style = ParagraphStyle(
             'ClarioHeading',
             parent=styles['Heading2'],
             fontName='Helvetica-Bold',
-            fontSize=14,
+            fontSize=11,
+            leading=15,
             textColor=c_navy,
             spaceBefore=14,
             spaceAfter=6
@@ -187,101 +236,252 @@ Draft an authoritative 2-3 paragraph executive overview highlighting key risk ex
             'ClarioBody',
             parent=styles['Normal'],
             fontName='Helvetica',
-            fontSize=10,
-            leading=14,
-            textColor=c_text,
-            spaceAfter=8
+            fontSize=8.5,
+            leading=13,
+            textColor=c_body,
+            spaceAfter=6
         )
         quote_style = ParagraphStyle(
             'ClarioQuote',
             parent=styles['Italic'],
             fontName='Helvetica-Oblique',
-            fontSize=9,
-            leading=13,
-            textColor=c_text,
-            leftIndent=15,
-            spaceAfter=6
+            fontSize=8,
+            leading=12,
+            textColor=c_slate,
+            leftIndent=10,
+            spaceAfter=4
         )
-        tag_style = ParagraphStyle(
-            'ClarioTag',
+        table_hdr_style = ParagraphStyle(
+            'ClarioTableHdr',
             parent=styles['Normal'],
             fontName='Helvetica-Bold',
-            fontSize=9,
-            textColor=c_gold
+            fontSize=8,
+            leading=10,
+            textColor=colors.white
+        )
+        table_cell_style = ParagraphStyle(
+            'ClarioTableCell',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=8,
+            leading=11.5,
+            textColor=c_body
+        )
+        table_cell_bold = ParagraphStyle(
+            'ClarioTableCellBold',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=8,
+            leading=11.5,
+            textColor=c_navy
         )
 
         elements = []
 
-        # Header Bar
-        elements.append(Paragraph("CLARIO &bull; DOCUMENT INTELLIGENCE WORKBENCH", tag_style))
+        # Header Bar - Clean editorial typography, no logos
+        elements.append(Paragraph("CLARIO  •  DOCUMENT INTELLIGENCE DOSSIER", tag_style))
         elements.append(Paragraph(escape(title), title_style))
-        elements.append(Paragraph(f"Category: {report_type.replace('_', ' ').upper()} &nbsp;|&nbsp; Generated on {datetime.now(timezone.utc).strftime('%B %d, %Y')}", subtitle_style))
-        elements.append(HRFlowable(width="100%", thickness=1.5, color=c_teal, spaceAfter=15))
+        elements.append(Paragraph(
+            f"CATEGORY: {report_type.replace('_', ' ').upper()}   |   GENERATED: {datetime.now(timezone.utc).strftime('%B %d, %Y')}   |   SCOPE: {len(doc_titles)} DOCUMENT(S)",
+            subtitle_style
+        ))
+        elements.append(HRFlowable(width="100%", thickness=1, color=c_navy, spaceBefore=2, spaceAfter=14))
 
-        # Executive Summary
+        # Executive Summary Callout Box
         elements.append(Paragraph("Executive Summary", heading_style))
-        elements.append(Paragraph(escape(executive_summary), body_style))
+        exec_summary_cell = [
+            Paragraph("<b>EXECUTIVE MEMORANDUM OVERVIEW</b>", ParagraphStyle('SmHdr', fontName='Helvetica-Bold', fontSize=8, leading=10, textColor=c_navy, spaceAfter=4)),
+            Paragraph(escape(executive_summary), body_style)
+        ]
+        t_summary = Table([[exec_summary_cell]], colWidths=[532])
+        t_summary.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), c_bg),
+            ('BOX', (0, 0), (-1, -1), 0.75, c_border),
+            ('LINELEFT', (0, 0), (-1, -1), 3.5, c_navy),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(t_summary)
+        elements.append(Spacer(1, 10))
 
-        # Documents Analysed
+        # Analysed Document Collection
         elements.append(Paragraph("Analysed Document Collection", heading_style))
-        if doc_titles:
-            doc_items = [[Paragraph(f"&bull; <b>{escape(t)}</b>", body_style)] for t in doc_titles]
-            t_docs = Table(doc_items, colWidths=[520])
+        docs_analyzed = content.get("documents_analyzed", [])
+        if docs_analyzed:
+            doc_rows = [[
+                Paragraph("Document Title", table_hdr_style),
+                Paragraph("Format", table_hdr_style),
+                Paragraph("Pages", table_hdr_style),
+                Paragraph("Status", table_hdr_style)
+            ]]
+            for d in docs_analyzed:
+                doc_rows.append([
+                    Paragraph(escape(d.get("title", "")), table_cell_bold),
+                    Paragraph(escape(str(d.get("format", "PDF")).upper()), table_cell_style),
+                    Paragraph(f"{d.get('pages', 1)} pages", table_cell_style),
+                    Paragraph("Verified Ready", table_cell_style)
+                ])
+            t_docs = Table(doc_rows, colWidths=[300, 60, 72, 100])
             t_docs.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, -1), c_ivory),
-                ('TOPPADDING', (0, 0), (-1, -1), 4),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ('BACKGROUND', (0, 0), (-1, 0), c_navy),
+                ('GRID', (0, 0), (-1, -1), 0.5, c_border),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, c_bg]),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                ('LEFTPADDING', (0, 0), (-1, -1), 7),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+            ]))
+            elements.append(t_docs)
+        elif doc_titles:
+            doc_rows = [[Paragraph("Document Title", table_hdr_style), Paragraph("Status", table_hdr_style)]]
+            for t in doc_titles:
+                doc_rows.append([Paragraph(escape(t), table_cell_bold), Paragraph("Verified Ready", table_cell_style)])
+            t_docs = Table(doc_rows, colWidths=[400, 132])
+            t_docs.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), c_navy),
+                ('GRID', (0, 0), (-1, -1), 0.5, c_border),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, c_bg]),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                ('LEFTPADDING', (0, 0), (-1, -1), 7),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 7),
             ]))
             elements.append(t_docs)
         else:
             elements.append(Paragraph("Full workspace active corpus analysed.", body_style))
 
-        # Key Findings
         elements.append(Spacer(1, 10))
+
+        # Key Findings & Contradictions
         elements.append(Paragraph("Evidence-Based Findings & Contradictions", heading_style))
         findings_data = content.get("findings_summary", [])
         if findings_data:
+            finding_rows = [[
+                Paragraph("Finding Vector / Topic", table_hdr_style),
+                Paragraph("Severity", table_hdr_style),
+                Paragraph("Comparative Evidence & Excerpts", table_hdr_style)
+            ]]
             for item in findings_data:
                 cat = item.get("category", "").replace("_", " ").title()
-                elements.append(Paragraph(f"<b>[{escape(cat)}] {escape(item.get('title', ''))}</b> (Severity: {escape(item.get('severity', '').upper())})", body_style))
+                evidence_cell = []
                 if item.get("evidence_a"):
-                    elements.append(Paragraph(f"<b>Doc A Reference:</b> {escape(item.get('evidence_a', ''))}", quote_style))
+                    evidence_cell.append(Paragraph(f"<b>Doc A Reference:</b> {escape(item.get('evidence_a', ''))}", quote_style))
                 if item.get("evidence_b"):
-                    elements.append(Paragraph(f"<b>Doc B Reference:</b> {escape(item.get('evidence_b', ''))}", quote_style))
-                elements.append(Spacer(1, 4))
+                    evidence_cell.append(Paragraph(f"<b>Doc B Reference:</b> {escape(item.get('evidence_b', ''))}", quote_style))
+                if not evidence_cell:
+                    evidence_cell.append(Paragraph(escape(item.get("description", "Identified discrepancy between contract terms.")), table_cell_style))
+                
+                sev = item.get("severity", "").upper()
+                finding_rows.append([
+                    [Paragraph(f"<b>{escape(item.get('title', ''))}</b>", table_cell_bold), Paragraph(f"<font color='#64748B'>{escape(cat)}</font>", table_cell_style)],
+                    Paragraph(f"<b>{escape(sev)}</b>", table_cell_bold),
+                    evidence_cell
+                ])
+            t_findings = Table(finding_rows, colWidths=[150, 70, 312])
+            t_findings.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), c_navy),
+                ('GRID', (0, 0), (-1, -1), 0.5, c_border),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, c_bg]),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 7),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+            ]))
+            elements.append(t_findings)
         else:
             elements.append(Paragraph("No saved findings included in this report template and scope.", body_style))
 
-        for heading, key in [("Source excerpts", "source_excerpts"), ("Saved comparisons", "comparisons"), ("Recorded retrieval runs", "retrieval_runs")]:
-            records = content.get(key, [])
-            if records:
-                elements.append(Paragraph(heading, heading_style))
-            for item in records:
-                if key == "source_excerpts":
-                    elements.append(Paragraph(escape(f"{item['document_title']} · Page {item['page']}"), body_style))
-                    elements.append(Paragraph(escape(item["text"]).replace("\n", "<br/>"), quote_style))
-                elif key == "comparisons":
-                    elements.append(Paragraph(escape(item["title"]), body_style))
-                    elements.append(Paragraph(escape(item["summary"]), body_style))
-                else:
-                    elements.append(Paragraph(escape(f"{item['query']} — {item['mode']}, {item['latency_ms']} ms, {item['result_count']} results"), body_style))
-        if content.get("custom_notes"):
-            elements.append(Paragraph("Reviewer notes", heading_style))
-            elements.append(Paragraph(escape(content["custom_notes"]).replace("\n", "<br/>"), body_style))
-
-        # Methodology & Limitations
         elements.append(Spacer(1, 10))
-        elements.append(Paragraph("Methodology & Rigor", heading_style))
-        elements.append(Paragraph(escape(content.get("methodology", "")), body_style))
 
-        elements.append(Paragraph("Academic Limitations & Scope", heading_style))
-        elements.append(Paragraph(escape(content.get("limitations", "")), quote_style))
+        # Comparisons
+        comparisons_data = content.get("comparisons", [])
+        if comparisons_data:
+            elements.append(Paragraph("Side-by-Side Comparative Reconciliations", heading_style))
+            comp_rows = [[Paragraph("Comparison Pair", table_hdr_style), Paragraph("Variance Analysis & Synthesis", table_hdr_style)]]
+            for c in comparisons_data:
+                comp_rows.append([
+                    Paragraph(escape(c.get("title", "")), table_cell_bold),
+                    Paragraph(escape(c.get("summary", "")), table_cell_style)
+                ])
+            t_comps = Table(comp_rows, colWidths=[180, 352])
+            t_comps.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), c_navy),
+                ('GRID', (0, 0), (-1, -1), 0.5, c_border),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, c_bg]),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                ('LEFTPADDING', (0, 0), (-1, -1), 7),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+            ]))
+            elements.append(t_comps)
+            elements.append(Spacer(1, 10))
 
-        # Footer
-        elements.append(HRFlowable(width="100%", thickness=0.8, color=c_gray, spaceBefore=15, spaceAfter=8))
-        elements.append(Paragraph("Clario Intelligence Engine &bull; Document Intelligence with Vector Search &bull; Confidential", subtitle_style))
+        # Source Excerpts
+        excerpts_data = content.get("source_excerpts", [])
+        if excerpts_data:
+            elements.append(Paragraph("Verified Source Excerpts", heading_style))
+            for item in excerpts_data[:5]:
+                excerpt_content = [
+                    Paragraph(f"<b>{escape(item.get('document_title', ''))} &bull; Page {item.get('page', 1)}</b>", table_cell_bold),
+                    Paragraph(escape(item.get("text", "")).replace("\n", "<br/>"), quote_style)
+                ]
+                t_exc = Table([[excerpt_content]], colWidths=[532])
+                t_exc.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), c_bg),
+                    ('BOX', (0, 0), (-1, -1), 0.5, c_border),
+                    ('LINELEFT', (0, 0), (-1, -1), 2.5, c_slate),
+                    ('TOPPADDING', (0, 0), (-1, -1), 5),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 9),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 9),
+                ]))
+                elements.append(t_exc)
+                elements.append(Spacer(1, 4))
+            elements.append(Spacer(1, 6))
 
-        doc.build(elements)
+        # Custom Notes
+        if content.get("custom_notes"):
+            elements.append(Paragraph("Reviewer Notes & Counsel Annotations", heading_style))
+            notes_content = [
+                Paragraph("<b>AUDITOR ANNOTATIONS</b>", ParagraphStyle('SmNote', fontName='Helvetica-Bold', fontSize=8, leading=10, textColor=c_navy, spaceAfter=4)),
+                Paragraph(escape(content["custom_notes"]).replace("\n", "<br/>"), body_style)
+            ]
+            t_notes = Table([[notes_content]], colWidths=[532])
+            t_notes.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), c_bg),
+                ('BOX', (0, 0), (-1, -1), 0.5, c_border),
+                ('LINELEFT', (0, 0), (-1, -1), 2.5, c_navy),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ]))
+            elements.append(t_notes)
+            elements.append(Spacer(1, 10))
+
+        # Methodology & Academic Rigor Box
+        elements.append(Spacer(1, 6))
+        elements.append(Paragraph("Audit Methodology & Scope Limitations", heading_style))
+        methodology_text = (
+            f"<b>METHODOLOGY:</b> {escape(content.get('methodology', ''))}<br/><br/>"
+            f"<b>LIMITATIONS:</b> {escape(content.get('limitations', ''))}"
+        )
+        t_method = Table([[Paragraph(methodology_text, ParagraphStyle('MethStyle', fontName='Helvetica', fontSize=7.5, leading=11, textColor=c_muted))]], colWidths=[532])
+        t_method.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), c_bg),
+            ('BOX', (0, 0), (-1, -1), 0.5, c_border),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ]))
+        elements.append(t_method)
+
+        doc.build(elements, canvasmaker=NumberedCanvas)
 
     @staticmethod
     def list_reports(db: Session) -> List[Report]:

@@ -59,6 +59,43 @@ def export_audio_get(
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
+@router.get("/export-pdf")
+def export_brief_pdf_get(
+    template_id: str = "board_executive",
+    document_ids: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    doc_id_list = [d.strip() for d in document_ids.split(",")] if document_ids else None
+    data, media_type, filename = BriefService.export_pdf(
+        db,
+        template_id=template_id,
+        document_ids=doc_id_list
+    )
+    return Response(
+        content=data,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+@router.post("/export-pdf")
+def export_brief_pdf_post(
+    req: BriefGenerateRequest,
+    db: Session = Depends(get_db)
+):
+    data, media_type, filename = BriefService.export_pdf(
+        db,
+        template_id=req.template_id,
+        document_ids=req.document_ids,
+        custom_notes=req.custom_notes,
+        use_ai=bool(req.use_ai)
+    )
+    return Response(
+        content=data,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
 @router.post("/audio-export")
 def export_audio_post(
     req: AudioSummaryRequest,
@@ -75,3 +112,4 @@ def export_audio_post(
         media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+

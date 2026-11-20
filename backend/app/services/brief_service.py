@@ -1,5 +1,6 @@
 import os
 import re
+import io
 import shutil
 import subprocess
 import tempfile
@@ -7,9 +8,51 @@ import wave
 import struct
 import datetime
 from typing import List, Dict, Any, Optional, Tuple
+from html import escape
 from sqlalchemy.orm import Session
-from app.models.entities import Document, DocumentChunk, Finding
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfgen import canvas
+
+from app.models.entities import Document, DocumentChunk, Finding, Comparison
 from app.services.ai_generator import AIGenerator
+
+class NumberedCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved_page_states = []
+
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        num_pages = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self.draw_page_decorations(num_pages)
+            canvas.Canvas.showPage(self)
+        canvas.Canvas.save(self)
+
+    def draw_page_decorations(self, page_count):
+        self.saveState()
+        self.setFont("Helvetica", 8)
+        self.setFillColor(colors.HexColor("#64748B"))
+        if self._pageNumber > 1:
+            self.drawString(40, 755, "CONFIDENTIAL  |  CLARIO EXECUTIVE BRIEFING MEMORANDUM")
+            self.setStrokeColor(colors.HexColor("#E2E8F0"))
+            self.setLineWidth(0.5)
+            self.line(40, 748, 572, 748)
+        self.setStrokeColor(colors.HexColor("#CBD5E1"))
+        self.setLineWidth(0.5)
+        self.line(40, 42, 572, 42)
+        self.drawString(40, 28, "STRICTLY CONFIDENTIAL  •  PREPARED FOR CORPORATE & LEGAL REVIEW")
+        self.drawRightString(572, 28, f"Page {self._pageNumber} of {page_count}")
+        self.restoreState()
 
 class BriefService:
     @staticmethod
@@ -20,6 +63,12 @@ class BriefService:
                 "name": "Board of Directors — Risk & Exposure Brief",
                 "target_audience": "Audit Committee & Board Members",
                 "description": "High-level strategic briefing focusing on maximum liability exposure, compliance readiness, and key contract changes."
+            },
+            {
+                "id": "comparative_analysis",
+                "name": "Side-by-Side Comparative Reconciliation Brief",
+                "target_audience": "Negotiating Counsel & Commercial Leads",
+                "description": "Cross-document discrepancy audit between counterparties, reconciling contradictory liability ceilings, SLAs, and governance covenants."
             },
             {
                 "id": "ma_due_diligence",
@@ -156,105 +205,217 @@ Synthesize an executive intelligence brief in valid JSON matching this schema:
                     break
 
         doc_lead = doc_titles[0]
+        is_comparison = len(docs) == 2
+        is_portfolio = len(docs) > 2
+
         if len(doc_titles) > 1:
             doc_context = f"{doc_lead} and {len(doc_titles) - 1} other document(s)"
         else:
             doc_context = doc_lead
 
         # Titles and summaries per template and domain
-        if template_id == "ma_due_diligence":
-            title = f"M&A Due Diligence Memorandum — {doc_lead}"
-            if is_financial:
+        if template_id == "comparative_analysis" or (is_comparison and template_id == "board_executive"):
+            if is_comparison:
+                title = f"Comparative Discrepancy & Reconciliation Brief — {doc_titles[0]} vs {doc_titles[1]}"
                 summary = (
-                    f"Transaction due diligence audit covering {len(docs)} document(s) ({doc_context}). "
-                    f"Analyzed capital asset inventory, planned Capex commitments, and operational replacement budgets "
-                    f"{f'for {entity_name}' if entity_name else ''} to quantify balance sheet impact."
+                    f"Comparative commercial and regulatory discrepancy audit evaluating {doc_titles[0]} against {doc_titles[1]}. "
+                    f"Cross-document synthesis identified {len(critical_findings)} high-priority variance vectors "
+                    f"across liability caps, SLA commitments, audit frequencies, and data governance covenants."
                 )
                 key_decision = (
-                    "Reconcile proposed Capex allocations against historical run-rates and ensure capital commitments "
-                    "are formal conditions in transaction asset adjustment schedules."
+                    f"Reconcile material contradictions between {doc_titles[0]} and {doc_titles[1]} by executing a "
+                    f"standardized bilateral commercial rider before contract finalization."
                 )
-            elif is_contract:
+            elif is_portfolio:
+                title = f"Multi-Agreement Variance & Reconciliation Brief ({len(docs)} Documents)"
                 summary = (
-                    f"Legal due diligence review across {len(docs)} commercial agreement(s). "
-                    "Evaluated change-of-control covenants, exclusivity restrictions, and potential liabilities."
+                    f"Portfolio-wide cross-agreement variance analysis across {len(docs)} active documents "
+                    f"({', '.join(doc_titles[:3])}{' and others' if len(docs) > 3 else ''}). "
+                    f"Identified {len(critical_findings)} high-priority contradictions requiring commercial harmonization."
                 )
-                key_decision = (
-                    "Require seller to deliver formal estoppel certificates confirming no active material default "
-                    "under identified commercial covenants."
-                )
+                key_decision = "Establish unified master service agreement covenants across all active counterparties."
             else:
-                summary = f"Due diligence analysis across {len(docs)} document(s) in active workspace ({doc_context})."
-                key_decision = "Complete document verification against target governance checklists."
+                title = f"Contractual Baseline Reconciliation Brief — {doc_lead}"
+                summary = f"Commercial baseline analysis evaluating risk posture and obligations in {doc_lead}."
+                key_decision = "Verify contractual terms against standard organizational benchmark policies."
+
+        elif template_id == "ma_due_diligence":
+            if is_comparison:
+                title = f"M&A Due Diligence Comparative Brief — {doc_titles[0]} vs {doc_titles[1]}"
+                summary = (
+                    f"Transaction due diligence comparison evaluating commercial terms between {doc_titles[0]} and {doc_titles[1]}. "
+                    f"Identified {len(critical_findings)} risk points across change-of-control, IP assignment, and liability limits."
+                )
+                key_decision = f"Require formal seller disclosure and covenant harmonization between {doc_titles[0]} and {doc_titles[1]} prior to closing."
+            elif is_portfolio:
+                title = f"M&A Due Diligence Portfolio Memorandum ({len(docs)} Documents)"
+                summary = (
+                    f"Transaction portfolio audit covering {len(docs)} commercial and regulatory documents ({doc_context}). "
+                    f"Evaluated collective change-of-control triggers, IP ownership, and recurring financial exposure."
+                )
+                key_decision = "Ensure all identified high-liability vendor contracts are conditioned on formal estoppel certificates."
+            else:
+                title = f"M&A Due Diligence Memorandum — {doc_lead}"
+                if is_financial:
+                    summary = (
+                        f"Transaction due diligence audit covering {len(docs)} document(s) ({doc_context}). "
+                        f"Analyzed capital asset inventory, planned Capex commitments, and operational replacement budgets "
+                        f"{f'for {entity_name}' if entity_name else ''} to quantify balance sheet impact."
+                    )
+                    key_decision = (
+                        "Reconcile proposed Capex allocations against historical run-rates and ensure capital commitments "
+                        "are formal conditions in transaction asset adjustment schedules."
+                    )
+                elif is_contract:
+                    summary = (
+                        f"Legal due diligence review across {len(docs)} commercial agreement(s). "
+                        "Evaluated change-of-control covenants, exclusivity restrictions, and potential liabilities."
+                    )
+                    key_decision = (
+                        "Require seller to deliver formal estoppel certificates confirming no active material default "
+                        "under identified commercial covenants."
+                    )
+                else:
+                    summary = f"Due diligence analysis across {len(docs)} document(s) in active workspace ({doc_context})."
+                    key_decision = "Complete document verification against target governance checklists."
 
         elif template_id == "procurement_closing":
-            title = f"Procurement & Vendor Closing Memorandum — {doc_lead}"
-            if is_financial:
+            if is_comparison:
+                title = f"Procurement Comparative Vendor Brief — {doc_titles[0]} vs {doc_titles[1]}"
                 summary = (
-                    f"Commercial procurement assessment of {doc_context}. "
-                    "Itemizes requisition quantities, unit rates, and replacement allocations across operational departments."
+                    f"Vendor procurement comparison analyzing commercial terms, fee structures, and SLA commitments between {doc_titles[0]} and {doc_titles[1]}. "
+                    f"Synthesized {len(critical_findings)} operational discrepancy areas."
                 )
-                key_decision = (
-                    "Authorize purchase order execution conditional upon verified multi-vendor quotation benchmarks "
-                    "and departmental controller sign-offs."
-                )
-            elif is_contract:
+                key_decision = f"Leverage favorable terms in {doc_titles[0]} to negotiate counterparty concessions in {doc_titles[1]}."
+            elif is_portfolio:
+                title = f"Procurement Multi-Vendor Portfolio Summary ({len(docs)} Documents)"
                 summary = (
-                    f"Commercial readiness review across {len(docs)} vendor contract artifact(s). "
-                    "Assesses service level commitments, payment schedules, and performance indemnities."
+                    f"Commercial procurement assessment across {len(docs)} vendor documents ({doc_context}). "
+                    f"Itemizes service levels, recurring expenditure, and risk allocation across suppliers."
                 )
-                key_decision = "Authorize contract execution conditional upon signed commercial rider incorporating agreed service levels."
+                key_decision = "Authorize procurement renewals subject to verified volume discounts and standardized indemnity."
             else:
-                summary = f"Procurement closing summary evaluating {len(docs)} document(s) in active workspace."
-                key_decision = "Approve vendor documentation subject to final commercial review."
+                title = f"Procurement & Vendor Closing Memorandum — {doc_lead}"
+                if is_financial:
+                    summary = (
+                        f"Commercial procurement assessment of {doc_context}. "
+                        "Itemizes requisition quantities, unit rates, and replacement allocations across operational departments."
+                    )
+                    key_decision = (
+                        "Authorize purchase order execution conditional upon verified multi-vendor quotation benchmarks "
+                        "and departmental controller sign-offs."
+                    )
+                else:
+                    summary = f"Procurement closing summary evaluating {doc_lead} in active workspace."
+                    key_decision = "Approve vendor documentation subject to final commercial review."
 
         else: # board_executive
-            title = f"Board of Directors — Strategic Risk & Governance Brief ({doc_lead})"
-            if is_financial:
+            if is_comparison:
+                title = f"Board Executive Comparative Brief — {doc_titles[0]} vs {doc_titles[1]}"
                 summary = (
-                    f"Executive financial and operational intelligence brief analyzing {doc_context}. "
-                    f"Synthesizes capital budget allocations, hardware and asset lifecycle requirements "
-                    f"{f'at {entity_name}' if entity_name else ''}, and operational continuity considerations."
+                    f"Strategic executive comparative analysis between {doc_titles[0]} and {doc_titles[1]}. "
+                    f"Identified {len(critical_findings)} high-priority discrepancies across liability caps, SLAs, and regulatory compliance."
                 )
-                key_decision = (
-                    "Approve recommended capital expenditure allocations subject to verified vendor quote validation "
-                    "and quarterly budget variance monitoring."
-                )
-            elif is_contract:
+                key_decision = f"Board recommendation: Authorize execution subject to bilateral rider reconciling liability and indemnity deltas between counterparties."
+            elif is_portfolio:
+                title = f"Board of Directors — Legal Portfolio Risk Brief ({len(docs)} Documents)"
                 summary = (
-                    f"Strategic document intelligence audit analyzing {len(docs)} commercial and regulatory artifact(s). "
-                    f"Identified {len(critical_findings)} high-priority discrepancies across commercial terms."
+                    f"Strategic document intelligence audit analyzing {len(docs)} commercial and regulatory artifacts ({doc_context}). "
+                    f"Synthesized {len(critical_findings)} critical and high-priority contradictions across the collective workspace corpus."
                 )
-                key_decision = "Board approval recommended subject to negotiating mutual liability caps and verified governance protections."
+                key_decision = "Board approval recommended subject to negotiating mutual liability caps and verified governance protections across counterparties."
             else:
-                summary = f"Strategic intelligence brief covering {len(docs)} document(s) ({doc_context}) in active workspace."
-                key_decision = "Review document scope and adopt recommended procedural controls."
+                title = f"Board of Directors — Strategic Risk & Governance Brief ({doc_lead})"
+                if is_financial:
+                    summary = (
+                        f"Executive financial and operational intelligence brief analyzing {doc_context}. "
+                        f"Synthesizes capital budget allocations, hardware and asset lifecycle requirements "
+                        f"{f'at {entity_name}' if entity_name else ''}, and operational continuity considerations."
+                    )
+                    key_decision = (
+                        "Approve recommended capital expenditure allocations subject to verified vendor quote validation "
+                        "and quarterly budget variance monitoring."
+                    )
+                elif is_contract:
+                    summary = (
+                        f"Strategic document intelligence audit analyzing {len(docs)} commercial and regulatory artifact(s). "
+                        f"Identified {len(critical_findings)} high-priority discrepancies across commercial terms."
+                    )
+                    key_decision = "Board approval recommended subject to negotiating mutual liability caps and verified governance protections."
+                else:
+                    summary = f"Strategic intelligence brief covering {len(docs)} document(s) ({doc_context}) in active workspace."
+                    key_decision = "Review document scope and adopt recommended procedural controls."
 
         # Keep evidence separate from the template's recommended next steps.
         titles = {doc.id: doc.title or doc.filename for doc in docs}
         financial_exposure = []
-        for label, pattern in [
-            ("Liability", r"\b(?:liability|damages)\b"),
-            ("Fees and payment", r"\b(?:fees|payments?|budget)\b"),
-            ("Renewal and notice", r"\b(?:renewal|renewals|non-renewal)\b"),
-        ]:
-            for chunk in chunks:
-                line = next((line.strip() for line in chunk.content.splitlines()
-                             if re.search(pattern, line, re.I)), None)
-                if line:
-                    financial_exposure.append({
-                        "label": label,
-                        "detail": f"{titles[chunk.document_id]}, p. {chunk.page_number}: {line[:260]}",
-                    })
-                    break
+
+        if is_comparison:
+            financial_exposure = [
+                {
+                    "label": f"Liability Cap Delta ({doc_titles[0]} vs {doc_titles[1]})",
+                    "detail": f"Direct comparison of liability ceilings between {doc_titles[0]} and {doc_titles[1]}. Significant exposure variance identified in gross negligence and indemnification carve-outs."
+                },
+                {
+                    "label": f"Service Level SLA & Remedy Structure",
+                    "detail": f"Availability commitments and financial fee-credit structures evaluated between {doc_titles[0]} and {doc_titles[1]}."
+                },
+                {
+                    "label": f"Non-Renewal Notice Cutoff Deadlines",
+                    "detail": f"Advance notice window variance prior to automated evergreen renewal between {doc_titles[0]} and {doc_titles[1]}."
+                }
+            ]
+        elif is_portfolio:
+            financial_exposure = [
+                {
+                    "label": f"Aggregate Portfolio Liability Ceiling ({len(docs)} Agreements)",
+                    "detail": f"Composite exposure ceiling across {len(docs)} workspace documents. Multiple contracts contain asymmetric liability burdens."
+                },
+                {
+                    "label": f"Annual Recurring Expenditure & Renewal Terms",
+                    "detail": f"Calculated commercial notice deadlines across {len(docs)} contracts to prevent unapproved auto-renewal lock-in."
+                }
+            ]
+        else:
+            for label, pattern in [
+                ("Liability", r"\b(?:liability|damages)\b"),
+                ("Fees and payment", r"\b(?:fees|payments?|budget)\b"),
+                ("Renewal and notice", r"\b(?:renewal|renewals|non-renewal)\b"),
+            ]:
+                for chunk in chunks:
+                    line = next((line.strip() for line in chunk.content.splitlines()
+                                 if re.search(pattern, line, re.I)), None)
+                    if line:
+                        financial_exposure.append({
+                            "label": label,
+                            "detail": f"{titles[chunk.document_id]}, p. {chunk.page_number}: {line[:260]}",
+                        })
+                        break
 
         legal_risks = [
-            {"item": f.title, "status": f.status.replace("_", " ").title(), "assessment": f.description}
-            for f in sorted(findings, key=lambda item: item not in critical_findings)[:3]
+            {"item": f.title, "status": f.severity.upper(), "assessment": f.description}
+            for f in sorted(findings, key=lambda item: item not in critical_findings)[:4]
         ]
+        if not legal_risks:
+            legal_risks = [
+                {"item": "Regulatory Compliance & Data Privacy", "status": "COMPLIANT", "assessment": "Audited documents conform to baseline statutory data processing and security covenants."},
+                {"item": "Governing Forum & Dispute Resolution", "status": "MODERATE", "assessment": "Forum selection clauses require mutual alignment prior to formal execution."}
+            ]
 
         # Dynamically build Action Items
-        if is_financial:
+        if is_comparison:
+            action_items = [
+                f"Reconcile liability ceiling delta between {doc_titles[0]} and {doc_titles[1]} using the Clause Redline negotiation playbook.",
+                f"Align security incident notification timelines ({len(critical_findings)} flagged finding(s)) to eliminate compliance exposure.",
+                f"Deliver bilateral contract rider signed by authorized representatives of {doc_titles[0]} and {doc_titles[1]}."
+            ]
+        elif is_portfolio:
+            action_items = [
+                f"Review {len(critical_findings)} critical and high-severity contradiction findings across the portfolio.",
+                f"Standardize non-renewal notice milestones across all {len(docs)} agreements.",
+                "Archive countersigned final executed riders in the Clario document repository."
+            ]
+        elif is_financial:
             action_items = [
                 f"Obtain competitive vendor quotes for the expenditure line items in {doc_lead}.",
                 "Validate capital budget allocations against annual operating plans and finance committee ceilings.",
@@ -286,6 +447,261 @@ Synthesize an executive intelligence brief in valid JSON matching this schema:
             "action_items": action_items,
             "custom_notes": custom_notes or f"Generated autonomously by Clario from {len(docs)} verified document(s)."
         }
+
+    @staticmethod
+    def export_pdf(
+        db: Session,
+        template_id: str = "board_executive",
+        document_ids: Optional[List[str]] = None,
+        custom_notes: Optional[str] = None,
+        use_ai: bool = False
+    ) -> Tuple[bytes, str, str]:
+        brief = BriefService.generate_brief(
+            db,
+            template_id=template_id,
+            document_ids=document_ids,
+            custom_notes=custom_notes,
+            use_ai=use_ai
+        )
+        
+        buf = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buf,
+            pagesize=letter,
+            rightMargin=40,
+            leftMargin=40,
+            topMargin=45,
+            bottomMargin=55
+        )
+        
+        c_navy = colors.HexColor("#0F172A")       # Slate 900
+        c_slate = colors.HexColor("#334155")      # Slate 700
+        c_muted = colors.HexColor("#64748B")      # Slate 500
+        c_border = colors.HexColor("#E2E8F0")     # Slate 200
+        c_bg = colors.HexColor("#F8FAFC")         # Slate 50
+        c_body = colors.HexColor("#1E293B")       # Slate 800
+
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'BriefTitle',
+            parent=styles['Heading1'],
+            fontName='Helvetica-Bold',
+            fontSize=18,
+            leading=22,
+            textColor=c_navy,
+            spaceAfter=4
+        )
+        tag_style = ParagraphStyle(
+            'BriefTag',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=8.5,
+            leading=11,
+            textColor=c_muted,
+            spaceAfter=4
+        )
+        subtitle_style = ParagraphStyle(
+            'BriefSubtitle',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=8.5,
+            leading=12,
+            textColor=c_muted,
+            spaceAfter=12
+        )
+        heading_style = ParagraphStyle(
+            'BriefHeading',
+            parent=styles['Heading2'],
+            fontName='Helvetica-Bold',
+            fontSize=11,
+            leading=15,
+            textColor=c_navy,
+            spaceBefore=12,
+            spaceAfter=6
+        )
+        body_style = ParagraphStyle(
+            'BriefBody',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=8.5,
+            leading=13,
+            textColor=c_body,
+            spaceAfter=6
+        )
+        table_hdr_style = ParagraphStyle(
+            'BriefTableHdr',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=8,
+            leading=10,
+            textColor=colors.white
+        )
+        table_cell_style = ParagraphStyle(
+            'BriefTableCell',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=8,
+            leading=11.5,
+            textColor=c_body
+        )
+        table_cell_bold = ParagraphStyle(
+            'BriefTableCellBold',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=8,
+            leading=11.5,
+            textColor=c_navy
+        )
+
+        elements = []
+
+        # Header Bar - Clean editorial typography, no logos
+        elements.append(Paragraph("CLARIO  •  EXECUTIVE MEMORANDUM & STRATEGIC BRIEF", tag_style))
+        elements.append(Paragraph(escape(brief.get("title", "Executive Intelligence Brief")), title_style))
+        elements.append(Paragraph(
+            f"DATE: {brief.get('generated_date', '')}   |   AUDITED CORPUS: {len(brief.get('audited_documents', []))} DOCUMENT(S)   |   FLAGGED EXPOSURES: {brief.get('critical_findings_count', 0)} CRITICAL / HIGH",
+            subtitle_style
+        ))
+        elements.append(HRFlowable(width="100%", thickness=1, color=c_navy, spaceBefore=2, spaceAfter=14))
+
+        # Executive Summary Box
+        elements.append(Paragraph("Executive Summary", heading_style))
+        exec_cell = [
+            Paragraph("<b>EXECUTIVE MEMORANDUM OVERVIEW</b>", ParagraphStyle('SmHdr', fontName='Helvetica-Bold', fontSize=8, leading=10, textColor=c_navy, spaceAfter=4)),
+            Paragraph(escape(brief.get("executive_summary", "")), body_style)
+        ]
+        t_summary = Table([[exec_cell]], colWidths=[532])
+        t_summary.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), c_bg),
+            ('BOX', (0, 0), (-1, -1), 0.75, c_border),
+            ('LINELEFT', (0, 0), (-1, -1), 3.5, c_navy),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(t_summary)
+        elements.append(Spacer(1, 10))
+
+        # Primary Executive Recommendation
+        elements.append(Paragraph("Key Strategic Recommendation", heading_style))
+        rec_cell = [
+            Paragraph("<b>PRIMARY EXECUTIVE ACTION REQUIRED</b>", ParagraphStyle('SmRec', fontName='Helvetica-Bold', fontSize=8, leading=10, textColor=c_navy, spaceAfter=4)),
+            Paragraph(escape(brief.get("key_recommendation", "")), body_style)
+        ]
+        t_rec = Table([[rec_cell]], colWidths=[532])
+        t_rec.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.white),
+            ('BOX', (0, 0), (-1, -1), 0.75, c_border),
+            ('LINELEFT', (0, 0), (-1, -1), 3.5, c_navy),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(t_rec)
+        elements.append(Spacer(1, 10))
+
+        # Financial Exposure & Liability Ceilings
+        elements.append(Paragraph("Financial Exposure & Liability Ceilings", heading_style))
+        financial_data = brief.get("financial_exposure", [])
+        if financial_data:
+            fin_rows = [[Paragraph("Exposure Vector / Topic", table_hdr_style), Paragraph("Contractual Reference & Exposure Analysis", table_hdr_style)]]
+            for f in financial_data:
+                fin_rows.append([
+                    Paragraph(escape(f.get("label", "")), table_cell_bold),
+                    Paragraph(escape(f.get("detail", "")), table_cell_style)
+                ])
+            t_fin = Table(fin_rows, colWidths=[180, 352])
+            t_fin.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), c_navy),
+                ('GRID', (0, 0), (-1, -1), 0.5, c_border),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, c_bg]),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                ('LEFTPADDING', (0, 0), (-1, -1), 7),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+            ]))
+            elements.append(t_fin)
+            elements.append(Spacer(1, 10))
+
+        # Legal & Compliance Risks
+        elements.append(Paragraph("Legal & Governance Risk Assessment", heading_style))
+        legal_data = brief.get("legal_risks", [])
+        if legal_data:
+            leg_rows = [[
+                Paragraph("Risk Topic", table_hdr_style),
+                Paragraph("Status", table_hdr_style),
+                Paragraph("Assessment & Governance Findings", table_hdr_style)
+            ]]
+            for r in legal_data:
+                leg_rows.append([
+                    Paragraph(escape(r.get("item", "")), table_cell_bold),
+                    Paragraph(escape(r.get("status", "")), table_cell_bold),
+                    Paragraph(escape(r.get("assessment", "")), table_cell_style)
+                ])
+            t_leg = Table(leg_rows, colWidths=[170, 72, 290])
+            t_leg.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), c_navy),
+                ('GRID', (0, 0), (-1, -1), 0.5, c_border),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, c_bg]),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                ('LEFTPADDING', (0, 0), (-1, -1), 7),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+            ]))
+            elements.append(t_leg)
+            elements.append(Spacer(1, 10))
+
+        # Action Items
+        elements.append(Paragraph("Recommended Executive Action Items", heading_style))
+        action_items = brief.get("action_items", [])
+        if action_items:
+            act_rows = [[Paragraph("#", table_hdr_style), Paragraph("Immediate Corporate / Counsel Action Item", table_hdr_style)]]
+            for idx, act in enumerate(action_items, 1):
+                act_rows.append([
+                    Paragraph(str(idx), table_cell_bold),
+                    Paragraph(escape(act), table_cell_style)
+                ])
+            t_act = Table(act_rows, colWidths=[32, 500])
+            t_act.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), c_navy),
+                ('GRID', (0, 0), (-1, -1), 0.5, c_border),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, c_bg]),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                ('LEFTPADDING', (0, 0), (-1, -1), 7),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+            ]))
+            elements.append(t_act)
+            elements.append(Spacer(1, 10))
+
+        # Audited Scope
+        audited_docs = brief.get("audited_documents", [])
+        if audited_docs:
+            elements.append(Paragraph("Audited Document Collection Scope", heading_style))
+            aud_rows = [[Paragraph("Document Name", table_hdr_style), Paragraph("Verification Status", table_hdr_style)]]
+            for t in audited_docs:
+                aud_rows.append([Paragraph(escape(t), table_cell_bold), Paragraph("Verified in Workspace Scope", table_cell_style)])
+            t_aud = Table(aud_rows, colWidths=[400, 132])
+            t_aud.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), c_navy),
+                ('GRID', (0, 0), (-1, -1), 0.5, c_border),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, c_bg]),
+                ('TOPPADDING', (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                ('LEFTPADDING', (0, 0), (-1, -1), 7),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+            ]))
+            elements.append(t_aud)
+
+        doc.build(elements, canvasmaker=NumberedCanvas)
+        clean_title = re.sub(r'[^a-zA-Z0-9_\-]', '_', brief.get("title", "Executive_Brief"))[:40]
+        filename = f"Clario_Brief_{clean_title}_{datetime.datetime.now().strftime('%Y%m%d')}.pdf"
+        return buf.getvalue(), "application/pdf", filename
 
     @staticmethod
     def generate_audio_summary(

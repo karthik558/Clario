@@ -496,6 +496,13 @@ export const api = {
     return res.json();
   },
 
+  getBriefPdfUrl: (templateId?: string, documentIds?: string[]): string => {
+    const params = new URLSearchParams();
+    if (templateId) params.set('template_id', templateId);
+    if (documentIds && documentIds.length) params.set('document_ids', documentIds.join(','));
+    return `${API_BASE}/briefs/export-pdf?${params.toString()}`;
+  },
+
   generateBrief: async (templateId?: string, documentIds?: string[], customNotes?: string, useAi?: boolean): Promise<BriefResponse> => {
     const res = await fetch(`${API_BASE}/briefs/generate`, {
       method: 'POST',
