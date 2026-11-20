@@ -203,7 +203,7 @@ export function RenewalPlannerPage() {
                 <CalendarDays className="w-4 h-4 text-slate-700" />
                 <span>Last day to give notice</span>
               </h2>
-              <Badge variant={valid ? 'red' : 'gray'} size="sm">
+              <Badge variant={valid ? 'red' : 'gray'} size="md">
                 {valid ? 'Firm Deadline' : 'Awaiting Input'}
               </Badge>
             </div>

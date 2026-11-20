@@ -485,7 +485,7 @@ export const RedactionStudioPage: React.FC = () => {
               </span>
             </div>
 
-            <Badge variant="navy" size="sm">
+            <Badge variant="navy" size="md">
               Live Sanitization Active
             </Badge>
           </div>

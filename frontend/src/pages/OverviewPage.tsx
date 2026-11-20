@@ -550,7 +550,7 @@ export const OverviewPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="navy" size="sm">
+              <Badge variant="navy" size="md">
                 Portfolio Grade: {riskScorecard.composite_grade}
               </Badge>
               <Button
@@ -1066,7 +1066,7 @@ export const OverviewPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="navy" size="sm">
+              <Badge variant="navy" size="md">
                 Legal Portfolio Matrix
               </Badge>
               <Button
@@ -1214,9 +1214,9 @@ export const OverviewPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="gray" size="sm">Low Risk</Badge>
-            <Badge variant="gold" size="sm">Moderate</Badge>
-            <Badge variant="red" size="sm">Critical</Badge>
+            <Badge variant="gray" size="md">Low Risk</Badge>
+            <Badge variant="gold" size="md">Moderate</Badge>
+            <Badge variant="red" size="md">Critical</Badge>
           </div>
         </div>
 

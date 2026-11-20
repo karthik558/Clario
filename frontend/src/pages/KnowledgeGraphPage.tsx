@@ -520,64 +520,64 @@ export const KnowledgeGraphPage: React.FC = () => {
       {/* Metric Stat Ribbon matching Findings and Overview */}
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4 flex flex-col justify-between hover:border-slate-300 transition-all shadow-subtle rounded-md bg-white">
-            <div className="flex items-center justify-between text-slate-500 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md bg-white">
+            <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider">
                 Indexed Documents
               </span>
               <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                 <FileText className="w-3.5 h-3.5" />
               </div>
             </div>
-            <span className="text-2xl font-semibold tracking-tight tabular-nums text-slate-900 font-mono">
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
               {data.stats.total_documents}
             </span>
-            <span className="text-[10px] text-slate-500 font-medium mt-1">Active Corpus</span>
+            <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Active Corpus</span>
           </Card>
 
-          <Card className="p-4 flex flex-col justify-between hover:border-slate-300 transition-all shadow-subtle rounded-md bg-white">
-            <div className="flex items-center justify-between text-slate-500 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md bg-white">
+            <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider">
                 Discovered Topics
               </span>
               <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                 <Layers className="w-3.5 h-3.5" />
               </div>
             </div>
-            <span className="text-2xl font-semibold tracking-tight tabular-nums text-slate-900 font-mono">
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
               {data.stats.total_topics}
             </span>
-            <span className="text-[10px] text-slate-500 font-medium mt-1">Provisions & Sections</span>
+            <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Provisions & Sections</span>
           </Card>
 
-          <Card className="p-4 flex flex-col justify-between hover:border-slate-300 transition-all shadow-subtle rounded-md bg-white">
-            <div className="flex items-center justify-between text-slate-500 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md bg-white">
+            <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider">
                 Flagged Contradictions
               </span>
               <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                 <AlertTriangle className="w-3.5 h-3.5" />
               </div>
             </div>
-            <span className="text-2xl font-semibold tracking-tight tabular-nums text-slate-900 font-mono">
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
               {data.stats.total_findings}
             </span>
-            <span className="text-[10px] text-slate-500 font-medium mt-1">Risk Differentials</span>
+            <span className="text-[10px] text-clario-text-secondary font-medium mt-1">Risk Differentials</span>
           </Card>
 
-          <Card className="p-4 flex flex-col justify-between hover:border-slate-300 transition-all shadow-subtle rounded-md bg-white">
-            <div className="flex items-center justify-between text-slate-500 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md bg-white">
+            <div className="flex items-center justify-between text-clario-text-secondary mb-3">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider">
                 Active Nodes
               </span>
               <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
                 <Network className="w-3.5 h-3.5" />
               </div>
             </div>
-            <span className="text-2xl font-semibold tracking-tight tabular-nums text-slate-900 font-mono">
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
               {data.stats.total_nodes}
             </span>
-            <span className="text-[10px] text-slate-500 font-medium mt-1">
+            <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
               {filteredEdges.length} connected edges
             </span>
           </Card>

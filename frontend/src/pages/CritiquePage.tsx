@@ -435,16 +435,16 @@ export const CritiquePage: React.FC = () => {
                 Executive Audit Consensus — {selectedDocTitle}
               </span>
               {data.mode === 'ai_multi_persona_synthesis' ? (
-                <Badge variant="navy" size="sm">
+                <Badge variant="navy" size="md">
                   Deep AI Multi-Persona Synthesis
                 </Badge>
               ) : (
-                <Badge variant="gray" size="sm">
+                <Badge variant="gray" size="md">
                   Heuristic Grounded Audit
                 </Badge>
               )}
             </div>
-            <Badge variant={data.composite_risk_score >= 50 ? 'red' : 'sage'} size="sm">
+            <Badge variant={data.composite_risk_score >= 50 ? 'red' : 'sage'} size="md">
               {data.composite_risk_score >= 50 ? 'Action Required' : 'Acceptable Baseline'}
             </Badge>
           </div>

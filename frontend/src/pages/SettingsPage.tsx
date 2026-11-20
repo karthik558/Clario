@@ -229,7 +229,7 @@ export const SettingsPage: React.FC = () => {
             </Button>
             <Badge
               variant={ollamaStatus?.running ? 'sage' : 'red'}
-              size="sm"
+              size="md"
               className="font-semibold"
             >
               {checkingOllama ? 'Checking connection…' : ollamaStatus?.running ? 'Ollama Online' : 'Ollama Offline'}

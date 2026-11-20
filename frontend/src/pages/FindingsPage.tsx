@@ -332,7 +332,7 @@ export const FindingsPage: React.FC = () => {
                     {f.category.replace('_', ' ').toUpperCase()}
                   </Badge>
                   <h3 className="font-semibold text-sm text-clario-navy">{f.title}</h3>
-                  <Badge variant={f.severity === 'critical' || f.severity === 'high' ? 'red' : f.severity === 'medium' ? 'gold' : 'sage'} size="sm">
+                  <Badge variant={f.severity === 'critical' || f.severity === 'high' ? 'red' : f.severity === 'medium' ? 'gold' : 'sage'} size="md">
                     {f.severity.toUpperCase()}
                   </Badge>
                 </div>

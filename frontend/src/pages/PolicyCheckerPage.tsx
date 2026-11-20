@@ -369,13 +369,13 @@ export const PolicyCheckerPage: React.FC = () => {
                 {/* Rule Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant={statusVariant} size="sm">
+                    <Badge variant={statusVariant} size="md">
                       {statusLabel}
                     </Badge>
-                    <Badge variant="navy" size="sm">
+                    <Badge variant="navy" size="md">
                       {rule.category}
                     </Badge>
-                    <Badge variant="gray" size="sm">
+                    <Badge variant="gray" size="md">
                       {rule.severity}
                     </Badge>
                   </div>
