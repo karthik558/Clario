@@ -18,6 +18,13 @@ afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); });
 const answer: AskResponse = { query: 'Retention?', answer: '## Evidence summary\n\n**Thirty days**.\n\n| Version | Days |\n| --- | --- |\n| Prior | 30 |', mode: 'extractive', citations: [], retrieval_latency_ms: 1, synthesis_latency_ms: 2, has_conflicting_evidence: false };
 
 describe('Document workspace polish', () => {
+  it('closes when clicking the backdrop outside the modal', () => {
+    const handleClose = vi.fn();
+    render(<Modal isOpen title="Test Modal" onClose={handleClose}>Content</Modal>);
+    fireEvent.mouseDown(screen.getByTestId('modal-backdrop'));
+    fireEvent.click(screen.getByTestId('modal-backdrop'));
+    expect(handleClose).toHaveBeenCalledOnce();
+  });
   it('portals dialogs outside page spacing and closes with the latest handler', () => {
     const first = vi.fn(); const latest = vi.fn();
     const { rerender } = render(<section data-testid="page"><Modal isOpen title="Document" onClose={first}>Passages</Modal></section>);

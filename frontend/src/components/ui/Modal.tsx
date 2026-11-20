@@ -21,6 +21,7 @@ export const Modal: React.FC<ModalProps> = ({
   const titleId = useId();
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const mouseDownTarget = useRef<EventTarget | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -81,14 +82,26 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div
+      data-testid="modal-backdrop"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs cursor-pointer"
+      onMouseDown={(e) => {
+        mouseDownTarget.current = e.target;
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && mouseDownTarget.current === e.currentTarget) {
+          closeRef.current();
+        }
+      }}
+    >
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`bg-white w-full ${maxWidthStyles[maxWidth]} rounded-md shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90dvh] animate-in fade-in zoom-in-95 duration-150 outline-none focus:outline-none`}
+        onClick={(e) => e.stopPropagation()}
+        className={`bg-white w-full ${maxWidthStyles[maxWidth]} rounded-md shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90dvh] animate-in fade-in zoom-in-95 duration-150 outline-none focus:outline-none cursor-default`}
       >
         <div className="shrink-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 bg-white">
           <h3 id={titleId} className="font-semibold text-base text-slate-900 tracking-tight">
