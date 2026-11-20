@@ -355,3 +355,77 @@ class CompareService:
             differences.append("No explicit numerical contradictions identified in scanned standard clauses.")
 
         return shared_topics, differences, contradictions
+
+    @classmethod
+    def compare_multiple_documents(cls, doc_ids: List[str], db: Session) -> Dict[str, Any]:
+        from app.services.risk_service import RiskService, RISK_PILLARS
+
+        docs = db.query(Document).filter(Document.id.in_(doc_ids)).all()
+        doc_map = {d.id: d for d in docs}
+
+        valid_docs = [doc_map[did] for did in doc_ids if did in doc_map]
+        if len(valid_docs) < 2:
+            raise ValueError("Select at least 2 valid documents to compare.")
+
+        evaluations = [RiskService.evaluate_document(d, db) for d in valid_docs]
+
+        pairwise_matrix = []
+        for i in range(len(valid_docs)):
+            for j in range(i + 1, len(valid_docs)):
+                da = valid_docs[i]
+                db_doc = valid_docs[j]
+                comp_res = cls.compare_documents(da.id, db_doc.id, db)
+                pairwise_matrix.append({
+                    "doc_a_id": da.id,
+                    "doc_a_title": da.title,
+                    "doc_b_id": db_doc.id,
+                    "doc_b_title": db_doc.title,
+                    "similarity_score": comp_res.similarity_score,
+                    "contradiction_count": len(comp_res.contradiction_candidates),
+                    "changed_sections_count": comp_res.changed_sections_count
+                })
+
+        pillar_leaders = []
+        for p_def in RISK_PILLARS:
+            pid = p_def["id"]
+            pname = p_def["name"]
+
+            scores = []
+            for ev in evaluations:
+                pmatch = next((p for p in ev["pillars"] if p["id"] == pid), None)
+                if pmatch:
+                    scores.append((ev["document_id"], ev["document_title"], pmatch["score"]))
+
+            if scores:
+                scores.sort(key=lambda x: x[2], reverse=True)
+                leader = scores[0]
+                exposure = scores[-1]
+                pillar_leaders.append({
+                    "pillar_id": pid,
+                    "pillar_name": pname,
+                    "leader_doc_id": leader[0],
+                    "leader_doc_title": leader[1],
+                    "highest_score": leader[2],
+                    "exposure_doc_id": exposure[0],
+                    "exposure_doc_title": exposure[1],
+                    "lowest_score": exposure[2],
+                    "summary": f"{leader[1].replace('_', ' ')} offers top protection ({leader[2]}/100) vs {exposure[1].replace('_', ' ')} ({exposure[2]}/100)."
+                })
+
+        evaluations.sort(key=lambda x: x["composite_score"], reverse=True)
+        top_doc = evaluations[0]
+        lowest_doc = evaluations[-1]
+        synthesis = (
+            f"Multi-document comparative analysis across {len(valid_docs)} enterprise policies reveals a commercial protective spread from "
+            f"{top_doc['document_title'].replace('_', ' ')} (Score: {top_doc['composite_score']}/100, {top_doc['composite_grade']}) "
+            f"to {lowest_doc['document_title'].replace('_', ' ')} (Score: {lowest_doc['composite_score']}/100, {lowest_doc['composite_grade']}). "
+            f"Computed {len(pairwise_matrix)} pairwise differentials across {len(valid_docs)} agreements."
+        )
+
+        return {
+            "total_documents": len(valid_docs),
+            "documents": evaluations,
+            "pairwise_matrix": pairwise_matrix,
+            "pillar_leaders": pillar_leaders,
+            "executive_synthesis": synthesis
+        }

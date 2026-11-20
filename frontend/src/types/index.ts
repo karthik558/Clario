@@ -133,6 +133,62 @@ export interface ComparisonResponse {
   diff_blocks: DiffBlock[];
 }
 
+export interface PairwiseSummary {
+  doc_a_id: string;
+  doc_a_title: string;
+  doc_b_id: string;
+  doc_b_title: string;
+  similarity_score: number;
+  contradiction_count: number;
+  changed_sections_count: number;
+}
+
+export interface PillarLeader {
+  pillar_id: string;
+  pillar_name: string;
+  leader_doc_id: string;
+  leader_doc_title: string;
+  highest_score: number;
+  exposure_doc_id: string;
+  exposure_doc_title: string;
+  lowest_score: number;
+  summary: string;
+}
+
+export interface MultiComparisonResponse {
+  total_documents: number;
+  documents: Array<{
+    document_id: string;
+    document_title: string;
+    composite_score: number;
+    composite_grade: string;
+    pillars: Array<{
+      id: string;
+      name: string;
+      weight: number;
+      score: number;
+      grade: string;
+      risk_level: string;
+      findings: Array<{ type: string; text: string } | string>;
+      recommendation: string;
+    }>;
+    highest_risk_area: {
+      name: string;
+      score: number;
+      level: string;
+      recommendation?: string;
+    };
+    strongest_protection: {
+      name: string;
+      score: number;
+      level: string;
+    };
+  }>;
+  pairwise_matrix: PairwiseSummary[];
+  pillar_leaders: PillarLeader[];
+  executive_synthesis: string;
+}
+
 export interface FindingItem {
   id: string;
   category: 'possible_contradiction' | 'agreement' | 'missing_coverage' | 'outdated_statement' | 'changed_obligation' | 'needs_human_review';

@@ -5,6 +5,7 @@ import {
   AskResponse,
   CitationItem,
   ComparisonResponse,
+  MultiComparisonResponse,
   FindingItem,
   ReportItem,
   SearchMethodComparison,
@@ -224,6 +225,16 @@ export const api = {
       body: JSON.stringify({ doc_a_id, doc_b_id }),
     });
     if (!res.ok) throw new Error('Comparison failed');
+    return res.json();
+  },
+
+  compareMultipleDocuments: async (doc_ids: string[]): Promise<MultiComparisonResponse> => {
+    const res = await fetch(`${API_BASE}/compare/matrix`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doc_ids }),
+    });
+    if (!res.ok) throw new Error('Multi-document comparison failed');
     return res.json();
   },
 

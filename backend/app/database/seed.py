@@ -25,39 +25,34 @@ def seed_sample_documents():
         except Exception:
             has_seeded = False
 
-    # If the workspace was already seeded before, respect user deletions!
-    if has_seeded:
-        logger.info("Workspace already initialized. Skipping auto-seed so deleted documents stay deleted.")
-        search_service.reload_index(db)
-        db.close()
-        return
-
-    existing_docs = db.query(Document).count()
-    if existing_docs > 0:
-        logger.info(f"Database already has {existing_docs} documents. Skipping seed.")
-        if config:
-            try:
-                cfg_data = json.loads(config.settings_json or "{}")
-                cfg_data["has_seeded"] = True
-                config.settings_json = json.dumps(cfg_data)
-                db.commit()
-            except Exception:
-                pass
-        search_service.reload_index(db)
-        db.close()
-        return
-
     sample_dir = Path(__file__).resolve().parents[3] / "sample_documents"
+    seeded_new = False
     for src in sorted(sample_dir.glob("*.pdf")):
-        with src.open("rb") as stream:
-            DocumentService.upload_document(UploadFile(stream, filename=src.name), None, [], "General", db)
+        doc_title = src.stem
+        existing = db.query(Document).filter(
+            (Document.filename == src.name) | (Document.title == doc_title)
+        ).first()
+        if not existing:
+            logger.info(f"Seeding sample document: {src.name}")
+            with src.open("rb") as stream:
+                DocumentService.upload_document(UploadFile(stream, filename=src.name), None, [], "General", db)
+            seeded_new = True
+
+    if config and seeded_new:
+        try:
+            cfg_data = json.loads(config.settings_json or "{}")
+            cfg_data["has_seeded"] = True
+            config.settings_json = json.dumps(cfg_data)
+            db.commit()
+        except Exception:
+            pass
 
     # Reload search indexes
     search_service.reload_index(db)
 
     # Automatically scan for initial contradiction candidates to populate Findings!
     docs = db.query(Document).filter(Document.status == "READY").all()
-    if len(docs) >= 2:
+    if len(docs) >= 2 and seeded_new:
         for i in range(len(docs)):
             for j in range(i + 1, len(docs)):
                 doc_a, doc_b = docs[i], docs[j]

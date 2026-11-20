@@ -542,7 +542,7 @@ export const DocumentsPage: React.FC = () => {
                           </div>
                           <div className="min-w-0">
                             <p className="font-semibold text-slate-900 group-hover:text-clario-navy transition-colors truncate max-w-md">
-                              {doc.title}
+                              {doc.title.replace(/_/g, ' ')}
                             </p>
                             <p className="text-[11px] text-slate-400 font-mono truncate max-w-xs">
                               {doc.filename}
@@ -669,7 +669,7 @@ export const DocumentsPage: React.FC = () => {
 
                   {/* Title & Filename */}
                   <h3 className="font-semibold text-sm text-slate-900 group-hover:text-clario-navy tracking-tight mb-1 line-clamp-1 transition-colors">
-                    {doc.title}
+                    {doc.title.replace(/_/g, ' ')}
                   </h3>
                   <p className="text-[11px] text-slate-400 font-mono truncate mb-4">
                     {doc.filename}

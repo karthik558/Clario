@@ -96,6 +96,7 @@ export const OverviewPage: React.FC = () => {
   const [quickCompareResult, setQuickCompareResult] = useState<any | null>(null);
   const [riskScorecard, setRiskScorecard] = useState<any | null>(null);
   const [selectedRiskDocIndex, setSelectedRiskDocIndex] = useState<number>(0);
+  const [comparisonRiskDocIndex, setComparisonRiskDocIndex] = useState<number>(-1);
   const [selectedCell, setSelectedCell] = useState<CellDetail | null>(null);
 
   // Compute exposure data for each document and vector
@@ -489,27 +490,27 @@ export const OverviewPage: React.FC = () => {
           {/* Active Document Risk Cards & Radar Visualization */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch pt-1">
             {/* Document Cards List */}
-            <div className={`${riskScorecard.documents?.[0]?.pillars?.length >= 3 ? 'lg:col-span-6' : 'lg:col-span-12'} flex flex-col justify-between gap-3 h-full`}>
+            <div className={`${riskScorecard.documents?.[0]?.pillars?.length >= 3 ? 'lg:col-span-6' : 'lg:col-span-12'} flex flex-col gap-2.5 max-h-[380px] overflow-y-auto pr-1.5`}>
               {riskScorecard.documents?.map((doc: any, dIdx: number) => {
                 const isSelected = selectedRiskDocIndex === dIdx;
+                const isCompared = comparisonRiskDocIndex === dIdx;
                 return (
                   <div
                     key={doc.document_id}
                     onClick={() => setSelectedRiskDocIndex(dIdx)}
-                    className={`flex-1 p-4 rounded-md border transition-all flex flex-col justify-between shadow-xs cursor-pointer ${
+                    className={`p-3.5 rounded-md border transition-all flex flex-col justify-between shadow-xs cursor-pointer ${
                       isSelected
                         ? 'border-clario-navy bg-clario-navy/5 ring-1 ring-clario-navy'
+                        : isCompared
+                        ? 'border-slate-400 bg-slate-50'
                         : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
                     <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
                         <div className="min-w-0">
-                          <span className="text-xs font-bold text-slate-900 truncate block" title={doc.document_title}>
-                            {doc.document_title}
-                          </span>
-                          <span className="text-[11px] text-slate-400 font-mono">
-                            {doc.document_title.endsWith('.pdf') ? doc.document_title : `${doc.document_title}.pdf`}
+                          <span className="text-xs font-bold text-slate-900 truncate block" title={doc.document_title.replace(/_/g, ' ')}>
+                            {doc.document_title.replace(/_/g, ' ')}
                           </span>
                         </div>
                         <Badge variant={doc.composite_score >= 80 ? 'navy' : 'gray'} size="sm">
@@ -517,30 +518,30 @@ export const OverviewPage: React.FC = () => {
                         </Badge>
                       </div>
 
-                      <div className="space-y-1.5 text-xs py-1">
+                      <div className="space-y-1 text-xs py-0.5">
                         <div className="flex items-center justify-between text-slate-600">
                           <span>Strongest Protection:</span>
-                          <span className="font-semibold text-slate-900 truncate max-w-[160px] text-right">
+                          <span className="font-semibold text-slate-900 truncate max-w-[180px] text-right">
                             {doc.strongest_protection?.name || 'Standard Terms'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-slate-600">
                           <span>Primary Exposure:</span>
-                          <span className="font-semibold text-slate-900 truncate max-w-[160px] text-right">
+                          <span className="font-semibold text-slate-900 truncate max-w-[180px] text-right">
                             {doc.highest_risk_area?.name || 'Standard Terms'}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="pt-3 mt-2 border-t border-slate-100 flex items-center justify-between text-xs" onClick={(e) => e.stopPropagation()}>
+                    <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-xs" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] text-slate-500 font-medium">
                           Grade {doc.composite_grade}
                         </span>
                         <span className="text-[10px] text-slate-400">&bull;</span>
                         <span className="text-[11px] text-slate-500">
-                          {isSelected ? 'Active Topology' : 'Click to View'}
+                          {isSelected ? 'Active Topology' : isCompared ? 'Comparison Baseline' : 'Click to View'}
                         </span>
                       </div>
                       <button
@@ -560,32 +561,49 @@ export const OverviewPage: React.FC = () => {
             {/* Interactive 6-Pillar Risk Radar Widget */}
             {riskScorecard.documents?.[selectedRiskDocIndex]?.pillars?.length >= 3 && (
               <div className="lg:col-span-6 flex flex-col items-center justify-between p-4 rounded-md border border-slate-200 bg-slate-50/60 shadow-2xs h-full">
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    6-Pillar Risk Topology
-                  </span>
-                  <span className="text-[11px] font-mono text-slate-700 font-semibold truncate max-w-[200px]">
-                    {riskScorecard.documents[selectedRiskDocIndex]?.document_title}
-                  </span>
+                <div className="flex items-center justify-between w-full mb-2 gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 shrink-0">
+                      6-Pillar Risk Topology
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-700 font-semibold truncate max-w-[160px]">
+                      {riskScorecard.documents[selectedRiskDocIndex]?.document_title?.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  {riskScorecard.documents?.length > 1 && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="text-[10px] text-slate-500 font-medium shrink-0">Benchmark vs:</span>
+                      <select
+                        aria-label="Benchmark document selection"
+                        value={comparisonRiskDocIndex}
+                        onChange={(e) => setComparisonRiskDocIndex(Number(e.target.value))}
+                        className="text-[11px] bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-800 font-medium focus:outline-none"
+                      >
+                        <option value={-1}>None (Standalone)</option>
+                        {riskScorecard.documents.map((d: any, idx: number) => {
+                          if (idx === selectedRiskDocIndex) return null;
+                          return (
+                            <option key={d.document_id} value={idx}>
+                              {d.document_title.replace(/_/g, ' ')}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 flex items-center justify-center my-auto">
                   <RiskRadarWidget
                     size={280}
                     primarySeries={{
-                      label: riskScorecard.documents[selectedRiskDocIndex]?.document_title,
+                      label: riskScorecard.documents[selectedRiskDocIndex]?.document_title.replace(/_/g, ' '),
                       pillars: riskScorecard.documents[selectedRiskDocIndex]?.pillars,
                     }}
                     comparisonSeries={
-                      riskScorecard.documents.length > 1
+                      comparisonRiskDocIndex >= 0 && riskScorecard.documents[comparisonRiskDocIndex]
                         ? {
-                            label:
-                              riskScorecard.documents[
-                                selectedRiskDocIndex === 0 ? 1 : 0
-                              ]?.document_title,
-                            pillars:
-                              riskScorecard.documents[
-                                selectedRiskDocIndex === 0 ? 1 : 0
-                              ]?.pillars,
+                            label: riskScorecard.documents[comparisonRiskDocIndex]?.document_title.replace(/_/g, ' '),
+                            pillars: riskScorecard.documents[comparisonRiskDocIndex]?.pillars,
                           }
                         : undefined
                     }
@@ -1166,7 +1184,7 @@ export const OverviewPage: React.FC = () => {
                     <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
                       <FileText className="w-3.5 h-3.5" />
                     </div>
-                    <span className="truncate max-w-sm">{doc.title}</span>
+                    <span className="truncate max-w-sm">{doc.title.replace(/_/g, ' ')}</span>
                   </td>
                   <td className={`${density === 'compact' ? 'py-1.5 px-2.5' : 'py-3 px-3'}`}>
                     <Badge variant="navy" size="sm">

@@ -181,6 +181,36 @@ class ComparisonResponse(BaseModel):
     contradiction_candidates: List[ContradictionCandidate]
     diff_blocks: List[DiffBlock]
 
+class MultiCompareRequest(BaseModel):
+    doc_ids: List[str]
+
+class PairwiseSummary(BaseModel):
+    doc_a_id: str
+    doc_a_title: str
+    doc_b_id: str
+    doc_b_title: str
+    similarity_score: float
+    contradiction_count: int
+    changed_sections_count: int
+
+class PillarLeader(BaseModel):
+    pillar_id: str
+    pillar_name: str
+    leader_doc_id: str
+    leader_doc_title: str
+    highest_score: int
+    exposure_doc_id: str
+    exposure_doc_title: str
+    lowest_score: int
+    summary: str
+
+class MultiCompareResponse(BaseModel):
+    total_documents: int
+    documents: List[Dict[str, Any]]
+    pairwise_matrix: List[PairwiseSummary]
+    pillar_leaders: List[PillarLeader]
+    executive_synthesis: str
+
 # ---------------- Findings ----------------
 
 class FindingCreate(BaseModel):

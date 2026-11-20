@@ -181,6 +181,23 @@ def test_knowledge_graph():
     assert data["stats"]["total_nodes"] >= 0
 
 
+def test_compare_matrix():
+    # Fetch ready documents from the test DB
+    docs_res = client.get("/api/documents")
+    assert docs_res.status_code == 200
+    docs = docs_res.json()
+    if len(docs) >= 2:
+        doc_ids = [d["id"] for d in docs[:3]]
+        resp = client.post("/api/compare/matrix", json={"doc_ids": doc_ids})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_documents"] == len(doc_ids)
+        assert len(data["documents"]) == len(doc_ids)
+        assert "pairwise_matrix" in data
+        assert "pillar_leaders" in data
+        assert "executive_synthesis" in data
+
+
 def test_ask_stream():
     response = client.post("/api/ask/stream", json={
         "query": "What is the policy?",
