@@ -4,6 +4,7 @@ REM Clario — Every document. A clearer answer.
 REM Local Startup Script (Windows)
 REM Automatically validates, installs missing dependencies, and launches Clario
 REM Supports local drives as well as UNC network shares (Parallels / VMs / SMB)
+REM Runs in a single unified window (no multiple command prompt popups)
 REM ==============================================================================
 
 setlocal enabledelayedexpansion
@@ -63,7 +64,9 @@ if "!PYTHON_CMD!"=="" (
 )
 
 pushd "!PROJECT_ROOT!\backend"
-if not exist "venv\Scripts\activate.bat" (
+set "VENV_PYTHON=!PROJECT_ROOT!\backend\venv\Scripts\python.exe"
+
+if not exist "!VENV_PYTHON!" (
     echo Creating virtual environment at backend\venv...
     !PYTHON_CMD! -m venv venv
     if !errorlevel! neq 0 (
@@ -71,12 +74,23 @@ if not exist "venv\Scripts\activate.bat" (
         pause
         exit /b 1
     )
-    call venv\Scripts\activate.bat
-    echo Installing Python backend dependencies...
+)
+
+call venv\Scripts\activate.bat
+
+REM Verify backend dependencies are actually installed in the venv
+"!VENV_PYTHON!" -c "import fastapi, uvicorn, sqlalchemy" >nul 2>&1
+if !errorlevel! neq 0 (
+    echo [Notice] Backend packages not detected in virtual environment.
+    echo Installing Python backend dependencies from requirements.txt...
     python -m pip install --upgrade pip --quiet
-    pip install -r requirements.txt --quiet
-) else (
-    call venv\Scripts\activate.bat
+    pip install -r requirements.txt
+    if !errorlevel! neq 0 (
+        echo [Error] Failed to install backend dependencies.
+        pause
+        exit /b 1
+    )
+    echo [OK] Backend dependencies installed successfully.
 )
 
 REM ==============================================================================
@@ -84,7 +98,12 @@ REM 2. Database and Knowledge Base Verification
 REM ==============================================================================
 echo [2/4] Verifying database and sample documents...
 set PYTHONPATH=.
-python -m app.database.seed
+"!VENV_PYTHON!" -m app.database.seed
+if !errorlevel! neq 0 (
+    echo [Error] Database initialization failed.
+    pause
+    exit /b 1
+)
 popd
 
 REM ==============================================================================
@@ -131,16 +150,35 @@ if not exist "node_modules" (
 popd
 
 REM ==============================================================================
-REM 4. Launch Services
+REM 4. Launch Services in a Single Unified Window
 REM ==============================================================================
 echo [4/4] Starting Clario Backend and Frontend...
-start "Clario Backend (FastAPI)" cmd /k "pushd "!PROJECT_ROOT!\backend" && call venv\Scripts\activate.bat && set PYTHONPATH=. && uvicorn app.main:app --port 8000 --reload"
-start "Clario Frontend (Vite)" cmd /k "pushd "!PROJECT_ROOT!\frontend" && npm run dev"
+echo.
+echo ================================================================
+echo    CLARIO IS UP AND RUNNING!
+echo    Frontend Workspace:  http://localhost:5173
+echo    Backend REST API:    http://localhost:8000
+echo    OpenAPI Swagger:     http://localhost:8000/docs
+echo ================================================================
+echo.
 
-echo ================================================================
-echo Clario is up and running!
-echo   Frontend Workspace:  http://localhost:5173
-echo   Backend REST API:    http://localhost:8000
-echo   OpenAPI Swagger:     http://localhost:8000/docs
-echo ================================================================
-pause
+REM Start FastAPI Backend in background within this same console session
+pushd "!PROJECT_ROOT!\backend"
+set PYTHONPATH=.
+start /B "" "!PROJECT_ROOT!\backend\venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+popd
+
+REM Open default web browser to the Frontend
+start http://localhost:5173
+
+REM Run Vite Frontend server in foreground in this same window
+pushd "!PROJECT_ROOT!\frontend"
+call npm run dev
+
+REM Clean up background backend process when user quits frontend (Ctrl+C)
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr :8000 ^| findstr LISTENING') do (
+    taskkill /F /PID %%a >nul 2>&1
+)
+popd
+popd
+exit /b 0

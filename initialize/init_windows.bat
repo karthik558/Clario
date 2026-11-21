@@ -293,7 +293,8 @@ REM ============================================================================
 echo.
 echo [6/8] Setting up Python backend virtual environment and database...
 pushd "%PROJECT_ROOT%\backend"
-if not exist "venv" (
+set "VENV_PYTHON=%PROJECT_ROOT%\backend\venv\Scripts\python.exe"
+if not exist "!VENV_PYTHON!" (
     echo Creating virtual environment at backend\venv...
     %PYTHON_CMD% -m venv venv
 )
@@ -303,9 +304,16 @@ echo Upgrading pip and installing backend requirements...
 python -m pip install --upgrade pip --quiet
 pip install -r requirements.txt --quiet
 
+REM Verify critical backend dependencies
+"!VENV_PYTHON!" -c "import fastapi, uvicorn, sqlalchemy" >nul 2>&1
+if !errorlevel! neq 0 (
+    echo [Warning] Re-running pip install with full verbose output...
+    pip install -r requirements.txt
+)
+
 echo Initializing database, extracting passages and indexing sample corpus...
 set PYTHONPATH=.
-python -m app.database.seed
+"!VENV_PYTHON!" -m app.database.seed
 popd
 
 REM ==============================================================================
@@ -325,7 +333,7 @@ echo.
 echo [8/8] Performing full-stack self-test...
 pushd "%PROJECT_ROOT%\backend"
 call venv\Scripts\activate.bat
-python -c "import fastapi, pymupdf, openpyxl, docx, reportlab, sqlalchemy; print('  ✔ Backend core Python libraries verified')"
+"!VENV_PYTHON!" -c "import fastapi, pymupdf, openpyxl, docx, reportlab, sqlalchemy; print('  ✔ Backend core Python libraries verified')"
 
 if exist "%PROJECT_ROOT%\backend\data\clario.db" (
     echo   ✔ SQLite database verified: backend\data\clario.db
