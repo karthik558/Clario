@@ -20,14 +20,31 @@ echo -e "${BLUE}================================================================
 
 REPO_URL="https://github.com/karthik558/Clario.git"
 TARGET_DIR="Clario"
+FORCE_CLONE=false
+FORCE_PULL=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --clone|-c)
+            FORCE_CLONE=true
+            ;;
+        --pull)
+            FORCE_PULL=true
+            ;;
+    esac
+done
 
 # 1. Determine Repository Root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/../backend/requirements.txt" ]; then
+if [ "$FORCE_CLONE" = false ] && [ -f "$SCRIPT_DIR/../backend/requirements.txt" ]; then
     PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
     echo -e "[Info] Running inside existing Clario repository at: ${BOLD}$PROJECT_ROOT${NC}"
+    if [ "$FORCE_PULL" = true ]; then
+        echo -e "[Info] Pulling latest repository updates..."
+        git -C "$PROJECT_ROOT" pull
+    fi
 else
-    echo -e "[Info] Repository not found locally. Cloning from $REPO_URL..."
+    echo -e "[Info] Repository not found locally or clone requested. Cloning from $REPO_URL..."
     if ! command -v git &>/dev/null; then
         echo -e "[Notice] Installing git..."
         if command -v apt-get &>/dev/null; then

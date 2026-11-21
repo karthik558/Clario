@@ -10,12 +10,121 @@ echo    CLARIO -- WINDOWS SYSTEM INITIALIZATION & ENVIRONMENT SETUP
 echo    Full-stack automated setup: Python, Node.js, Database & Ollama
 echo ================================================================
 
-cd /d "%~dp0.."
-set "PROJECT_ROOT=%CD%"
-
-REM 1. Check Python Runtime & Version
+REM ==============================================================================
+REM 1. Repository Setup & Clone Verification
+REM ==============================================================================
 echo.
-echo [1/7] Checking Python runtime...
+echo [1/8] Checking Clario repository files & cloning option...
+
+set "REPO_URL=https://github.com/karthik558/Clario.git"
+set "TARGET_DIR=Clario"
+set "FORCE_CLONE=0"
+set "FORCE_PULL=0"
+
+REM Parse optional CLI flags
+if /i "%~1"=="--clone" set "FORCE_CLONE=1"
+if /i "%~1"=="-c" set "FORCE_CLONE=1"
+if /i "%~1"=="--pull" set "FORCE_PULL=1"
+
+set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+
+set "PROJECT_ROOT="
+if exist "%SCRIPT_DIR%\..\backend\requirements.txt" (
+    cd /d "%SCRIPT_DIR%\.."
+    set "PROJECT_ROOT=!CD!"
+) else if exist "%SCRIPT_DIR%\backend\requirements.txt" (
+    cd /d "%SCRIPT_DIR%"
+    set "PROJECT_ROOT=!CD!"
+) else if exist "%SCRIPT_DIR%\%TARGET_DIR%\backend\requirements.txt" (
+    cd /d "%SCRIPT_DIR%\%TARGET_DIR%"
+    set "PROJECT_ROOT=!CD!"
+)
+
+REM If repository files are not found locally, trigger auto-clone
+if "!PROJECT_ROOT!"=="" (
+    echo [Notice] Clario repository files not detected in: !SCRIPT_DIR!
+    echo Automatic cloning enabled from !REPO_URL!...
+    set "FORCE_CLONE=1"
+)
+
+REM Check or install Git if cloning or pulling is needed
+if "!FORCE_CLONE!"=="1" (
+    where git >nul 2>&1
+    if !errorlevel! neq 0 (
+        echo [Notice] Git is not detected on your system.
+        echo Installing Git for Windows automatically via winget...
+        winget install --id Git.Git -e --source winget --silent --accept-package-agreements --accept-source-agreements
+        if !errorlevel! neq 0 (
+            echo [Error] Git installation via winget failed.
+            echo Please download and install Git from: https://git-scm.com/download/win
+            pause
+            exit /b 1
+        )
+        if exist "%ProgramFiles%\Git\cmd" set "PATH=%ProgramFiles%\Git\cmd;!PATH!"
+        if exist "%ProgramFiles(x86)%\Git\cmd" set "PATH=%ProgramFiles(x86)%\Git\cmd;!PATH!"
+        if exist "%LocalAppData%\Programs\Git\cmd" set "PATH=%LocalAppData%\Programs\Git\cmd;!PATH!"
+    )
+
+    echo [Info] Cloning Clario repository from !REPO_URL!...
+    cd /d "!SCRIPT_DIR!"
+    if exist "%TARGET_DIR%\backend\requirements.txt" (
+        cd /d "%SCRIPT_DIR%\%TARGET_DIR%"
+        set "PROJECT_ROOT=!CD!"
+        echo [OK] Using existing Clario folder at: !PROJECT_ROOT!
+    ) else (
+        git clone !REPO_URL! !TARGET_DIR!
+        if !errorlevel! neq 0 (
+            echo [Error] Git clone failed. Please check your internet connection.
+            pause
+            exit /b 1
+        )
+        cd /d "!SCRIPT_DIR!\%TARGET_DIR%"
+        set "PROJECT_ROOT=!CD!"
+        echo [OK] Clario repository cloned successfully to: !PROJECT_ROOT!
+    )
+) else (
+    echo [OK] Existing Clario repository detected at: !PROJECT_ROOT!
+    if "!FORCE_PULL!"=="1" (
+        echo [Info] Pulling latest repository updates...
+        cd /d "!PROJECT_ROOT!"
+        git pull
+    ) else (
+        echo.
+        echo Repository options:
+        echo   [1] Use current local files and proceed with setup (Default)
+        echo   [2] Pull latest changes from GitHub (git pull)
+        echo   [3] Clone a fresh copy of Clario
+        set "REPO_ACTION=1"
+        set /p "REPO_ACTION=Select option (1-3, default 1): "
+        if "!REPO_ACTION!"=="" set "REPO_ACTION=1"
+        if "!REPO_ACTION!"=="2" (
+            echo [Info] Pulling latest changes from GitHub...
+            cd /d "!PROJECT_ROOT!"
+            git pull
+        ) else if "!REPO_ACTION!"=="3" (
+            set "FRESH_DIR=Clario_fresh"
+            echo [Info] Cloning fresh copy into "!SCRIPT_DIR!\!FRESH_DIR!"...
+            cd /d "!SCRIPT_DIR!"
+            git clone !REPO_URL! !FRESH_DIR!
+            if !errorlevel! equ 0 (
+                cd /d "!SCRIPT_DIR!\!FRESH_DIR!"
+                set "PROJECT_ROOT=!CD!"
+                echo [OK] Switched to freshly cloned repository: !PROJECT_ROOT!
+            ) else (
+                echo [Warning] Clone failed. Proceeding with existing repository.
+            )
+        )
+    )
+)
+
+cd /d "!PROJECT_ROOT!"
+
+REM ==============================================================================
+REM 2. Check Python Runtime & Version
+REM ==============================================================================
+echo.
+echo [2/8] Checking Python runtime...
 set "PYTHON_CMD="
 set "PYTHON_VERSION_OK=0"
 
@@ -79,9 +188,11 @@ if "%PYTHON_CMD%"=="" (
     )
 )
 
-REM 2. Check Node.js & npm
+REM ==============================================================================
+REM 3. Check Node.js & npm
+REM ==============================================================================
 echo.
-echo [2/7] Checking Node.js and npm...
+echo [3/8] Checking Node.js and npm...
 node -v >nul 2>&1
 if %errorlevel% neq 0 (
     echo [Notice] Node.js not detected. Attempting to install Node.js LTS via winget...
@@ -95,9 +206,11 @@ if %errorlevel% neq 0 (
     for /f "tokens=*" %%i in ('node -v') do echo [OK] Detected Node.js %%i
 )
 
-REM 3. Check Ollama
+REM ==============================================================================
+REM 4. Check Ollama Local Model Engine
+REM ==============================================================================
 echo.
-echo [3/7] Checking Ollama local model engine...
+echo [4/8] Checking Ollama local model engine...
 ollama --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo [Notice] Ollama not detected. Attempting installation via winget...
@@ -111,9 +224,11 @@ if %errorlevel% neq 0 (
     echo [OK] Ollama is installed.
 )
 
-REM 4. Configure Workspace Environment & Security
+REM ==============================================================================
+REM 5. Configure Workspace Environment & Security
+REM ==============================================================================
 echo.
-echo [4/7] Configuring workspace environment & security...
+echo [5/8] Configuring workspace environment & security...
 if not exist "%PROJECT_ROOT%\backend\data\documents" mkdir "%PROJECT_ROOT%\backend\data\documents"
 if not exist "%PROJECT_ROOT%\backend\data\reports" mkdir "%PROJECT_ROOT%\backend\data\reports"
 
@@ -132,9 +247,11 @@ if not exist "%PROJECT_ROOT%\backend\.env" (
     )
 )
 
-REM 5. Setup Python Virtual Environment & Dependencies
+REM ==============================================================================
+REM 6. Setup Python Virtual Environment & Dependencies
+REM ==============================================================================
 echo.
-echo [5/7] Setting up Python backend virtual environment & database...
+echo [6/8] Setting up Python backend virtual environment & database...
 cd /d "%PROJECT_ROOT%\backend"
 if not exist "venv" (
     echo Creating virtual environment at backend\venv...
@@ -150,16 +267,20 @@ echo Initializing database, extracting passages & indexing sample corpus...
 set PYTHONPATH=.
 python -m app.database.seed
 
-REM 6. Setup Frontend
+REM ==============================================================================
+REM 7. Setup Frontend
+REM ==============================================================================
 echo.
-echo [6/7] Installing frontend dependencies & building production bundle...
+echo [7/8] Installing frontend dependencies & building production bundle...
 cd /d "%PROJECT_ROOT%\frontend"
 call npm install --silent
 call npm run build --silent
 
-REM 7. Self-Test & Verification
+REM ==============================================================================
+REM 8. Self-Test & Verification
+REM ==============================================================================
 echo.
-echo [7/7] Performing full-stack self-test...
+echo [8/8] Performing full-stack self-test...
 cd /d "%PROJECT_ROOT%\backend"
 call venv\Scripts\activate.bat
 python -c "import fastapi, pymupdf, openpyxl, docx, reportlab, sqlalchemy; print('  ✔ Backend core Python libraries verified')"
