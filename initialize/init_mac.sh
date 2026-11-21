@@ -18,26 +18,6 @@ echo -e "${BOLD}   CLARIO — MACOS SYSTEM INITIALIZATION & ENVIRONMENT SETUP${N
 echo -e "   Full-stack automated setup: Python, Node.js, Database & Ollama"
 echo -e "${BLUE}================================================================${NC}"
 
-# Parse optional password argument
-USER_PASSWORD=""
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -p|--password)
-            USER_PASSWORD="$2"
-            shift 2
-            ;;
-        --password=*)
-            USER_PASSWORD="${1#*=}"
-            shift
-            ;;
-        *)
-            shift
-            ;;
-    esac
-done
-
-USER_PASSWORD="${USER_PASSWORD:-${PASSWORD:-${SUDO_PASSWORD:-${WORKSPACE_PASSWORD:-}}}}"
-
 REPO_URL="https://github.com/karthik558/Clario.git"
 TARGET_DIR="Clario"
 
@@ -59,19 +39,7 @@ fi
 
 cd "$PROJECT_ROOT"
 
-# 2. Check Sudo / Admin Access if password provided
-if [ -n "$USER_PASSWORD" ]; then
-    echo -e "\n[Auth] Validating administrator credentials..."
-    if echo "$USER_PASSWORD" | sudo -S -v 2>/dev/null; then
-        echo -e "${GREEN}[OK] Administrator privileges verified.${NC}"
-        # Keep-alive sudo in background
-        while true; do sudo -n true; sleep 50; kill -0 "$$" || exit; done 2>/dev/null &
-    else
-        echo -e "${YELLOW}[Notice] Provided password is not a sudo password; saving as workspace password.${NC}"
-    fi
-fi
-
-# 3. Check Homebrew
+# 2. Check Homebrew
 echo -e "\n${BOLD}[1/7] Checking Homebrew package manager...${NC}"
 if ! command -v brew &>/dev/null; then
     echo "[Notice] Homebrew not detected. Installing Homebrew..."
@@ -85,11 +53,14 @@ else
     echo -e "${GREEN}[OK] Homebrew is installed: $(brew --version | head -n 1)${NC}"
 fi
 
-# 4. Check Python 3
+# 3. Check Python 3 Runtime & Version
 echo -e "\n${BOLD}[2/7] Checking Python runtime...${NC}"
 PYTHON_CMD=""
-for cmd in python3.12 python3.11 python3.10 python3; do
+FOUND_PY=""
+
+for cmd in python3.12 python3.11 python3.10 python3 python; do
     if command -v $cmd &>/dev/null; then
+        FOUND_PY="$cmd"
         MAJOR=$($cmd -c 'import sys; print(sys.version_info.major)' 2>/dev/null || echo 0)
         MINOR=$($cmd -c 'import sys; print(sys.version_info.minor)' 2>/dev/null || echo 0)
         if [ "$MAJOR" -ge 3 ] && [ "$MINOR" -ge 10 ]; then
@@ -100,10 +71,34 @@ for cmd in python3.12 python3.11 python3.10 python3; do
     fi
 done
 
-if [ -z "$PYTHON_CMD" ]; then
-    echo "[Notice] Python 3.12 or compatible version not found. Installing via Homebrew..."
+if [ -z "$FOUND_PY" ]; then
+    echo "[Notice] Python is not installed. Installing Python 3.12 via Homebrew..."
     brew install python@3.12
-    PYTHON_CMD="python3.12"
+    if [ -x "$(brew --prefix python@3.12 2>/dev/null)/bin/python3.12" ]; then
+        PYTHON_CMD="$(brew --prefix python@3.12)/bin/python3.12"
+    else
+        PYTHON_CMD="python3.12"
+    fi
+    echo -e "${GREEN}[OK] Python 3.12 installed: $($PYTHON_CMD --version)${NC}"
+elif [ -z "$PYTHON_CMD" ]; then
+    OLD_VER="$($FOUND_PY --version 2>&1)"
+    echo -e "${YELLOW}[Warning] Detected older Python runtime: $OLD_VER.${NC}"
+    echo -e "Clario requires Python 3.10 or newer (Python 3.12 recommended)."
+    read -r -p "Would you like to install/update to Python 3.12 now? [Y/n] " UPDATE_CHOICE
+    UPDATE_CHOICE="${UPDATE_CHOICE:-Y}"
+    if [[ "$UPDATE_CHOICE" =~ ^[Yy]$ ]]; then
+        echo "[Notice] Installing Python 3.12 via Homebrew..."
+        brew install python@3.12
+        if [ -x "$(brew --prefix python@3.12 2>/dev/null)/bin/python3.12" ]; then
+            PYTHON_CMD="$(brew --prefix python@3.12)/bin/python3.12"
+        else
+            PYTHON_CMD="python3.12"
+        fi
+        echo -e "${GREEN}[OK] Python 3.12 installed: $($PYTHON_CMD --version)${NC}"
+    else
+        echo -e "${YELLOW}[Notice] Continuing with existing Python: $OLD_VER. Note that modern dependencies may fail.${NC}"
+        PYTHON_CMD="$FOUND_PY"
+    fi
 fi
 
 # 5. Check Node.js & npm
@@ -169,16 +164,6 @@ LLM_PROVIDER="extractive"
 EOF
         echo -e "${GREEN}[OK] Generated backend/.env with default settings${NC}"
     fi
-fi
-
-# Set password if provided
-if [ -n "$USER_PASSWORD" ]; then
-    if grep -q "WORKSPACE_PASSWORD=" "$BACKEND_DIR/.env"; then
-        sed -i '' "s/^WORKSPACE_PASSWORD=.*/WORKSPACE_PASSWORD=\"$USER_PASSWORD\"/" "$BACKEND_DIR/.env"
-    else
-        echo "WORKSPACE_PASSWORD=\"$USER_PASSWORD\"" >> "$BACKEND_DIR/.env"
-    fi
-    echo -e "${GREEN}[OK] Workspace password configured successfully.${NC}"
 fi
 
 # 8. Configure Python Backend Virtual Environment

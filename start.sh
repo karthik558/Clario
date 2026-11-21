@@ -24,6 +24,18 @@ FRONTEND_DIR="$PROJECT_ROOT/frontend"
 
 # 1. Check Python & Virtual Environment
 echo -e "\n${NAVY}[1/4] Checking Python backend environment...${NC}"
+if ! command -v python3 &>/dev/null; then
+    echo -e "${RED}[Error] Python 3 is not installed. Run ./initialize/setup.sh to install dependencies automatically.${NC}"
+    exit 1
+fi
+
+PY_MAJOR=$(python3 -c 'import sys; print(sys.version_info.major)' 2>/dev/null || echo 0)
+PY_MINOR=$(python3 -c 'import sys; print(sys.version_info.minor)' 2>/dev/null || echo 0)
+if [ "$PY_MAJOR" -lt 3 ] || ([ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 10 ]); then
+    echo -e "${YELLOW}[Warning] Detected older Python version ($(python3 --version 2>&1)). Clario requires Python 3.10+.${NC}"
+    echo -e "Run ${BOLD}./initialize/setup.sh${NC} to update Python to 3.12."
+fi
+
 if [ ! -d "$BACKEND_DIR/venv" ]; then
     echo "Creating Python virtual environment in $BACKEND_DIR/venv..."
     python3 -m venv "$BACKEND_DIR/venv"

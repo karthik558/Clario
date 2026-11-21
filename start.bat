@@ -13,6 +13,15 @@ cd /d "%~dp0"
 
 REM 1. Backend Setup
 echo [1/4] Checking Python backend environment...
+where python >nul 2>&1
+if %errorlevel% neq 0 (
+    where py >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo [Error] Python not detected. Run initialize\init_windows.bat to install Python automatically.
+        pause
+        exit /b 1
+    )
+)
 cd backend
 if not exist "venv" (
     echo Creating virtual environment...

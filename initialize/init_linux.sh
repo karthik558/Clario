@@ -18,26 +18,6 @@ echo -e "${BOLD}   CLARIO — LINUX SYSTEM INITIALIZATION & ENVIRONMENT SETUP${N
 echo -e "   Full-stack automated setup: Python, Node.js, Database & Ollama"
 echo -e "${BLUE}================================================================${NC}"
 
-# Parse optional password argument
-USER_PASSWORD=""
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -p|--password)
-            USER_PASSWORD="$2"
-            shift 2
-            ;;
-        --password=*)
-            USER_PASSWORD="${1#*=}"
-            shift
-            ;;
-        *)
-            shift
-            ;;
-    esac
-done
-
-USER_PASSWORD="${USER_PASSWORD:-${PASSWORD:-${SUDO_PASSWORD:-${WORKSPACE_PASSWORD:-}}}}"
-
 REPO_URL="https://github.com/karthik558/Clario.git"
 TARGET_DIR="Clario"
 
@@ -69,24 +49,7 @@ cd "$PROJECT_ROOT"
 SUDO=""
 if [ "$EUID" -ne 0 ]; then
     if command -v sudo &>/dev/null; then
-        if [ -n "$USER_PASSWORD" ]; then
-            echo -e "\n[Auth] Authenticating administrator privileges with provided password..."
-            if echo "$USER_PASSWORD" | sudo -S -v 2>/dev/null; then
-                SUDO="echo '$USER_PASSWORD' | sudo -S"
-                echo -e "${GREEN}[OK] Administrator privileges authenticated.${NC}"
-                # Keep-alive sudo in background
-                while true; do echo "$USER_PASSWORD" | sudo -S -n true; sleep 50; kill -0 "$$" || exit; done 2>/dev/null &
-            else
-                echo -e "${YELLOW}[Notice] Provided password is not a sudo password; saving as workspace password.${NC}"
-                SUDO="sudo"
-            fi
-        else
-            echo -e "\n[Auth] System dependencies may require administrator (sudo) access."
-            sudo -v || true
-            SUDO="sudo"
-            # Keep-alive sudo in background
-            while true; do sudo -n true; sleep 50; kill -0 "$$" || exit; done 2>/dev/null &
-        fi
+        SUDO="sudo"
     else
         echo -e "${YELLOW}[Warning] Running as non-root user and sudo is not installed. Package installations may fail if root access is required.${NC}"
     fi
@@ -109,11 +72,14 @@ else
     echo -e "${YELLOW}[Warning] Unknown package manager. Please ensure build essentials, curl, and git are installed.${NC}"
 fi
 
-# 3. Check Python 3
+# 3. Check Python 3 Runtime & Version
 echo -e "\n${BOLD}[2/7] Checking Python 3 runtime...${NC}"
 PYTHON_CMD=""
-for cmd in python3.12 python3.11 python3.10 python3; do
+FOUND_PY=""
+
+for cmd in python3.12 python3.11 python3.10 python3 python; do
     if command -v $cmd &>/dev/null; then
+        FOUND_PY="$cmd"
         MAJOR=$($cmd -c 'import sys; print(sys.version_info.major)' 2>/dev/null || echo 0)
         MINOR=$($cmd -c 'import sys; print(sys.version_info.minor)' 2>/dev/null || echo 0)
         if [ "$MAJOR" -ge 3 ] && [ "$MINOR" -ge 10 ]; then
@@ -124,8 +90,8 @@ for cmd in python3.12 python3.11 python3.10 python3; do
     fi
 done
 
-if [ -z "$PYTHON_CMD" ]; then
-    echo "[Notice] Compatible Python 3 not detected. Installing via system package manager..."
+if [ -z "$FOUND_PY" ]; then
+    echo "[Notice] Python 3 not detected. Installing via system package manager ($PKG_MGR)..."
     if [ "$PKG_MGR" = "apt" ]; then
         $SUDO apt-get install -y python3 python3-pip python3-venv python3-dev
         PYTHON_CMD="python3"
@@ -138,6 +104,38 @@ if [ -z "$PYTHON_CMD" ]; then
     else
         echo -e "${RED}[Error] Could not automatically install Python 3. Please install Python 3.10+ manually.${NC}"
         exit 1
+    fi
+    echo -e "${GREEN}[OK] Python installed: $($PYTHON_CMD --version)${NC}"
+elif [ -z "$PYTHON_CMD" ]; then
+    OLD_VER="$($FOUND_PY --version 2>&1)"
+    echo -e "${YELLOW}[Warning] Detected older Python runtime: $OLD_VER.${NC}"
+    echo -e "Clario requires Python 3.10 or newer (Python 3.12 recommended)."
+    read -r -p "Would you like to install/update to Python 3.12 now? [Y/n] " UPDATE_CHOICE
+    UPDATE_CHOICE="${UPDATE_CHOICE:-Y}"
+    if [[ "$UPDATE_CHOICE" =~ ^[Yy]$ ]]; then
+        echo "[Notice] Updating Python via package manager..."
+        if [ "$PKG_MGR" = "apt" ]; then
+            $SUDO apt-get update -qq
+            $SUDO apt-get install -y -qq software-properties-common
+            $SUDO add-apt-repository -y ppa:deadsnakes/ppa 2>/dev/null || true
+            $SUDO apt-get update -qq
+            $SUDO apt-get install -y python3.12 python3.12-venv python3.12-dev || $SUDO apt-get install -y python3 python3-venv python3-dev
+            if command -v python3.12 &>/dev/null; then
+                PYTHON_CMD="python3.12"
+            else
+                PYTHON_CMD="python3"
+            fi
+        elif [ "$PKG_MGR" = "dnf" ]; then
+            $SUDO dnf install -y python3.12 python3.12-devel || $SUDO dnf install -y python3 python3-devel
+            PYTHON_CMD="python3"
+        elif [ "$PKG_MGR" = "pacman" ]; then
+            $SUDO pacman -S --noconfirm python python-pip
+            PYTHON_CMD="python3"
+        fi
+        echo -e "${GREEN}[OK] Python updated: $($PYTHON_CMD --version)${NC}"
+    else
+        echo -e "${YELLOW}[Notice] Continuing with existing Python: $OLD_VER. Note that modern dependencies may fail.${NC}"
+        PYTHON_CMD="$FOUND_PY"
     fi
 fi
 
@@ -206,16 +204,6 @@ LLM_PROVIDER="extractive"
 EOF
         echo -e "${GREEN}[OK] Generated backend/.env with default settings${NC}"
     fi
-fi
-
-# Set password if provided
-if [ -n "$USER_PASSWORD" ]; then
-    if grep -q "WORKSPACE_PASSWORD=" "$BACKEND_DIR/.env"; then
-        sed -i "s/^WORKSPACE_PASSWORD=.*/WORKSPACE_PASSWORD=\"$USER_PASSWORD\"/" "$BACKEND_DIR/.env"
-    else
-        echo "WORKSPACE_PASSWORD=\"$USER_PASSWORD\"" >> "$BACKEND_DIR/.env"
-    fi
-    echo -e "${GREEN}[OK] Workspace password configured successfully.${NC}"
 fi
 
 # 7. Configure Python Backend Virtual Environment

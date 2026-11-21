@@ -13,40 +13,27 @@ echo ================================================================
 cd /d "%~dp0.."
 set "PROJECT_ROOT=%CD%"
 
-REM Parse optional password argument
-set "USER_PASSWORD="
-if "%~1"=="--password" (
-    set "USER_PASSWORD=%~2"
-) else if "%~1"=="-p" (
-    set "USER_PASSWORD=%~2"
-) else if not "%~1"=="" (
-    set "USER_PASSWORD=%~1"
-)
-if "%USER_PASSWORD%"=="" (
-    if defined PASSWORD set "USER_PASSWORD=%PASSWORD%"
-    if defined WORKSPACE_PASSWORD set "USER_PASSWORD=%WORKSPACE_PASSWORD%"
-)
-
-REM 1. Check Python
+REM 1. Check Python Runtime & Version
 echo.
 echo [1/7] Checking Python runtime...
 set "PYTHON_CMD="
+set "PYTHON_VERSION_OK=0"
+
 python --version >nul 2>&1
 if %errorlevel% equ 0 (
     set "PYTHON_CMD=python"
-    for /f "tokens=*" %%i in ('python --version') do echo [OK] Detected %%i
 ) else (
     py --version >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=py"
-        for /f "tokens=*" %%i in ('py --version') do echo [OK] Detected %%i
     )
 )
 
 if "%PYTHON_CMD%"=="" (
-    echo [Notice] Python not detected. Attempting to install Python 3.12 via winget...
+    echo [Notice] Python not detected on your system.
+    echo Installing Python 3.12 automatically via winget...
     winget install Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements
-    if %errorlevel% neq 0 (
+    if !errorlevel! neq 0 (
         echo [Warning] Automatic installation via winget failed.
         echo Please download and install Python 3.12 manually from: https://www.python.org/downloads/
         echo Ensure you check 'Add Python to PATH' during installation.
@@ -54,6 +41,42 @@ if "%PYTHON_CMD%"=="" (
         exit /b 1
     )
     set "PYTHON_CMD=python"
+    set "PYTHON_VERSION_OK=1"
+    echo [OK] Python 3.12 installed successfully.
+) else (
+    for /f "tokens=*" %%i in ('%PYTHON_CMD% --version 2^>^&1') do echo [Info] Detected %%i
+
+    for /f "tokens=1,2 delims=." %%a in ('%PYTHON_CMD% -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2^>nul') do (
+        set "PY_MAJOR=%%a"
+        set "PY_MINOR=%%b"
+    )
+
+    if defined PY_MAJOR if defined PY_MINOR (
+        if !PY_MAJOR! equ 3 if !PY_MINOR! geq 10 (
+            set "PYTHON_VERSION_OK=1"
+            echo [OK] Compatible Python runtime verified (!PY_MAJOR!.!PY_MINOR!).
+        )
+    )
+
+    if "!PYTHON_VERSION_OK!"=="0" (
+        echo [Warning] Detected older Python version (!PY_MAJOR!.!PY_MINOR!).
+        echo Clario requires Python 3.10 or newer (Python 3.11 or 3.12 recommended).
+        echo.
+        set /p "UPDATE_CHOICE=Would you like to install/update to Python 3.12 now? (Y/N, default Y): "
+        if /i "!UPDATE_CHOICE!"=="" set "UPDATE_CHOICE=Y"
+        if /i "!UPDATE_CHOICE!"=="Y" (
+            echo Installing/updating to Python 3.12 via winget...
+            winget install Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements
+            if !errorlevel! equ 0 (
+                echo [OK] Python 3.12 installed.
+                set "PYTHON_CMD=python"
+            ) else (
+                echo [Warning] Automatic update failed. Please update Python from https://www.python.org/downloads/
+            )
+        ) else (
+            echo [Notice] Continuing with existing Python (!PY_MAJOR!.!PY_MINOR!). Some dependencies may fail.
+        )
+    )
 )
 
 REM 2. Check Node.js & npm
@@ -107,11 +130,6 @@ if not exist "%PROJECT_ROOT%\backend\.env" (
         ) > "%PROJECT_ROOT%\backend\.env"
         echo [OK] Generated backend\.env with default settings
     )
-)
-
-if not "%USER_PASSWORD%"=="" (
-    echo WORKSPACE_PASSWORD="%USER_PASSWORD%">>"%PROJECT_ROOT%\backend\.env"
-    echo [OK] Workspace password configured successfully.
 )
 
 REM 5. Setup Python Virtual Environment & Dependencies
