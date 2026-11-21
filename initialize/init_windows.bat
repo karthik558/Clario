@@ -1,20 +1,22 @@
 @echo off
 REM ==============================================================================
 REM Clario — Windows Automatic System Initialization & Environment Setup
+REM Full-stack automated setup: Python, Node.js, Database & Ollama
+REM Supports local drives as well as UNC network shares (Parallels / VMs / SMB)
 REM ==============================================================================
 
 setlocal enabledelayedexpansion
 
 echo ================================================================
-echo    CLARIO -- WINDOWS SYSTEM INITIALIZATION & ENVIRONMENT SETUP
-echo    Full-stack automated setup: Python, Node.js, Database & Ollama
+echo    CLARIO -- WINDOWS SYSTEM INITIALIZATION AND ENVIRONMENT SETUP
+echo    Full-stack automated setup: Python, Node.js, Database and Ollama
 echo ================================================================
 
 REM ==============================================================================
-REM 1. Repository Setup & Clone Verification
+REM 1. Repository Setup and Clone Verification
 REM ==============================================================================
 echo.
-echo [1/8] Checking Clario repository files & cloning option...
+echo [1/8] Checking Clario repository files and cloning option...
 
 set "REPO_URL=https://github.com/karthik558/Clario.git"
 set "TARGET_DIR=Clario"
@@ -26,19 +28,22 @@ if /i "%~1"=="--clone" set "FORCE_CLONE=1"
 if /i "%~1"=="-c" set "FORCE_CLONE=1"
 if /i "%~1"=="--pull" set "FORCE_PULL=1"
 
-set "SCRIPT_DIR=%~dp0"
+REM Handle UNC network shares automatically via pushd
+pushd "%~dp0"
+set "SCRIPT_DIR=%CD%"
 if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 
 set "PROJECT_ROOT="
 if exist "%SCRIPT_DIR%\..\backend\requirements.txt" (
-    cd /d "%SCRIPT_DIR%\.."
+    pushd "%SCRIPT_DIR%\.."
     set "PROJECT_ROOT=!CD!"
+    popd
 ) else if exist "%SCRIPT_DIR%\backend\requirements.txt" (
-    cd /d "%SCRIPT_DIR%"
-    set "PROJECT_ROOT=!CD!"
+    set "PROJECT_ROOT=!SCRIPT_DIR!"
 ) else if exist "%SCRIPT_DIR%\%TARGET_DIR%\backend\requirements.txt" (
-    cd /d "%SCRIPT_DIR%\%TARGET_DIR%"
+    pushd "%SCRIPT_DIR%\%TARGET_DIR%"
     set "PROJECT_ROOT=!CD!"
+    popd
 )
 
 REM If repository files are not found locally, trigger auto-clone
@@ -69,8 +74,9 @@ if "!FORCE_CLONE!"=="1" (
     echo [Info] Cloning Clario repository from !REPO_URL!...
     cd /d "!SCRIPT_DIR!"
     if exist "%TARGET_DIR%\backend\requirements.txt" (
-        cd /d "%SCRIPT_DIR%\%TARGET_DIR%"
+        pushd "%SCRIPT_DIR%\%TARGET_DIR%"
         set "PROJECT_ROOT=!CD!"
+        popd
         echo [OK] Using existing Clario folder at: !PROJECT_ROOT!
     ) else (
         git clone !REPO_URL! !TARGET_DIR!
@@ -79,16 +85,18 @@ if "!FORCE_CLONE!"=="1" (
             pause
             exit /b 1
         )
-        cd /d "!SCRIPT_DIR!\%TARGET_DIR%"
+        pushd "%SCRIPT_DIR%\%TARGET_DIR%"
         set "PROJECT_ROOT=!CD!"
+        popd
         echo [OK] Clario repository cloned successfully to: !PROJECT_ROOT!
     )
 ) else (
     echo [OK] Existing Clario repository detected at: !PROJECT_ROOT!
     if "!FORCE_PULL!"=="1" (
         echo [Info] Pulling latest repository updates...
-        cd /d "!PROJECT_ROOT!"
+        pushd "!PROJECT_ROOT!"
         git pull
+        popd
     ) else (
         echo.
         echo Repository options:
@@ -100,28 +108,31 @@ if "!FORCE_CLONE!"=="1" (
         if "!REPO_ACTION!"=="" set "REPO_ACTION=1"
         if "!REPO_ACTION!"=="2" (
             echo [Info] Pulling latest changes from GitHub...
-            cd /d "!PROJECT_ROOT!"
+            pushd "!PROJECT_ROOT!"
             git pull
+            popd
         ) else if "!REPO_ACTION!"=="3" (
             set "FRESH_DIR=Clario_fresh"
             echo [Info] Cloning fresh copy into "!SCRIPT_DIR!\!FRESH_DIR!"...
-            cd /d "!SCRIPT_DIR!"
+            pushd "!SCRIPT_DIR!"
             git clone !REPO_URL! !FRESH_DIR!
             if !errorlevel! equ 0 (
-                cd /d "!SCRIPT_DIR!\!FRESH_DIR!"
+                pushd "!SCRIPT_DIR!\!FRESH_DIR!"
                 set "PROJECT_ROOT=!CD!"
+                popd
                 echo [OK] Switched to freshly cloned repository: !PROJECT_ROOT!
             ) else (
                 echo [Warning] Clone failed. Proceeding with existing repository.
             )
+            popd
         )
     )
 )
 
-cd /d "!PROJECT_ROOT!"
+pushd "!PROJECT_ROOT!"
 
 REM ==============================================================================
-REM 2. Check Python Runtime & Version
+REM 2. Check Python Runtime and Version
 REM ==============================================================================
 echo.
 echo [2/8] Checking Python runtime...
@@ -203,7 +214,7 @@ if "%PYTHON_CMD%"=="" (
 )
 
 REM ==============================================================================
-REM 3. Check Node.js & npm
+REM 3. Check Node.js and npm
 REM ==============================================================================
 echo.
 echo [3/8] Checking Node.js and npm...
@@ -254,10 +265,10 @@ if %errorlevel% neq 0 (
 )
 
 REM ==============================================================================
-REM 5. Configure Workspace Environment & Security
+REM 5. Configure Workspace Environment and Security
 REM ==============================================================================
 echo.
-echo [5/8] Configuring workspace environment & security...
+echo [5/8] Configuring workspace environment and security...
 if not exist "%PROJECT_ROOT%\backend\data\documents" mkdir "%PROJECT_ROOT%\backend\data\documents"
 if not exist "%PROJECT_ROOT%\backend\data\reports" mkdir "%PROJECT_ROOT%\backend\data\reports"
 
@@ -277,11 +288,11 @@ if not exist "%PROJECT_ROOT%\backend\.env" (
 )
 
 REM ==============================================================================
-REM 6. Setup Python Virtual Environment & Dependencies
+REM 6. Setup Python Virtual Environment and Dependencies
 REM ==============================================================================
 echo.
-echo [6/8] Setting up Python backend virtual environment & database...
-cd /d "%PROJECT_ROOT%\backend"
+echo [6/8] Setting up Python backend virtual environment and database...
+pushd "%PROJECT_ROOT%\backend"
 if not exist "venv" (
     echo Creating virtual environment at backend\venv...
     %PYTHON_CMD% -m venv venv
@@ -292,25 +303,27 @@ echo Upgrading pip and installing backend requirements...
 python -m pip install --upgrade pip --quiet
 pip install -r requirements.txt --quiet
 
-echo Initializing database, extracting passages & indexing sample corpus...
+echo Initializing database, extracting passages and indexing sample corpus...
 set PYTHONPATH=.
 python -m app.database.seed
+popd
 
 REM ==============================================================================
 REM 7. Setup Frontend
 REM ==============================================================================
 echo.
-echo [7/8] Installing frontend dependencies & building production bundle...
-cd /d "%PROJECT_ROOT%\frontend"
+echo [7/8] Installing frontend dependencies and building production bundle...
+pushd "%PROJECT_ROOT%\frontend"
 call npm install --silent
 call npm run build --silent
+popd
 
 REM ==============================================================================
-REM 8. Self-Test & Verification
+REM 8. Self-Test and Verification
 REM ==============================================================================
 echo.
 echo [8/8] Performing full-stack self-test...
-cd /d "%PROJECT_ROOT%\backend"
+pushd "%PROJECT_ROOT%\backend"
 call venv\Scripts\activate.bat
 python -c "import fastapi, pymupdf, openpyxl, docx, reportlab, sqlalchemy; print('  ✔ Backend core Python libraries verified')"
 
@@ -320,6 +333,7 @@ if exist "%PROJECT_ROOT%\backend\data\clario.db" (
 if exist "%PROJECT_ROOT%\frontend\dist\index.html" (
     echo   ✔ Frontend production bundle verified: frontend\dist\
 )
+popd
 
 echo.
 echo ================================================================
@@ -339,5 +353,5 @@ echo    Frontend Workspace:  http://localhost:5173
 echo    Backend REST API:    http://localhost:8000
 echo    OpenAPI Swagger:     http://localhost:8000/docs
 echo ================================================================
-cd /d "%PROJECT_ROOT%"
+popd
 pause

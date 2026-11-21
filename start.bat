@@ -3,6 +3,7 @@ REM ============================================================================
 REM Clario — Every document. A clearer answer.
 REM Local Startup Script (Windows)
 REM Automatically validates, installs missing dependencies, and launches Clario
+REM Supports local drives as well as UNC network shares (Parallels / VMs / SMB)
 REM ==============================================================================
 
 setlocal enabledelayedexpansion
@@ -12,12 +13,13 @@ echo    CLARIO -- DOCUMENT INTELLIGENCE WORKSPACE
 echo    Tagline: Every document. A clearer answer.
 echo ================================================================
 
-cd /d "%~dp0"
-set "PROJECT_ROOT=%~dp0"
+REM Handle UNC network shares and mapped drives automatically
+pushd "%~dp0"
+set "PROJECT_ROOT=%CD%"
 if "%PROJECT_ROOT:~-1%"=="\" set "PROJECT_ROOT=%PROJECT_ROOT:~0,-1%"
 
 REM ==============================================================================
-REM 1. Backend Python Runtime & Virtual Environment
+REM 1. Backend Python Runtime and Virtual Environment
 REM ==============================================================================
 echo [1/4] Checking Python backend environment...
 
@@ -60,7 +62,7 @@ if "!PYTHON_CMD!"=="" (
     )
 )
 
-cd /d "!PROJECT_ROOT!\backend"
+pushd "!PROJECT_ROOT!\backend"
 if not exist "venv\Scripts\activate.bat" (
     echo Creating virtual environment at backend\venv...
     !PYTHON_CMD! -m venv venv
@@ -78,17 +80,18 @@ if not exist "venv\Scripts\activate.bat" (
 )
 
 REM ==============================================================================
-REM 2. Database & Knowledge Base Verification
+REM 2. Database and Knowledge Base Verification
 REM ==============================================================================
 echo [2/4] Verifying database and sample documents...
 set PYTHONPATH=.
 python -m app.database.seed
+popd
 
 REM ==============================================================================
-REM 3. Frontend Node.js, npm & Dependencies
+REM 3. Frontend Node.js, npm and Dependencies
 REM ==============================================================================
-echo [3/4] Checking frontend dependencies (Node.js & npm)...
-cd /d "!PROJECT_ROOT!\frontend"
+echo [3/4] Checking frontend dependencies (Node.js and npm)...
+pushd "!PROJECT_ROOT!\frontend"
 
 REM Add standard Node.js paths if installed but not yet in session PATH
 if exist "%ProgramFiles%\nodejs" set "PATH=%ProgramFiles%\nodejs;!PATH!"
@@ -125,13 +128,14 @@ if not exist "node_modules" (
         exit /b 1
     )
 )
+popd
 
 REM ==============================================================================
 REM 4. Launch Services
 REM ==============================================================================
 echo [4/4] Starting Clario Backend and Frontend...
-start "Clario Backend (FastAPI)" cmd /k "cd /d !PROJECT_ROOT!\backend && call venv\Scripts\activate.bat && set PYTHONPATH=. && uvicorn app.main:app --port 8000 --reload"
-start "Clario Frontend (Vite)" cmd /k "cd /d !PROJECT_ROOT!\frontend && npm run dev"
+start "Clario Backend (FastAPI)" cmd /k "pushd "!PROJECT_ROOT!\backend" && call venv\Scripts\activate.bat && set PYTHONPATH=. && uvicorn app.main:app --port 8000 --reload"
+start "Clario Frontend (Vite)" cmd /k "pushd "!PROJECT_ROOT!\frontend" && npm run dev"
 
 echo ================================================================
 echo Clario is up and running!

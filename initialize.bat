@@ -2,10 +2,12 @@
 REM ==============================================================================
 REM Clario — Windows Initialization Launcher
 REM Double-click to clone repository files (if missing) and set up full environment.
+REM Supports local drives as well as UNC network shares (Parallels / VMs / SMB)
 REM ==============================================================================
 
 setlocal
-set "SCRIPT_DIR=%~dp0"
+pushd "%~dp0"
+set "SCRIPT_DIR=%CD%"
 if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 
 if exist "%SCRIPT_DIR%\initialize\init_windows.bat" (
@@ -31,3 +33,4 @@ if exist "%SCRIPT_DIR%\initialize\init_windows.bat" (
         pause
     )
 )
+popd
