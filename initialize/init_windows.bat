@@ -125,14 +125,21 @@ REM 2. Check Python Runtime & Version
 REM ==============================================================================
 echo.
 echo [2/8] Checking Python runtime...
+
+REM Add standard Python paths if installed
+if exist "%LocalAppData%\Programs\Python\Python312" set "PATH=%LocalAppData%\Programs\Python\Python312;%LocalAppData%\Programs\Python\Python312\Scripts;!PATH!"
+if exist "%LocalAppData%\Programs\Python\Python311" set "PATH=%LocalAppData%\Programs\Python\Python311;%LocalAppData%\Programs\Python\Python311\Scripts;!PATH!"
+if exist "%ProgramFiles%\Python312" set "PATH=%ProgramFiles%\Python312;%ProgramFiles%\Python312\Scripts;!PATH!"
+if exist "%ProgramFiles%\Python311" set "PATH=%ProgramFiles%\Python311;%ProgramFiles%\Python311\Scripts;!PATH!"
+
 set "PYTHON_CMD="
 set "PYTHON_VERSION_OK=0"
 
-python --version >nul 2>&1
-if %errorlevel% equ 0 (
+python -c "import sys; sys.exit(0)" >nul 2>&1
+if !errorlevel! equ 0 (
     set "PYTHON_CMD=python"
 ) else (
-    py --version >nul 2>&1
+    py -c "import sys; sys.exit(0)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=py"
     )
@@ -142,6 +149,10 @@ if "%PYTHON_CMD%"=="" (
     echo [Notice] Python not detected on your system.
     echo Installing Python 3.12 automatically via winget...
     winget install Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements
+    if exist "%LocalAppData%\Programs\Python\Python312" set "PATH=%LocalAppData%\Programs\Python\Python312;%LocalAppData%\Programs\Python\Python312\Scripts;!PATH!"
+    if exist "%ProgramFiles%\Python312" set "PATH=%ProgramFiles%\Python312;%ProgramFiles%\Python312\Scripts;!PATH!"
+
+    python -c "import sys; sys.exit(0)" >nul 2>&1
     if !errorlevel! neq 0 (
         echo [Warning] Automatic installation via winget failed.
         echo Please download and install Python 3.12 manually from: https://www.python.org/downloads/
@@ -176,6 +187,9 @@ if "%PYTHON_CMD%"=="" (
         if /i "!UPDATE_CHOICE!"=="Y" (
             echo Installing/updating to Python 3.12 via winget...
             winget install Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements
+            if exist "%LocalAppData%\Programs\Python\Python312" set "PATH=%LocalAppData%\Programs\Python\Python312;%LocalAppData%\Programs\Python\Python312\Scripts;!PATH!"
+            if exist "%ProgramFiles%\Python312" set "PATH=%ProgramFiles%\Python312;%ProgramFiles%\Python312\Scripts;!PATH!"
+            python -c "import sys; sys.exit(0)" >nul 2>&1
             if !errorlevel! equ 0 (
                 echo [OK] Python 3.12 installed.
                 set "PYTHON_CMD=python"
@@ -193,17 +207,32 @@ REM 3. Check Node.js & npm
 REM ==============================================================================
 echo.
 echo [3/8] Checking Node.js and npm...
-node -v >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [Notice] Node.js not detected. Attempting to install Node.js LTS via winget...
+
+REM Add standard Node.js paths if installed
+if exist "%ProgramFiles%\nodejs" set "PATH=%ProgramFiles%\nodejs;!PATH!"
+if exist "%ProgramFiles(x86)%\nodejs" set "PATH=%ProgramFiles(x86)%\nodejs;!PATH!"
+if exist "%LocalAppData%\Programs\nodejs" set "PATH=%LocalAppData%\Programs\nodejs;!PATH!"
+if exist "%AppData%\npm" set "PATH=%AppData%\npm;!PATH!"
+
+call npm -v >nul 2>&1
+if !errorlevel! neq 0 (
+    echo [Notice] Node.js and npm not detected. Attempting to install Node.js LTS via winget...
     winget install OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
-    if %errorlevel% neq 0 (
+    if exist "%ProgramFiles%\nodejs" set "PATH=%ProgramFiles%\nodejs;!PATH!"
+    if exist "%ProgramFiles(x86)%\nodejs" set "PATH=%ProgramFiles(x86)%\nodejs;!PATH!"
+    if exist "%LocalAppData%\Programs\nodejs" set "PATH=%LocalAppData%\Programs\nodejs;!PATH!"
+    if exist "%AppData%\npm" set "PATH=%AppData%\npm;!PATH!"
+    call npm -v >nul 2>&1
+    if !errorlevel! neq 0 (
         echo [Warning] Please download and install Node.js from: https://nodejs.org/
         pause
         exit /b 1
     )
+    echo [OK] Node.js and npm installed successfully.
 ) else (
-    for /f "tokens=*" %%i in ('node -v') do echo [OK] Detected Node.js %%i
+    for /f "tokens=*" %%i in ('node -v 2^>nul') do (
+        for /f "tokens=*" %%j in ('call npm -v 2^>nul') do echo [OK] Detected Node.js %%i with npm %%j
+    )
 )
 
 REM ==============================================================================

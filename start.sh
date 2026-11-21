@@ -52,8 +52,12 @@ cd "$BACKEND_DIR"
 PYTHONPATH=. python3 -m app.database.seed
 
 # 3. Check Frontend Node Modules
-echo -e "${NAVY}[3/4] Checking Frontend dependencies...${NC}"
+echo -e "${NAVY}[3/4] Checking Frontend dependencies (Node.js & npm)...${NC}"
 cd "$FRONTEND_DIR"
+if ! command -v npm &>/dev/null; then
+    echo -e "${RED}[Error] Node.js and npm are not installed. Run ./initialize/setup.sh to install them automatically.${NC}"
+    exit 1
+fi
 if [ ! -d "node_modules" ]; then
     echo "Installing frontend npm packages..."
     npm install
