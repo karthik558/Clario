@@ -210,7 +210,7 @@ echo -e "\n${BOLD}[Verification] Performing full-stack self-test...${NC}"
 cd "$BACKEND_DIR"
 source venv/bin/activate
 python -c "
-import fastapi, pymupdf, openpyxl, docx, reportlab, sqlalchemy
+import fastapi, openpyxl, docx, reportlab, sqlalchemy
 print('  ✔ Backend core Python libraries verified')
 "
 

@@ -58,7 +58,7 @@
 - **Runtime:** Python 3.12+
 - **Framework:** FastAPI with Uvicorn
 - **Database & ORM:** SQLite with SQLAlchemy ORM (automatic creation and migration)
-- **Parsers:** PyMuPDF (`fitz`), `python-docx`, `openpyxl`
+- **Parsers:** PyPDF / PyMuPDF (`fitz`), `python-docx`, `openpyxl`
 - **Retrieval:** Hybrid search with Okapi BM25, Sentence Transformers embeddings, and Reciprocal Rank Fusion (RRF)
 - **Local AI:** Seamless integration with Ollama, LM Studio, vLLM, and zero-latency extractive fallback
 

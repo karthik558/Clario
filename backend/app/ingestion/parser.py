@@ -1,8 +1,20 @@
 import os
 from pathlib import Path
 from typing import List, Dict, Any
-import pymupdf as fitz  # PyMuPDF
 import docx
+
+try:
+    import pymupdf as fitz  # PyMuPDF
+except ImportError:
+    try:
+        import fitz
+    except ImportError:
+        fitz = None
+
+try:
+    import pypdf
+except ImportError:
+    pypdf = None
 
 class PageText:
     def __init__(self, page_number: int, text: str):
@@ -14,13 +26,23 @@ class DocumentParser:
     def parse_pdf(file_path: str) -> List[PageText]:
         pages: List[PageText] = []
         try:
-            doc = fitz.open(file_path)
-            for i, page in enumerate(doc):
-                text = page.get_text("text") or ""
-                # Clean up repeated trailing newlines
-                cleaned = "\n".join([line.strip() for line in text.splitlines() if line.strip()])
-                pages.append(PageText(page_number=i + 1, text=cleaned))
-            doc.close()
+            if fitz is not None:
+                doc = fitz.open(file_path)
+                for i, page in enumerate(doc):
+                    text = page.get_text("text") or ""
+                    cleaned = "\n".join([line.strip() for line in text.splitlines() if line.strip()])
+                    pages.append(PageText(page_number=i + 1, text=cleaned))
+                doc.close()
+                return pages
+            elif pypdf is not None:
+                reader = pypdf.PdfReader(file_path)
+                for i, page in enumerate(reader.pages):
+                    text = page.extract_text() or ""
+                    cleaned = "\n".join([line.strip() for line in text.splitlines() if line.strip()])
+                    pages.append(PageText(page_number=i + 1, text=cleaned))
+                return pages
+            else:
+                raise ImportError("No PDF parser available. Please install pypdf or pymupdf.")
         except Exception as e:
             raise ValueError("Could not read the PDF file.") from e
         return pages

@@ -79,7 +79,7 @@ if not exist "!VENV_PYTHON!" (
 call venv\Scripts\activate.bat
 
 REM Verify backend dependencies are actually installed in the venv
-"!VENV_PYTHON!" -c "import fastapi, uvicorn, sqlalchemy" >nul 2>&1
+"!VENV_PYTHON!" -c "import fastapi, uvicorn, sqlalchemy, pypdf" >nul 2>&1
 if !errorlevel! neq 0 (
     echo [Notice] Backend packages not detected in virtual environment.
     echo Installing Python backend dependencies from requirements.txt...

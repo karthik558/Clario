@@ -333,7 +333,7 @@ echo.
 echo [8/8] Performing full-stack self-test...
 pushd "%PROJECT_ROOT%\backend"
 call venv\Scripts\activate.bat
-"!VENV_PYTHON!" -c "import fastapi, pymupdf, openpyxl, docx, reportlab, sqlalchemy; print('  ✔ Backend core Python libraries verified')"
+"!VENV_PYTHON!" -c "import fastapi, openpyxl, docx, reportlab, sqlalchemy; print('  ✔ Backend core Python libraries verified')"
 
 if exist "%PROJECT_ROOT%\backend\data\clario.db" (
     echo   ✔ SQLite database verified: backend\data\clario.db
