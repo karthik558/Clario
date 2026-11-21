@@ -39,17 +39,13 @@ export const SettingsPage: React.FC = () => {
   // Ollama State
   const [llmProvider, setLlmProvider] = useState('extractive');
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
-  const [ollamaModel, setOllamaModel] = useState('llama3.2');
+  const [ollamaModel, setOllamaModel] = useState('');
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null);
   const [checkingOllama, setCheckingOllama] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
 
   const availableModels = useMemo<string[]>(() => {
-    const detected: string[] = ollamaStatus?.models || [];
-    const set = new Set<string>(detected);
-    if (!set.has('gemma3:latest')) set.add('gemma3:latest');
-    if (!set.has('llama3.2')) set.add('llama3.2');
-    return Array.from(set);
+    return ollamaStatus?.models || [];
   }, [ollamaStatus]);
 
   // AI Tuning State
@@ -311,7 +307,11 @@ export const SettingsPage: React.FC = () => {
           <p className="text-[11px] leading-relaxed ml-6">
             {ollamaStatus?.running
               ? `Connected at ${ollamaStatus.url}. Detected ${ollamaStatus.models.length} model(s): [${ollamaStatus.models.join(', ') || 'None pulled yet'}].`
-              : `To start Ollama, open your Mac terminal and run: 'ollama serve' or open the Ollama application.`}
+              : typeof navigator !== 'undefined' && /win/i.test(navigator.userAgent || '')
+              ? `To start Ollama, open PowerShell or Command Prompt and run: 'ollama serve', or launch the Ollama Windows application.`
+              : typeof navigator !== 'undefined' && /mac/i.test(navigator.userAgent || '')
+              ? `To start Ollama, open Terminal and run: 'ollama serve', or open the Ollama application.`
+              : `To start Ollama, open your terminal and run: 'ollama serve'.`}
           </p>
         </div>
 
@@ -368,15 +368,27 @@ export const SettingsPage: React.FC = () => {
                 }}
                 className="flex-1 text-xs font-semibold bg-white border border-slate-200 rounded-md px-3 py-2 text-slate-900 focus:outline-none focus:border-slate-900 shadow-xs"
               >
-                <optgroup label="Available Models">
-                  {availableModels.map((m) => (
-                    <option key={m} value={m}>
-                      {m === 'gemma3:latest' ? 'gemma3:latest (Installed)' : m}
+                {availableModels.length > 0 ? (
+                  <optgroup label="Installed Models (Ollama)">
+                    {availableModels.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : (
+                  <optgroup label="Detected Models">
+                    <option value="" disabled>
+                      {ollamaStatus?.running ? 'No local models pulled yet' : 'Ollama offline (no models detected)'}
                     </option>
-                  ))}
-                </optgroup>
+                  </optgroup>
+                )}
                 <optgroup label="Manual Entry">
-                  <option value="__custom__">Custom model name…</option>
+                  <option value="__custom__">
+                    {ollamaModel && !availableModels.includes(ollamaModel)
+                      ? `Custom: ${ollamaModel}`
+                      : 'Custom model name…'}
+                  </option>
                 </optgroup>
               </Select>
 
@@ -400,7 +412,7 @@ export const SettingsPage: React.FC = () => {
                   aria-label="Model name or custom model"
                   value={ollamaModel}
                   onChange={(e) => setOllamaModel(e.target.value)}
-                  placeholder="Enter custom model (e.g. gemma3:latest)"
+                  placeholder="Enter custom model (e.g. llama3.2, mistral)"
                   className="w-full text-xs font-mono bg-white border border-slate-200 text-slate-900 rounded-md px-3 py-2 shadow-xs"
                 />
               </div>
@@ -411,9 +423,9 @@ export const SettingsPage: React.FC = () => {
         <details className="border-t border-clario-border pt-4 text-sm">
           <summary className="cursor-pointer font-medium text-clario-navy">Set up Ollama or a custom model</summary>
           <div className="mt-4 space-y-3 text-slate-600">
-            <p>Install <a href="https://ollama.com/download" target="_blank" rel="noreferrer" className="text-slate-900 underline font-medium">Ollama</a>, open the app, and download a model in your terminal:</p>
+            <p>Install <a href="https://ollama.com/download" target="_blank" rel="noreferrer" className="text-slate-900 underline font-medium">Ollama</a>, launch the application, and download any model from your terminal ({typeof navigator !== 'undefined' && /win/i.test(navigator.userAgent || '') ? 'PowerShell or Command Prompt' : 'Terminal'}):</p>
             <pre className="bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto text-xs text-slate-800">ollama pull llama3.2</pre>
-            <p>Choose Ollama above, enter the exact installed model name, and save the configuration. Custom models created in Ollama work in the same field.</p>
+            <p>Select your installed model from the dropdown above and click Save. Custom models created in Ollama also work in the custom field.</p>
             <p className="text-xs">These are setup instructions. Commands are run in your own terminal.</p>
           </div>
         </details>
