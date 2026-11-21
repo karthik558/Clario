@@ -48,3 +48,25 @@ it('redirects /docs to /documents and renders redesigned document library', asyn
   expect(screen.getByText('Indexed Passages')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Upload Documents/i })).toBeInTheDocument();
 });
+
+it('renders redesigned homepage with interactive contract review and sample breakdown', () => {
+  window.history.replaceState(null, '', '/home');
+  render(<App />);
+
+  // Verify headers and key titles
+  expect(screen.getByText('Why Clario, and how teams use it')).toBeInTheDocument();
+  expect(screen.getByText('Sample document breakdown')).toBeInTheDocument();
+
+  // Test interactive hero contract review
+  expect(screen.getByText('When do we need to give notice?')).toBeInTheDocument();
+
+  const liabilityBtn = screen.getByRole('button', { name: 'Liability cap' });
+  fireEvent.click(liabilityBtn);
+  expect(screen.getByText('What is the liability cap?')).toBeInTheDocument();
+  expect(screen.getByText(/capped at twelve months of fees/i)).toBeInTheDocument();
+
+  const incidentBtn = screen.getByRole('button', { name: 'Incident notice' });
+  fireEvent.click(incidentBtn);
+  expect(screen.getByText('What is the breach notification window?')).toBeInTheDocument();
+  expect(screen.getAllByText(/within 48 hours of confirmation/i)[0]).toBeInTheDocument();
+});
