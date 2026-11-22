@@ -311,7 +311,7 @@ if !errorlevel! neq 0 (
     pip install -r requirements.txt
 )
 
-echo Initializing database, extracting passages and indexing sample corpus...
+echo Initializing local database schema (fresh clean workspace)...
 set PYTHONPATH=.
 "!VENV_PYTHON!" -m app.database.seed
 popd

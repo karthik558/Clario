@@ -94,9 +94,9 @@ if !errorlevel! neq 0 (
 )
 
 REM ==============================================================================
-REM 2. Database and Knowledge Base Verification
+REM 2. Local Database Initialization
 REM ==============================================================================
-echo [2/4] Verifying database and sample documents...
+echo [2/4] Verifying local database environment...
 set PYTHONPATH=.
 "!VENV_PYTHON!" -m app.database.seed
 if !errorlevel! neq 0 (

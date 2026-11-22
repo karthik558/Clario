@@ -18,10 +18,16 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Local databases & uploads
-backend/data/*.db
-backend/data/documents/*
-backend/data/reports/*
+# Local databases & uploads (NEVER commit or sync to GitHub)
+backend/data/
+backend/uploads/
+backend/storage/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
 !sample_documents/*
 
 # Environment variables

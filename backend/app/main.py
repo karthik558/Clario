@@ -8,7 +8,6 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.logging import setup_logging, logger
 from app.database.session import engine, Base, SessionLocal
-from app.database.seed import seed_sample_documents
 from app.api.router import api_router
 
 @asynccontextmanager
@@ -20,9 +19,6 @@ async def lifespan(app: FastAPI):
     from app.services.settings_service import load_saved_settings
     with SessionLocal() as db:
         load_saved_settings(db)
-
-    logger.info("Verifying seed corpus...")
-    seed_sample_documents()
 
     logger.info(f"{settings.PROJECT_NAME} backend started successfully on port 8000.")
     yield

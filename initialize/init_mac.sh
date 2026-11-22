@@ -196,7 +196,7 @@ echo "Installing and upgrading backend dependencies..."
 pip install --upgrade pip --quiet
 pip install -r requirements.txt --quiet
 
-echo "Initializing database, extracting passages & indexing sample corpus..."
+echo "Initializing local database schema (fresh clean workspace)..."
 PYTHONPATH=. python -m app.database.seed
 
 # 9. Configure Frontend
