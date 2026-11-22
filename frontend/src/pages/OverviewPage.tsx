@@ -40,6 +40,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
+import { Modal } from '../components/ui/Modal';
 import { FileUploadZone } from '../components/documents/FileUploadZone';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 import { DocumentDrawer } from '../components/documents/DocumentDrawer';
@@ -241,15 +242,30 @@ export const OverviewPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (docId: string, e: React.MouseEvent) => {
+  interface DeleteTarget {
+    docId: string;
+    docTitle: string;
+  }
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState(false);
+
+  const handleDelete = (docId: string, docTitle: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Delete this document from the corpus?')) {
-      try {
-        await api.deleteDocument(docId);
-        fetchDashboardData();
-      } catch (err) {
-        setError('Could not delete the document. Please try again.');
-      }
+    setDeleteTarget({ docId, docTitle });
+  };
+
+  const executeDelete = async (deleteFromDisk: boolean) => {
+    if (!deleteTarget) return;
+    setDeletingDoc(true);
+    setError('');
+    try {
+      await api.deleteDocument(deleteTarget.docId, deleteFromDisk);
+      setDeleteTarget(null);
+      await fetchDashboardData();
+    } catch {
+      setError('Could not delete the document. Please try again.');
+    } finally {
+      setDeletingDoc(false);
     }
   };
 
@@ -1442,7 +1458,7 @@ export const OverviewPage: React.FC = () => {
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={(e) => handleDelete(doc.id, e)}
+                      onClick={(e) => handleDelete(doc.id, doc.title, e)}
                       className="p-1.5 rounded-md text-clario-text-secondary hover:text-rose-600 hover:bg-rose-50 transition-colors"
                       title="Delete document"
                     >
@@ -1479,6 +1495,79 @@ export const OverviewPage: React.FC = () => {
         onClose={() => setShowAuditWizard(false)}
         documents={documents}
       />
+
+      {/* Website-Style Delete Options Modal */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => !deletingDoc && setDeleteTarget(null)}
+        title={`Remove "${deleteTarget?.docTitle}"`}
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Choose how you would like to delete or unindex &ldquo;{deleteTarget?.docTitle}&rdquo;.
+          </p>
+
+          <div className="space-y-3 pt-1">
+            {/* Option 1: Remove from Library Only */}
+            <div className="rounded-md border border-slate-200 p-4 hover:border-slate-300 transition-colors bg-white">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h5 className="text-sm font-semibold text-slate-900">
+                    Delete just from document library
+                  </h5>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Removes indexed citations and metadata from Clario, but keeps the physical files safe in your <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">documents/</code> directory. You can re-import them anytime by clicking Sync Folder in Documents.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={deletingDoc}
+                  onClick={() => executeDelete(false)}
+                  className="shrink-0 text-slate-700 hover:text-slate-900 border-slate-200"
+                >
+                  {deletingDoc ? 'Removing…' : 'Remove from library'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Option 2: Delete from Project Directory */}
+            <div className="rounded-md border border-rose-200/80 bg-rose-50/40 p-4 hover:border-rose-300 transition-colors">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h5 className="text-sm font-semibold text-rose-900">
+                    Delete from project directory
+                  </h5>
+                  <p className="text-xs text-rose-700/80 mt-1 leading-relaxed">
+                    Permanently deletes the physical files from the <code className="bg-rose-100 px-1 py-0.5 rounded text-rose-800">documents/</code> folder on disk and wipes all database indices. This action cannot be undone.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={deletingDoc}
+                  onClick={() => executeDelete(true)}
+                  className="shrink-0 bg-rose-600 hover:bg-rose-700 text-white border-transparent"
+                >
+                  {deletingDoc ? 'Deleting…' : 'Delete from disk'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end pt-3 border-t border-slate-100">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={deletingDoc}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

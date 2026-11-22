@@ -73,32 +73,42 @@ export const ReportsPage: React.FC = () => {
     }
   };
 
-  const handleClearAllReports = async () => {
-    if (window.confirm('Are you sure you want to clear all generated reports? This will remove all previous dossiers.')) {
-      setClearing(true);
-      setError('');
-      try {
+  interface ReportDeleteTarget {
+    type: 'single' | 'all';
+    reportId?: string;
+    reportTitle?: string;
+  }
+  const [deleteTarget, setDeleteTarget] = useState<ReportDeleteTarget | null>(null);
+  const [deletingReport, setDeletingReport] = useState(false);
+
+  const handleClearAllReports = () => {
+    setDeleteTarget({ type: 'all' });
+  };
+
+  const handleDeleteReport = (reportId: string, reportTitle: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteTarget({ type: 'single', reportId, reportTitle });
+  };
+
+  const executeReportDelete = async () => {
+    if (!deleteTarget) return;
+    setDeletingReport(true);
+    setError('');
+    try {
+      if (deleteTarget.type === 'all') {
         await api.clearAllReports();
         setReports([]);
         setSelectedReport(null);
-      } catch (err) {
-        setError('Failed to clear reports. Please try again.');
-      } finally {
-        setClearing(false);
+      } else if (deleteTarget.reportId) {
+        await api.deleteReport(deleteTarget.reportId);
+        if (selectedReport?.id === deleteTarget.reportId) setSelectedReport(null);
+        setReports(prev => prev.filter(r => r.id !== deleteTarget.reportId));
       }
-    }
-  };
-
-  const handleDeleteReport = async (reportId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm('Delete this report?')) {
-      try {
-        await api.deleteReport(reportId);
-        if (selectedReport?.id === reportId) setSelectedReport(null);
-        setReports(prev => prev.filter(r => r.id !== reportId));
-      } catch (err) {
-        setError('Could not delete report.');
-      }
+      setDeleteTarget(null);
+    } catch {
+      setError(deleteTarget.type === 'all' ? 'Failed to clear reports. Please try again.' : 'Could not delete report.');
+    } finally {
+      setDeletingReport(false);
     }
   };
 
@@ -407,7 +417,7 @@ export const ReportsPage: React.FC = () => {
                   )}
 
                   <button
-                    onClick={(e) => handleDeleteReport(rep.id, e)}
+                    onClick={(e) => handleDeleteReport(rep.id, rep.title, e)}
                     className="p-1.5 rounded-md text-clario-text-secondary hover:text-rose-600 hover:bg-rose-50 transition-colors"
                     title="Delete Report"
                   >
@@ -608,6 +618,41 @@ export const ReportsPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Website-Style Delete Report Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => !deletingReport && setDeleteTarget(null)}
+        title={deleteTarget?.type === 'all' ? 'Clear All Reports' : 'Delete Report'}
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            {deleteTarget?.type === 'all'
+              ? 'Are you sure you want to clear all generated reports? This will remove all previous dossiers.'
+              : `Are you sure you want to delete "${deleteTarget?.reportTitle || 'this report'}"? This action cannot be undone.`}
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={deletingReport}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={deletingReport}
+              onClick={executeReportDelete}
+              className="bg-rose-600 hover:bg-rose-700 text-white border-transparent"
+            >
+              {deletingReport ? 'Deleting…' : deleteTarget?.type === 'all' ? 'Clear all reports' : 'Delete report'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

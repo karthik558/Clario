@@ -100,15 +100,23 @@ def sync_documents_folder(db: Session = Depends(get_db)):
     }
 
 @router.delete("/documents/clear-all")
-def clear_all_documents(db: Session = Depends(get_db)):
-    count = DocumentService.clear_all_documents(db)
+def clear_all_documents(delete_files: bool = True, db: Session = Depends(get_db)):
+    count = DocumentService.clear_all_documents(db, delete_files=delete_files)
     search_service.reload_index(db)
-    return {"message": f"Successfully cleared all {count} documents and associated indices.", "cleared_count": count}
+    return {
+        "message": f"Successfully cleared all {count} documents.",
+        "cleared_count": count,
+        "deleted_from_disk": delete_files
+    }
 
 @router.delete("/documents/{doc_id}")
-def delete_document(doc_id: str, db: Session = Depends(get_db)):
-    success = DocumentService.delete_document(doc_id, db)
+def delete_document(doc_id: str, delete_file: bool = True, db: Session = Depends(get_db)):
+    success = DocumentService.delete_document(doc_id, db, delete_file=delete_file)
     if not success:
         raise HTTPException(status_code=404, detail="Document not found")
     search_service.reload_index(db)
-    return {"message": "Document deleted successfully", "id": doc_id}
+    return {
+        "message": "Document deleted successfully",
+        "id": doc_id,
+        "deleted_from_disk": delete_file
+    }

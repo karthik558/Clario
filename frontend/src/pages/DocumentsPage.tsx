@@ -37,6 +37,7 @@ import { Button } from '../components/ui/Button';
 import { FileUploadZone } from '../components/documents/FileUploadZone';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 import { DocumentDrawer } from '../components/documents/DocumentDrawer';
+import { Modal } from '../components/ui/Modal';
 
 export const DocumentsPage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -93,29 +94,43 @@ export const DocumentsPage: React.FC = () => {
     fetchDocuments();
   }, []);
 
-  const handleClearAll = async () => {
-    if (window.confirm('Are you sure you want to delete ALL documents and their indexed embeddings? This cannot be undone.')) {
-      setClearing(true);
-      try {
-        await api.clearAllDocuments();
-        await fetchDocuments();
-      } catch {
-        setError('Failed to clear documents.');
-      } finally {
-        setClearing(false);
-      }
-    }
+  interface DeleteTarget {
+    type: 'single' | 'all';
+    docId?: string;
+    docTitle?: string;
+  }
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleOpenClearAll = () => {
+    setDeleteTarget({ type: 'all' });
   };
 
-  const handleDelete = async (docId: string, title: string, e?: React.MouseEvent) => {
+  const handleOpenDeleteSingle = (docId: string, title: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      try {
-        await api.deleteDocument(docId);
-        fetchDocuments();
-      } catch {
-        setError('Could not delete the document. Please retry.');
+    setDeleteTarget({ type: 'single', docId, docTitle: title });
+  };
+
+  const executeDelete = async (deleteFromDisk: boolean) => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setError('');
+    try {
+      if (deleteTarget.type === 'all') {
+        await api.clearAllDocuments(deleteFromDisk);
+      } else if (deleteTarget.docId) {
+        await api.deleteDocument(deleteTarget.docId, deleteFromDisk);
       }
+      setDeleteTarget(null);
+      await fetchDocuments();
+    } catch {
+      setError(
+        deleteTarget.type === 'all'
+          ? 'Failed to clear documents.'
+          : 'Could not delete the document. Please retry.'
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -248,12 +263,12 @@ export const DocumentsPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              disabled={clearing}
-              onClick={handleClearAll}
+              disabled={deleting}
+              onClick={handleOpenClearAll}
               className="text-rose-600 border-rose-200 hover:bg-rose-50"
             >
               <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-              {clearing ? 'Clearing...' : 'Clear All'}
+              Clear All
             </Button>
           )}
           <Button
@@ -264,7 +279,7 @@ export const DocumentsPage: React.FC = () => {
             className="shadow-2xs text-slate-700 hover:text-slate-900 border-slate-200"
             title="Scan the documents/ folder in project root for files"
           >
-            <FolderSync className={`w-3.5 h-3.5 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
+            <FolderSync className="w-3.5 h-3.5 mr-1.5" />
             {syncing ? 'Syncing…' : 'Sync Folder'}
           </Button>
           <Button
@@ -563,7 +578,7 @@ export const DocumentsPage: React.FC = () => {
                 Upload First Document
               </Button>
               <Button variant="outline" size="sm" disabled={syncing} onClick={handleSyncFolder}>
-                <FolderSync className={`w-3.5 h-3.5 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
+                <FolderSync className="w-3.5 h-3.5 mr-1.5" />
                 {syncing ? 'Syncing…' : 'Sync Folder'}
               </Button>
             </div>
@@ -700,7 +715,7 @@ export const DocumentsPage: React.FC = () => {
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={(e) => handleDelete(doc.id, doc.title, e)}
+                            onClick={(e) => handleOpenDeleteSingle(doc.id, doc.title, e)}
                             className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             title="Delete document"
                           >
@@ -840,7 +855,7 @@ export const DocumentsPage: React.FC = () => {
                       <Eye className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={(e) => handleDelete(doc.id, doc.title, e)}
+                      onClick={(e) => handleOpenDeleteSingle(doc.id, doc.title, e)}
                       className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                       title="Delete document"
                     >
@@ -924,6 +939,81 @@ export const DocumentsPage: React.FC = () => {
         documentId={modalDocId}
         onClose={() => setModalDocId(null)}
       />
+
+      {/* Website-Style Delete / Clear Options Modal */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        title={deleteTarget?.type === 'all' ? 'Clear Document Workspace' : `Remove "${deleteTarget?.docTitle}"`}
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            {deleteTarget?.type === 'all'
+              ? 'Choose how you would like to clear documents from your workspace.'
+              : `Choose how you would like to delete or unindex "${deleteTarget?.docTitle}".`}
+          </p>
+
+          <div className="space-y-3 pt-1">
+            {/* Option 1: Remove from Library Only */}
+            <div className="rounded-md border border-slate-200 p-4 hover:border-slate-300 transition-colors bg-white">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h5 className="text-sm font-semibold text-slate-900">
+                    Delete just from document library
+                  </h5>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Removes indexed citations and metadata from Clario, but keeps the physical files safe in your <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">documents/</code> directory. You can re-import them anytime by clicking Sync Folder.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={deleting}
+                  onClick={() => executeDelete(false)}
+                  className="shrink-0 text-slate-700 hover:text-slate-900 border-slate-200"
+                >
+                  {deleting ? 'Removing…' : 'Remove from library'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Option 2: Delete from Project Directory */}
+            <div className="rounded-md border border-rose-200/80 bg-rose-50/40 p-4 hover:border-rose-300 transition-colors">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h5 className="text-sm font-semibold text-rose-900">
+                    Delete from project directory
+                  </h5>
+                  <p className="text-xs text-rose-700/80 mt-1 leading-relaxed">
+                    Permanently deletes the physical files from the <code className="bg-rose-100 px-1 py-0.5 rounded text-rose-800">documents/</code> folder on disk and wipes all database indices. This action cannot be undone.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={deleting}
+                  onClick={() => executeDelete(true)}
+                  className="shrink-0 bg-rose-600 hover:bg-rose-700 text-white border-transparent"
+                >
+                  {deleting ? 'Deleting…' : 'Delete from disk'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end pt-3 border-t border-slate-100">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={deleting}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

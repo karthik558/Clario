@@ -80,13 +80,13 @@ export const api = {
     return res.json();
   },
 
-  deleteDocument: async (id: string): Promise<void> => {
-    const res = await fetch(`${API_BASE}/documents/${id}`, { method: 'DELETE' });
+  deleteDocument: async (id: string, deleteFile: boolean = true): Promise<void> => {
+    const res = await fetch(`${API_BASE}/documents/${id}?delete_file=${deleteFile}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete document');
   },
 
-  clearAllDocuments: async (): Promise<{ message: string; cleared_count: number }> => {
-    const res = await fetch(`${API_BASE}/documents/clear-all`, { method: 'DELETE' });
+  clearAllDocuments: async (deleteFiles: boolean = true): Promise<{ message: string; cleared_count: number; deleted_from_disk: boolean }> => {
+    const res = await fetch(`${API_BASE}/documents/clear-all?delete_files=${deleteFiles}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to clear documents');
     return res.json();
   },

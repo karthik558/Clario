@@ -215,7 +215,7 @@ class DocumentService:
         return q.order_by(Document.created_at.desc()).all()
 
     @staticmethod
-    def delete_document(doc_id: str, db: Session) -> bool:
+    def delete_document(doc_id: str, db: Session, delete_file: bool = True) -> bool:
         from app.models.entities import Finding, Comparison, IngestionJob, DocumentChunk, AnswerRecord, Report
         from app.services.search_service import search_service
 
@@ -223,12 +223,13 @@ class DocumentService:
         if not doc:
             return False
         
-        # Remove file from disk
-        try:
-            if os.path.exists(doc.storage_path):
-                os.remove(doc.storage_path)
-        except Exception as e:
-            logger.warning(f"Could not remove file {doc.storage_path}: {e}")
+        # Remove file from disk if requested
+        if delete_file:
+            try:
+                if os.path.exists(doc.storage_path):
+                    os.remove(doc.storage_path)
+            except Exception as e:
+                logger.warning(f"Could not remove file {doc.storage_path}: {e}")
 
         # Delete all findings and comparisons referencing this document
         db.query(Finding).filter(
@@ -264,18 +265,19 @@ class DocumentService:
         return True
 
     @staticmethod
-    def clear_all_documents(db: Session) -> int:
+    def clear_all_documents(db: Session, delete_files: bool = True) -> int:
         from app.models.entities import Finding, Comparison, IngestionJob, DocumentChunk, AnswerRecord, Report
         from app.services.search_service import search_service
 
         docs = db.query(Document).all()
         count = len(docs)
         for doc in docs:
-            try:
-                if os.path.exists(doc.storage_path):
-                    os.remove(doc.storage_path)
-            except Exception as e:
-                logger.warning(f"Could not remove file {doc.storage_path}: {e}")
+            if delete_files:
+                try:
+                    if os.path.exists(doc.storage_path):
+                        os.remove(doc.storage_path)
+                except Exception as e:
+                    logger.warning(f"Could not remove file {doc.storage_path}: {e}")
             db.delete(doc)
         
         db.query(DocumentChunk).delete()

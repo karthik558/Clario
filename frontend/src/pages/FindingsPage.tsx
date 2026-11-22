@@ -25,6 +25,7 @@ import { FindingItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 import { ClauseNegotiatorModal } from '../components/negotiate/ClauseNegotiatorModal';
 
 export const FindingsPage: React.FC = () => {
@@ -51,28 +52,38 @@ export const FindingsPage: React.FC = () => {
     }
   };
 
-  const handleClearAllFindings = async () => {
-    if (window.confirm('Are you sure you want to clear all reviewable findings?')) {
-      setClearing(true);
-      try {
-        await api.clearAllFindings();
-        setFindings([]);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setClearing(false);
-      }
-    }
+  interface FindingDeleteTarget {
+    type: 'single' | 'all';
+    findingId?: string;
+    title?: string;
+  }
+  const [deleteTarget, setDeleteTarget] = useState<FindingDeleteTarget | null>(null);
+  const [deletingFinding, setDeletingFinding] = useState(false);
+
+  const handleClearAllFindings = () => {
+    setDeleteTarget({ type: 'all' });
   };
 
-  const handleDeleteSingle = async (findingId: string, title: string) => {
-    if (window.confirm(`Delete finding "${title}"?`)) {
-      try {
-        await api.deleteFinding(findingId);
-        setFindings((prev) => prev.filter((f) => f.id !== findingId));
-      } catch (err) {
-        console.error(err);
+  const handleDeleteSingle = (findingId: string, title: string) => {
+    setDeleteTarget({ type: 'single', findingId, title });
+  };
+
+  const executeFindingDelete = async () => {
+    if (!deleteTarget) return;
+    setDeletingFinding(true);
+    try {
+      if (deleteTarget.type === 'all') {
+        await api.clearAllFindings();
+        setFindings([]);
+      } else if (deleteTarget.findingId) {
+        await api.deleteFinding(deleteTarget.findingId);
+        setFindings((prev) => prev.filter((f) => f.id !== deleteTarget.findingId));
       }
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeletingFinding(false);
     }
   };
 
@@ -466,6 +477,41 @@ export const FindingsPage: React.FC = () => {
           onSaved={fetchFindings}
         />
       )}
+
+      {/* Website-Style Delete Finding Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => !deletingFinding && setDeleteTarget(null)}
+        title={deleteTarget?.type === 'all' ? 'Clear All Findings' : 'Delete Finding'}
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            {deleteTarget?.type === 'all'
+              ? 'Are you sure you want to clear all reviewable findings?'
+              : `Are you sure you want to delete finding "${deleteTarget?.title}"? This action cannot be undone.`}
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={deletingFinding}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={deletingFinding}
+              onClick={executeFindingDelete}
+              className="bg-rose-600 hover:bg-rose-700 text-white border-transparent"
+            >
+              {deletingFinding ? 'Deleting…' : deleteTarget?.type === 'all' ? 'Clear all findings' : 'Delete finding'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
