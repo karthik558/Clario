@@ -91,6 +91,12 @@ export const api = {
     return res.json();
   },
 
+  syncDocumentsFolder: async (): Promise<{ status: string; message: string; added: number; removed: number; total_documents: number }> => {
+    const res = await fetch(`${API_BASE}/documents/sync`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to sync documents directory');
+    return res.json();
+  },
+
   getDocumentFileUrl: (id: string) => `${API_BASE}/documents/${id}/file`,
 
   // Search & Lab

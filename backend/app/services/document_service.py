@@ -142,7 +142,14 @@ class DocumentService:
             )
 
         doc_id = str(uuid.uuid4())
-        safe_filename = f"{doc_id}_{filename}"
+        clean_filename = Path(filename).name
+        dest_candidate = settings.DOCUMENTS_DIR / clean_filename
+        if dest_candidate.exists():
+            stem = dest_candidate.stem
+            suffix = dest_candidate.suffix
+            safe_filename = f"{stem}_{doc_id[:8]}{suffix}"
+        else:
+            safe_filename = clean_filename
         storage_path = str(settings.DOCUMENTS_DIR / safe_filename)
 
         with open(storage_path, "wb") as buffer:
@@ -282,3 +289,81 @@ class DocumentService:
         # Reload in-memory search index so it is completely empty
         search_service.reload_index(db)
         return count
+
+    @classmethod
+    def sync_documents_folder(cls, db: Session) -> dict:
+        """
+        Scans the top-level documents/ directory.
+        - Automatically ingests any new files that were placed in documents/ but not yet in database.
+        - Automatically cleans up any database records whose underlying file was removed from documents/.
+        """
+        from app.services.search_service import search_service
+        from app.models.entities import Finding, Comparison, IngestionJob, DocumentChunk
+
+        valid_exts = {".pdf", ".docx", ".doc", ".txt", ".md", ".xlsx", ".xls", ".xlsm", ".csv", ".json"}
+        added = 0
+        removed = 0
+
+        # 1. Clean up database records if the physical file was deleted from documents/
+        all_docs = db.query(Document).all()
+        for doc in all_docs:
+            if not os.path.exists(doc.storage_path):
+                logger.info(f"File missing on disk for '{doc.title}', purging from database...")
+                db.query(Finding).filter((Finding.doc_a_id == doc.id) | (Finding.doc_b_id == doc.id)).delete(synchronize_session=False)
+                db.query(Comparison).filter((Comparison.doc_a_id == doc.id) | (Comparison.doc_b_id == doc.id)).delete(synchronize_session=False)
+                db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).delete(synchronize_session=False)
+                db.query(IngestionJob).filter(IngestionJob.document_id == doc.id).delete(synchronize_session=False)
+                db.delete(doc)
+                removed += 1
+
+        # 2. Ingest any files on disk not yet in database
+        existing_paths = {os.path.abspath(d.storage_path) for d in db.query(Document).all()}
+        
+        if settings.DOCUMENTS_DIR.exists():
+            for p in sorted(settings.DOCUMENTS_DIR.iterdir()):
+                if p.is_file() and p.suffix.lower() in valid_exts and not p.name.startswith("."):
+                    abs_path = os.path.abspath(str(p))
+                    if abs_path not in existing_paths:
+                        try:
+                            logger.info(f"Syncing new document from documents/ folder: {p.name}")
+                            doc_id = str(uuid.uuid4())
+                            ext = p.suffix.lstrip(".").lower()
+                            file_size = p.stat().st_size
+                            doc_title = p.stem.replace("_", " ")
+
+                            doc = Document(
+                                id=doc_id,
+                                title=doc_title,
+                                filename=p.name,
+                                file_type=ext,
+                                file_size=file_size,
+                                storage_path=str(p),
+                                status="PROCESSING",
+                                tags_json="[]",
+                                collection="General"
+                            )
+                            db.add(doc)
+                            job = IngestionJob(
+                                id=str(uuid.uuid4()),
+                                document_id=doc_id,
+                                status="PENDING",
+                                progress_percent=10,
+                                current_stage="Queued for ingestion",
+                                message="File discovered from documents/ directory."
+                            )
+                            db.add(job)
+                            db.commit()
+                            db.refresh(doc)
+
+                            cls.process_file_content(doc_id, str(p), ext, db)
+                            existing_paths.add(abs_path)
+                            added += 1
+                        except Exception as e:
+                            logger.warning(f"Error ingesting {p.name} during folder sync: {e}")
+
+        db.commit()
+        if added > 0 or removed > 0:
+            search_service.reload_index(db)
+
+        total_docs = db.query(Document).count()
+        return {"added": added, "removed": removed, "total_documents": total_docs}

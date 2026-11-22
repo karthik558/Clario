@@ -90,6 +90,15 @@ def get_document_file(doc_id: str, db: Session = Depends(get_db)):
         media_type=media_type
     )
 
+@router.post("/documents/sync")
+def sync_documents_folder(db: Session = Depends(get_db)):
+    result = DocumentService.sync_documents_folder(db)
+    return {
+        "status": "success",
+        "message": f"Folder synced: {result['added']} added, {result['removed']} removed.",
+        **result
+    }
+
 @router.delete("/documents/clear-all")
 def clear_all_documents(db: Session = Depends(get_db)):
     count = DocumentService.clear_all_documents(db)

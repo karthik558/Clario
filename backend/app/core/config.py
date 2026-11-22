@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     
     # Storage
     DATA_DIR: Path = BASE_DIR / "data"
-    DOCUMENTS_DIR: Path = BASE_DIR / "data" / "documents"
+    DOCUMENTS_DIR: Path = BASE_DIR.parent / "documents"
     REPORTS_DIR: Path = BASE_DIR / "data" / "reports"
     DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/clario.db"
     

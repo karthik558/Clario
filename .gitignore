@@ -28,7 +28,10 @@ backend/storage/
 *.db-shm
 *.sqlite
 *.sqlite3
-!sample_documents/*
+
+# User documents directory (files stay strictly local, NEVER synced to GitHub)
+documents/*
+!documents/.gitkeep
 
 # Environment variables
 .env

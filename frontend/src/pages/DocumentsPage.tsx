@@ -23,7 +23,8 @@ import {
   FileSpreadsheet,
   FileCode,
   Rows3,
-  SlidersHorizontal
+  SlidersHorizontal,
+  FolderSync
 } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 import { workspaceDate } from '../utils/date';
@@ -54,11 +55,25 @@ export const DocumentsPage: React.FC = () => {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [modalDocId, setModalDocId] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const toggleDensity = () => {
     const next = density === 'comfortable' ? 'compact' : 'comfortable';
     setDensity(next);
     localStorage.setItem('clario_table_density', next);
+  };
+
+  const handleSyncFolder = async () => {
+    setSyncing(true);
+    setError('');
+    try {
+      await api.syncDocumentsFolder();
+      await fetchDocuments();
+    } catch {
+      setError('Could not sync documents directory.');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const fetchDocuments = async () => {
@@ -241,6 +256,17 @@ export const DocumentsPage: React.FC = () => {
               {clearing ? 'Clearing...' : 'Clear All'}
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={syncing}
+            onClick={handleSyncFolder}
+            className="shadow-2xs text-slate-700 hover:text-slate-900 border-slate-200"
+            title="Scan the documents/ folder in project root for files"
+          >
+            <FolderSync className={`w-3.5 h-3.5 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing…' : 'Sync Folder'}
+          </Button>
           <Button
             variant="primary"
             size="sm"
@@ -524,17 +550,23 @@ export const DocumentsPage: React.FC = () => {
           <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5 leading-relaxed">
             {isFiltering
               ? 'No documents matched your active search and filter criteria. Try resetting your filters.'
-              : 'Upload your first contract or policy document to begin semantic search and evidence-backed Q&A.'}
+              : 'Upload your first contract or policy document, or place files into the documents/ folder and click Sync Folder.'}
           </p>
           {isFiltering ? (
             <Button variant="outline" size="sm" onClick={clearFilters}>
               Reset Filters
             </Button>
           ) : (
-            <Button variant="primary" size="sm" onClick={() => setShowUploadZone(true)}>
-              <Plus className="w-4 h-4 mr-1.5" />
-              Upload First Document
-            </Button>
+            <div className="flex items-center justify-center gap-2">
+              <Button variant="primary" size="sm" onClick={() => setShowUploadZone(true)}>
+                <Plus className="w-4 h-4 mr-1.5" />
+                Upload First Document
+              </Button>
+              <Button variant="outline" size="sm" disabled={syncing} onClick={handleSyncFolder}>
+                <FolderSync className={`w-3.5 h-3.5 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Syncing…' : 'Sync Folder'}
+              </Button>
+            </div>
           )}
         </div>
       ) : viewMode === 'table' ? (
