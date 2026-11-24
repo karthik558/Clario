@@ -74,14 +74,8 @@ export const BackgroundTaskDrawer: React.FC = () => {
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-white">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <span>Background Tasks</span>
-                {activeTasks.length > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-800 border border-slate-200">
-                    <Loader2 className="w-2.5 h-2.5 animate-spin text-slate-600" />
-                    {activeTasks.length} in progress
-                  </span>
-                )}
+              <h3 className="text-sm font-semibold text-slate-900">
+                Background Tasks
               </h3>
               <p className="text-[11px] text-slate-500">
                 Completed tasks clear automatically after 5 minutes
