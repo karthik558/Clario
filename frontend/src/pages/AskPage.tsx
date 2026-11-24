@@ -553,87 +553,12 @@ export const AskPage: React.FC = () => {
       <PageHeader
         title="Ask Clario"
         description="Ask questions across your documents and follow each answer back to its sources."
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Document Scope Modal Button (Top) */}
-          <button
-            type="button"
-            onClick={() => setShowScopeModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-2xs cursor-pointer"
-            title="Filter specific documents or search entire workspace"
-          >
-            <Layers className="w-3.5 h-3.5 text-clario-navy" />
-            <span>
-              {selectedDocIds.length > 0 ? `${selectedDocIds.length} doc${selectedDocIds.length > 1 ? 's' : ''} selected` : 'Entire workspace'}
-            </span>
-          </button>
+      />
 
-          {/* Answer Settings Trigger Button */}
-          <button
-            type="button"
-            onClick={() => setShowSettingsModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-2xs transition-colors cursor-pointer"
-            title="Configure AI model, thinking mode, and streaming"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-clario-navy" />
-            <span>Answer settings</span>
-          </button>
-
-          {/* Reset Chat Button */}
-          {history.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearHistory}
-              disabled={clearing || loading}
-              className="text-xs text-slate-700 hover:text-rose-600 hover:border-rose-300 flex items-center gap-1.5 cursor-pointer"
-            >
-              <RotateCcw className={`w-3.5 h-3.5 ${clearing ? 'animate-spin' : ''}`} />
-              <span>{clearing ? 'Clearing…' : 'Reset Chat'}</span>
-            </Button>
-          )}
-        </div>
-      </PageHeader>
-
-      {/* Document Scope Selector Card */}
-      <Card className="p-3.5 space-y-2 border-clario-border bg-white rounded-xl shadow-subtle">
-        <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <Layers className="w-3.5 h-3.5 text-clario-navy" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-clario-navy">
-              Document Scope
-            </span>
-            <span className="text-xs text-slate-500 font-medium">
-              • {selectedDocIds.length === 1 ? '1 document selected' : `${selectedDocIds.length} documents selected`}
-            </span>
-          </div>
-          {selectedDocIds.length >= 2 && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={loading || loadingHistory}
-              onClick={() => {
-                const targetUrl =
-                  selectedDocIds.length === 2
-                    ? `/compare?docA=${selectedDocIds[0]}&docB=${selectedDocIds[1]}`
-                    : `/compare?mode=matrix&docs=${selectedDocIds.join(',')}`;
-                if (typeof window !== 'undefined') {
-                  window.location.assign(targetUrl);
-                }
-              }}
-              className="flex items-center gap-1.5 text-xs h-7 px-2.5 font-medium"
-            >
-              <GitCompare className="w-3.5 h-3.5 text-slate-700" />
-              <span>
-                {selectedDocIds.length === 2
-                  ? 'Compare Side-by-Side (2)'
-                  : `Compare Matrix (${selectedDocIds.length})`}
-              </span>
-            </Button>
-          )}
-        </div>
+      {/* Accessible Document Scope (Visual selector is available in the bottom workspace modal) */}
+      <div className="sr-only" aria-hidden="false">
         <AskSources documents={documents} selection={selection} error={sourceError} disabled={loading} />
-      </Card>
+      </div>
 
       {error && (
         <div role="alert" className="p-3.5 border border-rose-200 bg-rose-50 text-rose-800 rounded-md text-sm">
@@ -927,27 +852,6 @@ export const AskPage: React.FC = () => {
 
       {/* Sticky Bottom Input Bar */}
       <div className="sticky bottom-3 z-10 space-y-2">
-        {/* Dynamic Legal Starters Carousel */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs px-1 scrollbar-none">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1 flex items-center gap-1">
-            <SearchCheck className="w-3 h-3 text-slate-600" />
-            <span>Starters:</span>
-          </span>
-          {PROMPT_CAROUSEL.map((item, cIdx) => (
-            <button
-              key={cIdx}
-              type="button"
-              onClick={() => {
-                setQuery(item.query);
-                questionInput.current?.focus();
-              }}
-              className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 shrink-0 border border-slate-200/90 transition-colors shadow-2xs cursor-pointer"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
         {/* Input Card Container */}
         <Card className="p-2.5 shadow-elevated border-clario-border bg-white rounded-2xl space-y-2">
           <form
@@ -995,7 +899,7 @@ export const AskPage: React.FC = () => {
                   title="Tune inference and models"
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600" />
-                  <span>{localModel || 'Settings'}</span>
+                  <span>Answer settings</span>
                 </button>
 
                 {/* Reset Chat Button at Bottom */}
