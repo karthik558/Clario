@@ -99,8 +99,8 @@ class AskService:
             else:
                 lines = [
                     f"I am actively referencing the following **{len(docs)}** document(s) in your workspace:\n",
-                    "| # | Document Title | Format | Volume | Searchable Chunks | Word Count | Status |",
-                    "|:---:|:---|:---:|:---:|:---:|:---:|:---:|"
+                    "| Document Title | Format | Volume | Searchable Chunks | Word Count | Status |",
+                    "|:---|:---:|:---:|:---:|:---:|:---:|"
                 ]
                 citations = []
                 for idx, doc in enumerate(docs, start=1):
@@ -109,7 +109,7 @@ class AskService:
                     pages_info = f"{pages_count} pages" if pages_count > 1 else "1 page"
                     words = f"~{doc.word_count:,}" if doc.word_count else "—"
                     chunks = f"{doc.chunk_count or 0} chunks"
-                    lines.append(f"| {idx} | **{doc.title}** | `{ext}` | {pages_info} | {chunks} | {words} | `Ready` |")
+                    lines.append(f"| **{doc.title}** | `{ext}` | {pages_info} | {chunks} | {words} | `Ready` |")
 
                     # First chunk as reference citation
                     first_chunk = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).order_by(DocumentChunk.chunk_index).first()
@@ -164,8 +164,8 @@ class AskService:
             if docs:
                 lines = [
                     f"I am actively checking all **{len(docs)} documents** in your active workspace scope:\n",
-                    "| # | Document Title | Format | Volume | Searchable Passages | Scope Status |",
-                    "|:---:|:---|:---:|:---:|:---:|:---:|"
+                    "| Document Title | Format | Volume | Searchable Passages | Scope Status |",
+                    "|:---|:---:|:---:|:---:|:---:|"
                 ]
                 citations = []
                 for idx, doc in enumerate(docs, start=1):
@@ -175,7 +175,7 @@ class AskService:
                     pages_count = doc.page_count or 1
                     pages_str = f"{pages_count} pages" if pages_count > 1 else "1 page"
                     chunks_str = f"{doc.chunk_count or 0} passages"
-                    lines.append(f"| {idx} | **{doc.title}** | `{ext}` | {pages_str} | {chunks_str} | Active Scope |")
+                    lines.append(f"| **{doc.title}** | `{ext}` | {pages_str} | {chunks_str} | Active Scope |")
                     if first_chunks:
                         citations.append(
                             CitationItem(
@@ -552,6 +552,7 @@ class AskService:
                 f"4. Citation Mapping: Bound factual claims to verified bracketed citations [1] through [{min(len(citations), 5)}]."
             )
 
+        answer = AskService._clean_table_markdown(answer)
         synth_latency_ms = round((time.perf_counter() - t_retrieved) * 1000, 2)
         follow_ups = AskService._generate_follow_up_questions(request.query, answer, citations)
 
@@ -567,6 +568,56 @@ class AskService:
             thinking_process=thinking_process if show_thinking else None,
             follow_up_questions=follow_ups
         )
+
+    @staticmethod
+    def _clean_table_markdown(md_text: str) -> str:
+        if not md_text or "|" not in md_text:
+            return md_text
+        lines = md_text.split("\n")
+        new_lines = []
+        table_lines = []
+
+        def process_table(t_lines):
+            if len(t_lines) < 2:
+                return t_lines
+            parsed_rows = []
+            for l in t_lines:
+                trimmed = l.strip()
+                if trimmed.startswith("|") and trimmed.endswith("|"):
+                    cells = [c.strip() for c in trimmed[1:-1].split("|")]
+                    parsed_rows.append(cells)
+                else:
+                    return t_lines
+
+            header = parsed_rows[0]
+            # Check if first column is an index/numbering column (#, No, S.No, Index)
+            first_col_is_num = False
+            first_header = header[0].lower().strip()
+            if first_header in ["#", "no", "no.", "s.no", "s.no.", "index", "id", ""]:
+                first_col_is_num = True
+            elif len(parsed_rows) > 2 and all(len(r) > 1 and (re.match(r"^\d+$", r[0].strip()) or r[0].strip() == "") for r in parsed_rows[2:]):
+                first_col_is_num = True
+
+            # Strip bracketed citation numbers from header row cells (e.g. 'Anthropic Claude [1, 3, 4]' -> 'Anthropic Claude')
+            parsed_rows[0] = [re.sub(r"\s*\[[\d,\s]+\]", "", c).strip() for c in parsed_rows[0]]
+
+            if first_col_is_num:
+                parsed_rows = [r[1:] for r in parsed_rows]
+
+            return ["| " + " | ".join(r) + " |" for r in parsed_rows]
+
+        for line in lines:
+            trimmed = line.strip()
+            if trimmed.startswith("|") and trimmed.endswith("|"):
+                table_lines.append(line)
+            else:
+                if table_lines:
+                    new_lines.extend(process_table(table_lines))
+                    table_lines = []
+                new_lines.append(line)
+        if table_lines:
+            new_lines.extend(process_table(table_lines))
+        return "\n".join(new_lines)
 
     @staticmethod
     def _is_bare_tabulate_query(query: str) -> bool:
@@ -752,7 +803,11 @@ class AskService:
         ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
         is_tab = AskService._is_tabulate_query(query)
         if is_tab:
-            len_instruction = "Synthesize all data, provisions, and key terms into a clean Markdown table comparing documents and metrics with bracketed citations like [1], [2]."
+            len_instruction = (
+                "Synthesize all data, provisions, and key terms directly into a clean Markdown table comparing documents, provisions, and metrics. "
+                "Do NOT include row numbering columns (such as '#', 'No.', '1', '2', '3'). "
+                "Do NOT put bracketed citation numbers in the table header row. Keep column headers clean (e.g. Document, Key Terms, Governance Provisions, Metrics) and place citation references [1], [2] inside the table cells."
+            )
             num_tokens = 750
         elif ans_len == "concise":
             len_instruction = "Limit to 1-2 punchy sentences or short bullet points without conversational preamble."
@@ -933,7 +988,11 @@ class AskService:
         is_tab = AskService._is_tabulate_query(request.query)
         if is_tab:
             stream_tokens = 750
-            len_hint = " Format the response primarily as a structured, clean Markdown table comparing documents, provisions, and metrics with bracketed citations [1], [2]."
+            len_hint = (
+                " Format the response primarily as a structured, clean Markdown table comparing documents, provisions, and metrics. "
+                "Do NOT include row index numbers ('#', '1', '2', '3') or numbering columns. "
+                "Do NOT put citation numbers in the table header row; place bracketed citations [1], [2] inside the table cells."
+            )
         elif ans_len == "concise":
             stream_tokens = 250
             len_hint = " Keep it ultra-concise in 1-2 short bullet points."
@@ -987,6 +1046,7 @@ class AskService:
             full_text = AskService._extractive_synthesis(request.query, citations, False, None)
             yield f"event: token\ndata: {json.dumps({'text': full_text})}\n\n"
         synth_ms = round((time.perf_counter() - t0) * 1000, 2)
+        full_text = AskService._clean_table_markdown(full_text)
         yield finish(AskResponse(query=request.query, answer=full_text, mode=f"{provider}_stream",
                     citations=citations, retrieval_latency_ms=ret_latency_ms,
                     synthesis_latency_ms=max(0, synth_ms - ret_latency_ms), thinking_process=thinking_msg,
@@ -1019,7 +1079,6 @@ class AskService:
 
         if AskService._is_tabulate_query(query):
             lines = [
-                "#### Tabulated Comparative Synthesis\n",
                 "| Document / Agreement | Key Contractual Terms & Provisions | Page Coordinates | Citations |",
                 "|:---|:---|:---:|:---:|"
             ]
@@ -1054,7 +1113,7 @@ class AskService:
                 )
             if has_conflict and conflict_notes:
                 lines.append(f"\n\n**Discrepancy Note:** {conflict_notes}")
-            return "\n".join(lines).strip()
+            return AskService._clean_table_markdown("\n".join(lines).strip())
 
         lines = []
         is_comp = AskService._is_comparative_query(query)
@@ -1104,7 +1163,7 @@ class AskService:
         if has_conflict and conflict_notes:
             lines.append(f"\n\n**Discrepancy Note:** {conflict_notes}")
 
-        return "\n".join(lines).strip()
+        return AskService._clean_table_markdown("\n".join(lines).strip())
 
     @staticmethod
     def _generate_gemini_answer(query: str, citations: List[CitationItem]) -> str:

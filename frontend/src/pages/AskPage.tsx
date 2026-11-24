@@ -41,6 +41,69 @@ import { Button } from '../components/ui/Button';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 import { GuidedAuditWizardModal } from '../components/audit/GuidedAuditWizardModal';
 
+export function extractMarkdownTable(text: string): string | null {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const tableLines: string[] = [];
+  let inTable = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.includes('|')) {
+      inTable = true;
+      tableLines.push(trimmed);
+    } else if (inTable) {
+      break;
+    }
+  }
+  return tableLines.length >= 2 ? tableLines.join('\n') : null;
+}
+
+export function tableToTSV(markdownTable: string): string {
+  const lines = markdownTable.split('\n');
+  const tsvRows: string[] = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) continue;
+    const cells = trimmed.slice(1, -1).split('|').map((c) => {
+      return c.trim()
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/`(.*?)`/g, '$1')
+        .replace(/\s+/g, ' ');
+    });
+    if (cells.every((c) => /^:?-+:?$/.test(c.replace(/\s/g, '')))) {
+      continue;
+    }
+    tsvRows.push(cells.join('\t'));
+  }
+  return tsvRows.join('\n');
+}
+
+export function tableToHTML(markdownTable: string): string {
+  const lines = markdownTable.split('\n');
+  let isHeader = true;
+  let html = '<table border="1">';
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) continue;
+    const cells = trimmed.slice(1, -1).split('|').map((c) => {
+      return c.trim()
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/`(.*?)`/g, '$1');
+    });
+    if (cells.every((c) => /^:?-+:?$/.test(c.replace(/\s/g, '')))) {
+      isHeader = false;
+      continue;
+    }
+    const tag = isHeader ? 'th' : 'td';
+    html += '<tr>' + cells.map((c) => `<${tag}>${c}</${tag}>`).join('') + '</tr>';
+    isHeader = false;
+  }
+  html += '</table>';
+  return html;
+}
+
 const PROMPT_CAROUSEL = [
   { label: 'Liability Super-Caps', query: 'What are the aggregate liability super-caps and indemnity carve-outs across the agreements?' },
   { label: 'AI Model Training Rights', query: 'Do any of the agreements permit customer confidential data or inputs to be used for AI foundation model training?' },
@@ -229,7 +292,7 @@ export const AskPage: React.FC = () => {
   const { documents, error: sourceError } = useAskDocuments(true, selection);
   const selectedDocIds = selection.ids;
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
-  const [copiedItem, setCopiedItem] = useState<{ id: number; type: 'answer' | 'query' } | null>(null);
+  const [copiedItem, setCopiedItem] = useState<{ id: number; type: 'answer' | 'query' | 'table' } | null>(null);
   const [showAuditWizard, setShowAuditWizard] = useState(false);
 
   // Local AI Gateway & Engine States
@@ -616,6 +679,38 @@ export const AskPage: React.FC = () => {
     setTimeout(() => setCopiedItem(null), 2000);
   };
 
+  const handleCopyTable = async (rawAnswer: string, index: number) => {
+    const tableMd = extractMarkdownTable(rawAnswer);
+    if (!tableMd) {
+      return handleCopy(rawAnswer, index, 'answer');
+    }
+    const tsv = tableToTSV(tableMd);
+    const html = tableToHTML(tableMd);
+    try {
+      if (typeof window !== 'undefined' && navigator.clipboard && window.ClipboardItem) {
+        const textBlob = new Blob([tsv], { type: 'text/plain' });
+        const htmlBlob = new Blob([html], { type: 'text/html' });
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': textBlob,
+            'text/html': htmlBlob,
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(tsv);
+      }
+    } catch {
+      try {
+        await navigator.clipboard.writeText(tsv);
+      } catch {
+        setError('Could not copy table.');
+        return;
+      }
+    }
+    setCopiedItem({ id: index, type: 'table' });
+    setTimeout(() => setCopiedItem(null), 2000);
+  };
+
   const handleClearHistory = async () => {
     if (loading || clearing) return;
     setClearing(true);
@@ -831,40 +926,84 @@ export const AskPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Under Clario response: copy answer & tabulate buttons */}
+                {/* Under Clario response: copy answer / table & tabulate buttons */}
                 <div className="flex items-center gap-2 pt-0.5 pl-0.5">
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(item.response.answer, idx, 'answer')}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
-                    title="Copy Clario's answer"
-                  >
-                    {copiedItem?.id === idx && copiedItem.type === 'answer' ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-emerald-600 font-medium">Copied answer</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Copy answer</span>
-                      </>
-                    )}
-                  </button>
+                  {extractMarkdownTable(item.response.answer) ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyTable(item.response.answer, idx)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-700 bg-white hover:text-slate-900 hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+                        title="Copy table formatted for Excel / Spreadsheets"
+                      >
+                        {copiedItem?.id === idx && copiedItem.type === 'table' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-emerald-600 font-medium">Copied table for Excel</span>
+                          </>
+                        ) : (
+                          <>
+                            <Table className="w-3.5 h-3.5 text-slate-500" />
+                            <span className="font-medium">Copy table (Excel)</span>
+                          </>
+                        )}
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const cleanQ = item.query.replace(/^Tabulate (?:the findings|this) for ["']?([^"']+)["']? into.*$/i, '$1');
-                      handleAsk(`Tabulate the findings for "${cleanQ}" into a comparative table with all metrics, documents, and key terms.`);
-                    }}
-                    disabled={loading || streaming}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Tabulate these findings into a structured table"
-                  >
-                    <Table className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Tabulate data</span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(item.response.answer, idx, 'answer')}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+                        title="Copy full response text"
+                      >
+                        {copiedItem?.id === idx && copiedItem.type === 'answer' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-emerald-600 font-medium">Copied full text</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Copy full text</span>
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(item.response.answer, idx, 'answer')}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+                        title="Copy Clario's answer"
+                      >
+                        {copiedItem?.id === idx && copiedItem.type === 'answer' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-emerald-600 font-medium">Copied answer</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Copy answer</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cleanQ = item.query.replace(/^Tabulate (?:the findings|this) for ["']?([^"']+)["']? into.*$/i, '$1');
+                          handleAsk(`Tabulate the findings for "${cleanQ}" into a comparative table with all metrics, documents, and key terms.`);
+                        }}
+                        disabled={loading || streaming}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Tabulate these findings into a structured table"
+                      >
+                        <Table className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Tabulate data</span>
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Follow-up Questions in Straight Horizontal Strip */}
