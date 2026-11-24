@@ -92,49 +92,63 @@ const sampleDistribution = [
   { label: 'Compliance', count: 6 },
 ];
 
-const FAQ_CARDS = [
+const FAQ_ITEMS = [
   {
     category: 'Architecture & Purpose',
     question: 'Why Clario, and why are we using it?',
-    answer: 'Standard AI models hallucinate legal terms and upload confidential agreements to third-party public clouds. Clario was engineered for legal teams and auditors who need zero-leakage, deterministic intelligence with exact bracketed citations [1], [2], verifiable page proofs, and automated contradiction detection across multi-party contracts.',
-    highlight: 'Verifiable legal intelligence · Zero cloud leakage'
+    answer: 'Built for legal teams and auditors who need deterministic answers with exact [1], [2] citations and zero public cloud leakage.',
+    highlight: 'Deterministic intelligence · Zero cloud leakage'
   },
   {
     category: 'Model Training',
     question: 'Did we train a model on our documents?',
-    answer: 'No. Clario never trains, fine-tunes, or adapts model weights on your confidential files. All intelligence operates via local Retrieval-Augmented Generation (RAG): documents are indexed into local vector and BM25 tables, and passages are only temporarily cited in context during query execution.',
+    answer: 'No. Clario never trains, fine-tunes, or adapts model weights on your confidential files. Queries use local RAG with temporary context only.',
     highlight: 'Zero training retention · 100% data sovereignty'
   },
   {
     category: 'Document Preparation',
     question: 'How to prepare documents for research?',
-    answer: 'Upload PDF, Word (DOCX), Excel (XLSX, XLS), Markdown, or plain text files. Clario automatically handles structure parsing, tabular preservation, OCR on scans, and semantic passage segmentation (200–500 tokens). To optimize research, ensure scans are legible and organize files into Collections.',
-    highlight: 'Auto-OCR · Multi-format parsing · Semantic chunking'
+    answer: 'Upload PDF, DOCX, XLSX, Markdown, or text files. Clario handles OCR, table preservation, and semantic chunking automatically.',
+    highlight: 'Auto-OCR · Multi-format parsing'
   },
   {
     category: 'Verification & Reliability',
     question: 'How can we verify AI responses?',
-    answer: 'Every factual claim includes clickable bracketed citations [1], [2] opening the exact source page and highlighted paragraph in the Document Viewer. Automated Contradiction Detection flags diverging terms across contracts, and Reasoning Process shows the full evaluation chain.',
-    highlight: 'Verbatim citations · Contradiction alerts · Audit logs'
+    answer: 'Every claim includes clickable [1], [2] citations that open the exact source page and highlighted passage in the Document Viewer.',
+    highlight: 'Verbatim citations · Contradiction alerts'
   },
   {
     category: 'Deployment & Security',
     question: 'Is this offline or online?',
-    answer: '100% offline capable by default. Running with local Ollama open-weights models and local SQLite/vector indices, all document parsing, embeddings, search, and answer generation execute entirely on your workstation without internet connectivity or external telemetry.',
-    highlight: 'Air-gapped operation · Zero external telemetry'
+    answer: '100% offline capable by default. Parsing, embeddings, and local Ollama inference run on your workstation with zero external telemetry.',
+    highlight: 'Air-gapped operation · Zero telemetry'
   },
   {
     category: 'Cloud AI Integration',
     question: 'Can we use cloud AI?',
-    answer: 'Yes, optionally. Clario includes a pluggable Multi-Engine Gateway in Settings. Administrators can connect enterprise OpenAI, Azure, Anthropic Claude, or Google Gemini keys if permitted, with zero-data-retention policies strictly enforced.',
-    highlight: 'Pluggable multi-provider gateway · Zero-retention flags'
+    answer: 'Yes, optionally. Connect enterprise OpenAI, Azure, Claude, or Gemini keys in Settings with zero-data-retention policies enforced.',
+    highlight: 'Pluggable gateway · Zero-retention flags'
   },
   {
     category: 'Data Lifecycle & Universalization',
     question: 'What happens to document data and the universalization method?',
-    answer: 'All files, embeddings, and chat histories persist strictly inside your local workspace. The Universal Document Normalizer standardizes heterogeneous formats (scanned PDFs, Excel spreadsheets, Word redlines) into uniform Markdown streams with page coordinates. You retain full custody and can purge all data with one click.',
-    highlight: 'Local file custody · Universal normalizer · One-click purge'
+    answer: 'Files and embeddings stay strictly local. The Universal Normalizer converts PDFs, spreadsheets, and redlines into uniform coordinate-mapped Markdown.',
+    highlight: 'Local custody · One-click purge'
   }
+];
+
+const ARCHITECTURE_METRICS = [
+  { label: 'Local data custody', value: 100, display: '100%' },
+  { label: 'Citation grounding', value: 100, display: '100%' },
+  { label: 'Model weight training', value: 0, display: '0%' },
+  { label: 'External telemetry (offline)', value: 0, display: '0%' },
+];
+
+const PIPELINE_STAGES = [
+  { stage: 'Ingest', time: '0.4s', percent: 28 },
+  { stage: 'Universalize', time: '0.8s', percent: 52 },
+  { stage: 'Local RAG', time: '0.3s', percent: 22 },
+  { stage: 'Cited Proof', time: '1.7s', percent: 85 },
 ];
 
 export function HomePage() {
@@ -448,37 +462,96 @@ export function HomePage() {
                 Project details & architecture questionnaire
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Key details on data sovereignty, model training policies, verification proofs, and offline deployment.
+                Key details on data sovereignty, model policies, verification, and offline execution.
               </p>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {FAQ_CARDS.map((card, idx) => {
-                const isWide = idx === FAQ_CARDS.length - 1;
-                return (
+            <div className="grid gap-8 lg:grid-cols-12 items-start">
+              {/* Left Column: Slight Architecture & Sovereignty Graph */}
+              <div className="lg:col-span-5 lg:sticky lg:top-8 rounded-clario border border-clario-border bg-slate-50 p-6 sm:p-7">
+                <div className="flex items-center justify-between mb-6 pb-3 border-b border-slate-200">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                    Architecture footprint
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-500">
+                    Local-first
+                  </span>
+                </div>
+
+                {/* Horizontal Bar Graph */}
+                <div className="space-y-4">
+                  {ARCHITECTURE_METRICS.map((metric) => (
+                    <div key={metric.label}>
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="font-medium text-slate-700">{metric.label}</span>
+                        <span className="font-mono font-semibold text-slate-900">{metric.display}</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-clario-navy transition-all duration-500"
+                          style={{ width: `${metric.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mini Pipeline Latency Graph */}
+                <div className="mt-7 pt-5 border-t border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                      Local pipeline profile
+                    </span>
+                    <span className="text-[11px] text-slate-500">3.2s avg</span>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2.5 items-end h-24 pt-2">
+                    {PIPELINE_STAGES.map((item) => (
+                      <div key={item.stage} className="flex flex-col items-center h-full justify-end">
+                        <span className="text-[10px] font-mono text-slate-500 mb-1">
+                          {item.time}
+                        </span>
+                        <div
+                          className="w-full max-w-[34px] rounded-t bg-clario-navy/90"
+                          style={{ height: `${item.percent}%` }}
+                        />
+                        <span className="mt-2 text-[10px] font-medium text-slate-600 text-center leading-tight">
+                          {item.stage}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="mt-5 pt-4 border-t border-slate-200 text-xs text-slate-500 leading-relaxed">
+                  All parsing, indexing, and citation verification execute on-device with zero external data retention.
+                </p>
+              </div>
+
+              {/* Right Column: Concise Questionnaire List */}
+              <div className="lg:col-span-7 space-y-3.5">
+                {FAQ_ITEMS.map((card, idx) => (
                   <div
                     key={idx}
-                    className={`rounded-clario border border-clario-border bg-white p-6 transition-all hover:border-slate-400 hover:shadow-subtle flex flex-col justify-between ${
-                      isWide ? 'md:col-span-2 lg:col-span-3' : ''
-                    }`}
+                    className="rounded-clario border border-clario-border bg-white p-5 transition-all hover:border-slate-400 hover:shadow-subtle"
                   >
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                         {card.category}
                       </span>
-                      <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
-                        {card.question}
-                      </h3>
-                      <p className="text-sm leading-relaxed text-slate-600">
-                        {card.answer}
-                      </p>
+                      <span className="text-[11px] font-medium text-slate-500">
+                        {card.highlight}
+                      </span>
                     </div>
-                    <div className="mt-6 pt-3 border-t border-slate-100 text-xs font-medium text-slate-500">
-                      {card.highlight}
-                    </div>
+                    <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                      {card.question}
+                    </h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                      {card.answer}
+                    </p>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
         </section>

@@ -84,4 +84,8 @@ it('renders project architecture and FAQ questionnaire at the bottom of the home
   // Verify answers are directly readable in clean card layout
   expect(screen.getByText(/Clario never trains, fine-tunes, or adapts model weights on your confidential files/i)).toBeInTheDocument();
   expect(screen.getByText(/100% offline capable by default/i)).toBeInTheDocument();
+
+  // Verify architecture footprint graph renders
+  expect(screen.getByText('Architecture footprint')).toBeInTheDocument();
+  expect(screen.getByText('Local pipeline profile')).toBeInTheDocument();
 });
