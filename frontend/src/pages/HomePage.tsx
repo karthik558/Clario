@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useIsDarkTheme } from '../utils/theme';
 
 const workflows = [
   {
@@ -152,6 +153,7 @@ const PIPELINE_STAGES = [
 ];
 
 export function HomePage() {
+  const isDark = useIsDarkTheme();
   const [showPreloader, setShowPreloader] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
@@ -242,7 +244,10 @@ export function HomePage() {
           <figure
             id="attribution"
             className="rounded-clario border border-slate-200 bg-slate-100 p-5 sm:p-9"
-            style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '16px 16px' }}
+            style={{
+              backgroundImage: `radial-gradient(${isDark ? '#334155' : '#cbd5e1'} 1px, transparent 1px)`,
+              backgroundSize: '16px 16px',
+            }}
           >
             <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
               <figcaption className="bg-slate-100 pr-2 text-xs font-medium text-slate-600">

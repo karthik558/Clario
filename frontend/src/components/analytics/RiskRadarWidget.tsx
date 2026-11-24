@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Badge } from '../ui/Badge';
+import { useIsDarkTheme } from '../../utils/theme';
 
 export interface PillarScore {
   id: string;
@@ -31,6 +32,7 @@ export const RiskRadarWidget: React.FC<RiskRadarWidgetProps> = ({
   className = '',
   showLegend = true,
 }) => {
+  const isDark = useIsDarkTheme();
   const [activeVertex, setActiveVertex] = useState<{
     pillar: PillarScore;
     seriesLabel: string;
@@ -106,8 +108,8 @@ export const RiskRadarWidget: React.FC<RiskRadarWidgetProps> = ({
             <g key={lvl}>
               <polygon
                 points={points}
-                fill={lvl === 100 ? '#F8FAFC' : 'none'}
-                stroke="#E2E8F0"
+                fill={lvl === 100 ? (isDark ? '#162033' : '#F8FAFC') : 'none'}
+                stroke={isDark ? '#334155' : '#E2E8F0'}
                 strokeWidth={lvl === 100 ? '1.5' : '1'}
                 strokeDasharray={lvl === 100 ? 'none' : '3 3'}
               />
@@ -145,7 +147,7 @@ export const RiskRadarWidget: React.FC<RiskRadarWidgetProps> = ({
                 y1={center}
                 x2={edge.x}
                 y2={edge.y}
-                stroke="#E2E8F0"
+                stroke={isDark ? '#334155' : '#E2E8F0'}
                 strokeWidth="1"
               />
               <text
@@ -154,6 +156,7 @@ export const RiskRadarWidget: React.FC<RiskRadarWidgetProps> = ({
                 textAnchor={textAnchor}
                 dominantBaseline="central"
                 className="text-[10.5px] font-semibold fill-slate-700 tracking-tight"
+                fill={isDark ? '#CBD5E1' : '#334155'}
               >
                 {getShortName(p.name)}
               </text>
@@ -177,9 +180,9 @@ export const RiskRadarWidget: React.FC<RiskRadarWidgetProps> = ({
         {/* Primary Series Polygon */}
         <polygon
           points={primaryPoints}
-          fill="#1E293B"
-          fillOpacity="0.14"
-          stroke="#0F172A"
+          fill={isDark ? '#38BDF8' : '#1E293B'}
+          fillOpacity={isDark ? '0.2' : '0.14'}
+          stroke={isDark ? '#38BDF8' : '#0F172A'}
           strokeWidth="2"
           className="transition-all duration-300"
         />
@@ -195,7 +198,7 @@ export const RiskRadarWidget: React.FC<RiskRadarWidgetProps> = ({
                 cy={y}
                 r="4"
                 fill="#D97706"
-                stroke="#FFFFFF"
+                stroke={isDark ? '#0B1120' : '#FFFFFF'}
                 strokeWidth="1.5"
                 className="cursor-pointer hover:r-6 transition-all"
                 onMouseEnter={() =>
@@ -220,8 +223,8 @@ export const RiskRadarWidget: React.FC<RiskRadarWidgetProps> = ({
               cx={x}
               cy={y}
               r="4.5"
-              fill="#0F172A"
-              stroke="#FFFFFF"
+              fill={isDark ? '#38BDF8' : '#0F172A'}
+              stroke={isDark ? '#0B1120' : '#FFFFFF'}
               strokeWidth="2"
               className="cursor-pointer hover:r-6 transition-all"
               onMouseEnter={() =>

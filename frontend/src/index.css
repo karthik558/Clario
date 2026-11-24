@@ -190,3 +190,486 @@ footer a:hover { color: theme('colors.clario.text'); text-decoration: underline;
   .quick-pill:hover { transform: translateY(-2px); background-color: #23334a; }
   @keyframes quick-ask-enter { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
 }
+
+/* ==========================================================================
+   Global Dark Mode (Toggled via Cmd+Shift+D / Ctrl+Shift+D)
+   ========================================================================== */
+html.clario-dark {
+  color-scheme: dark;
+}
+
+html.clario-dark body {
+  background-color: #0b1120;
+  color: #f1f5f9;
+}
+
+html.clario-dark ::selection {
+  background-color: rgba(56, 189, 248, 0.35);
+  color: #f8fafc;
+}
+
+html.clario-dark .sidebar {
+  background-color: #090e1a;
+  border-right-color: #1e293b;
+}
+
+/* Page & Card Surfaces */
+.clario-dark .bg-slate-50,
+.clario-dark .bg-clario-ivory-muted {
+  background-color: #0b1120;
+}
+
+.clario-dark .bg-slate-50\/40,
+.clario-dark .bg-slate-50\/50,
+.clario-dark .bg-slate-50\/60,
+.clario-dark .bg-slate-50\/70,
+.clario-dark .bg-slate-50\/80,
+.clario-dark .bg-slate-50\/90,
+.clario-dark .bg-slate-100,
+.clario-dark .bg-slate-100\/70,
+.clario-dark .bg-slate-100\/80,
+.clario-dark .bg-gray-50,
+.clario-dark .bg-gray-100 {
+  background-color: #162033;
+}
+
+.clario-dark .bg-white,
+.clario-dark .bg-white\/95,
+.clario-dark .bg-white\/90,
+.clario-dark .bg-clario-ivory,
+.clario-dark .bg-clario-ivory-card {
+  background-color: #111827;
+}
+
+.clario-dark .bg-white\/80 {
+  background-color: rgba(17, 24, 39, 0.85);
+}
+
+.clario-dark .bg-slate-200,
+.clario-dark .bg-slate-200\/60,
+.clario-dark .bg-slate-200\/70,
+.clario-dark .bg-slate-200\/80 {
+  background-color: #1e293b;
+}
+
+.clario-dark .bg-clario-navy,
+.clario-dark .bg-clario-navy\/90 {
+  background-color: #1e293b;
+}
+
+.clario-dark button.bg-clario-navy,
+.clario-dark a.bg-clario-navy,
+.clario-dark .bg-slate-900 {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.clario-dark button.bg-clario-navy:hover,
+.clario-dark a.bg-clario-navy:hover {
+  background-color: #293548;
+}
+
+.clario-dark .bg-clario-navy\/5,
+.clario-dark .bg-clario-navy\/10,
+.clario-dark .bg-slate-900\/5,
+.clario-dark .bg-navy-50,
+.clario-dark .bg-navy-50\/50 {
+  background-color: rgba(56, 189, 248, 0.14);
+}
+
+/* Progress Bars (tracks & fills remain unmistakably visible on dark & hover surfaces) */
+.clario-dark div.rounded-full.bg-slate-100,
+.clario-dark div.rounded-full.bg-slate-200 {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+}
+
+.clario-dark div.rounded-full > div.bg-slate-900,
+.clario-dark div.rounded-full > div.bg-clario-navy,
+.clario-dark div.rounded-full > div.bg-amber-700 {
+  background-color: #38bdf8;
+}
+
+.clario-dark div.rounded-full > div.bg-slate-300 {
+  background-color: #64748b;
+}
+
+/* Primary Text Hierarchy */
+.clario-dark .text-slate-950,
+.clario-dark .text-slate-900,
+.clario-dark .text-gray-900,
+.clario-dark .text-clario-navy,
+.clario-dark .text-clario-text,
+.clario-dark .text-clario-text\/90 {
+  color: #f8fafc;
+}
+
+.clario-dark .text-slate-800,
+.clario-dark .text-gray-800,
+.clario-dark .text-clario-navy-light,
+.clario-dark .text-clario-teal-light,
+.clario-dark .text-navy-900,
+.clario-dark .text-navy-800 {
+  color: #e2e8f0;
+}
+
+.clario-dark .text-slate-700,
+.clario-dark .text-gray-700,
+.clario-dark .text-clario-sage-dark {
+  color: #cbd5e1;
+}
+
+.clario-dark .text-slate-600,
+.clario-dark .text-slate-500,
+.clario-dark .text-slate-400,
+.clario-dark .text-gray-600,
+.clario-dark .text-gray-500,
+.clario-dark .text-clario-text-secondary,
+.clario-dark .text-clario-text-muted {
+  color: #94a3b8;
+}
+
+/* Borders, Dividers & Rings */
+.clario-dark .border-clario-border,
+.clario-dark .border-clario-border\/60,
+.clario-dark .border-slate-200,
+.clario-dark .border-slate-200\/80,
+.clario-dark .border-slate-200\/90,
+.clario-dark .border-slate-100,
+.clario-dark .border-gray-200 {
+  border-color: #1e293b;
+}
+
+.clario-dark .border-slate-300,
+.clario-dark .border-slate-400,
+.clario-dark .border-clario-border-dark {
+  border-color: #334155;
+}
+
+.clario-dark .border-clario-navy,
+.clario-dark .border-slate-900,
+.clario-dark .border-navy-800 {
+  border-color: #38bdf8;
+}
+
+.clario-dark .ring-clario-navy,
+.clario-dark .ring-slate-900,
+.clario-dark .ring-navy-800 {
+  --tw-ring-color: rgba(56, 189, 248, 0.55);
+}
+
+.clario-dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+.clario-dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.clario-dark .divide-clario-border > :not([hidden]) ~ :not([hidden]),
+.clario-dark .divide-clario-border\/60 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b;
+}
+
+/* Semantic Status Tints (including all fractional opacities) */
+.clario-dark .bg-emerald-50,
+.clario-dark .bg-emerald-50\/20,
+.clario-dark .bg-emerald-50\/50,
+.clario-dark .bg-emerald-50\/60,
+.clario-dark .bg-emerald-50\/80,
+.clario-dark .bg-emerald-100,
+.clario-dark .bg-green-50,
+.clario-dark .bg-green-100 {
+  background-color: rgba(16, 185, 129, 0.14);
+}
+.clario-dark .border-emerald-200,
+.clario-dark .border-emerald-200\/60,
+.clario-dark .border-emerald-300,
+.clario-dark .border-green-200 {
+  border-color: rgba(16, 185, 129, 0.35);
+}
+.clario-dark .text-emerald-950,
+.clario-dark .text-emerald-900,
+.clario-dark .text-emerald-800,
+.clario-dark .text-emerald-800\/80,
+.clario-dark .text-emerald-700,
+.clario-dark .text-emerald-600,
+.clario-dark .text-green-800,
+.clario-dark .text-green-700 {
+  color: #6ee7b7;
+}
+
+.clario-dark .bg-amber-50,
+.clario-dark .bg-amber-50\/30,
+.clario-dark .bg-amber-50\/50,
+.clario-dark .bg-amber-50\/60,
+.clario-dark .bg-amber-50\/80,
+.clario-dark .bg-amber-100,
+.clario-dark .bg-amber-200\/60,
+.clario-dark .bg-yellow-50,
+.clario-dark .bg-yellow-100,
+.clario-dark .bg-orange-50 {
+  background-color: rgba(245, 158, 11, 0.15);
+}
+.clario-dark .border-amber-200,
+.clario-dark .border-amber-200\/80,
+.clario-dark .border-amber-300,
+.clario-dark .border-yellow-200 {
+  border-color: rgba(245, 158, 11, 0.38);
+}
+.clario-dark .text-amber-950,
+.clario-dark .text-amber-900,
+.clario-dark .text-amber-800,
+.clario-dark .text-amber-700,
+.clario-dark .text-amber-600,
+.clario-dark .text-yellow-800,
+.clario-dark .text-orange-800,
+.clario-dark .text-orange-700 {
+  color: #fcd34d;
+}
+
+.clario-dark .bg-rose-50,
+.clario-dark .bg-rose-50\/40,
+.clario-dark .bg-rose-50\/50,
+.clario-dark .bg-rose-50\/60,
+.clario-dark .bg-rose-50\/80,
+.clario-dark .bg-rose-100,
+.clario-dark .bg-red-50,
+.clario-dark .bg-red-100 {
+  background-color: rgba(244, 63, 94, 0.15);
+}
+.clario-dark .border-rose-200,
+.clario-dark .border-rose-200\/60,
+.clario-dark .border-rose-200\/80,
+.clario-dark .border-rose-300,
+.clario-dark .border-red-200 {
+  border-color: rgba(244, 63, 94, 0.38);
+}
+.clario-dark .text-rose-950,
+.clario-dark .text-rose-900,
+.clario-dark .text-rose-800,
+.clario-dark .text-rose-800\/80,
+.clario-dark .text-rose-700,
+.clario-dark .text-rose-700\/80,
+.clario-dark .text-rose-600,
+.clario-dark .text-red-800,
+.clario-dark .text-red-700,
+.clario-dark .text-red-600 {
+  color: #fda4af;
+}
+
+.clario-dark .bg-sky-50,
+.clario-dark .bg-sky-100,
+.clario-dark .bg-blue-50,
+.clario-dark .bg-blue-100,
+.clario-dark .bg-indigo-50,
+.clario-dark .bg-indigo-100,
+.clario-dark .bg-teal-50,
+.clario-dark .bg-teal-100,
+.clario-dark .bg-violet-50,
+.clario-dark .bg-purple-50 {
+  background-color: rgba(56, 189, 248, 0.15);
+}
+.clario-dark .border-sky-200,
+.clario-dark .border-blue-200,
+.clario-dark .border-indigo-200,
+.clario-dark .border-teal-200,
+.clario-dark .border-teal-700 {
+  border-color: rgba(56, 189, 248, 0.42);
+}
+.clario-dark .ring-teal-700 {
+  --tw-ring-color: rgba(56, 189, 248, 0.5);
+}
+.clario-dark .text-sky-900,
+.clario-dark .text-sky-800,
+.clario-dark .text-sky-700,
+.clario-dark .text-blue-900,
+.clario-dark .text-blue-800,
+.clario-dark .text-blue-700,
+.clario-dark .text-indigo-900,
+.clario-dark .text-indigo-800,
+.clario-dark .text-indigo-700,
+.clario-dark .text-teal-900,
+.clario-dark .text-teal-800,
+.clario-dark .text-teal-700,
+.clario-dark .text-violet-800,
+.clario-dark .text-purple-800,
+.clario-dark .text-purple-700 {
+  color: #7dd3fc;
+}
+
+/* Hover, Group-Hover & Focus States (prevent black text or white flashes on hover) */
+.clario-dark .hover\:bg-slate-50:hover,
+.clario-dark .hover\:bg-slate-50\/50:hover,
+.clario-dark .hover\:bg-slate-50\/60:hover,
+.clario-dark .hover\:bg-slate-50\/70:hover,
+.clario-dark .hover\:bg-slate-50\/80:hover,
+.clario-dark .hover\:bg-slate-100:hover,
+.clario-dark .hover\:bg-slate-100\/80:hover,
+.clario-dark .hover\:bg-white:hover,
+.clario-dark .focus\:bg-white:focus {
+  background-color: #1e293b;
+}
+.clario-dark .hover\:bg-slate-200:hover,
+.clario-dark .group:hover .group-hover\:bg-slate-200 {
+  background-color: #334155;
+}
+.clario-dark .hover\:bg-clario-navy\/10:hover,
+.clario-dark .group:hover .group-hover\:bg-clario-navy\/10 {
+  background-color: rgba(56, 189, 248, 0.22);
+}
+.clario-dark .hover\:bg-amber-50:hover {
+  background-color: rgba(245, 158, 11, 0.22);
+}
+.clario-dark .hover\:bg-emerald-50:hover {
+  background-color: rgba(16, 185, 129, 0.22);
+}
+.clario-dark .hover\:bg-rose-50:hover,
+.clario-dark .hover\:bg-rose-100:hover,
+.clario-dark .hover\:bg-rose-100\/60:hover,
+.clario-dark .hover\:bg-rose-100\/70:hover {
+  background-color: rgba(244, 63, 94, 0.24);
+}
+
+.clario-dark .hover\:text-slate-900:hover,
+.clario-dark .hover\:text-slate-800:hover,
+.clario-dark .hover\:text-slate-700:hover,
+.clario-dark .hover\:text-clario-navy:hover,
+.clario-dark .group:hover .group-hover\:text-clario-navy,
+.clario-dark .group:hover .group-hover\:text-slate-900 {
+  color: #f8fafc;
+}
+.clario-dark .group:hover .group-hover\:text-slate-700 {
+  color: #cbd5e1;
+}
+.clario-dark .group:hover .group-hover\:text-slate-400 {
+  color: #94a3b8;
+}
+.clario-dark .hover\:text-rose-600:hover,
+.clario-dark .hover\:text-rose-700:hover,
+.clario-dark .hover\:text-rose-900:hover,
+.clario-dark .group:hover .group-hover\:text-rose-700 {
+  color: #fda4af;
+}
+.clario-dark .hover\:text-emerald-700:hover {
+  color: #6ee7b7;
+}
+.clario-dark .hover\:text-amber-700:hover,
+.clario-dark .hover\:text-amber-950:hover {
+  color: #fcd34d;
+}
+
+.clario-dark .hover\:border-slate-300:hover,
+.clario-dark .hover\:border-slate-400:hover,
+.clario-dark .hover\:border-clario-navy\/20:hover,
+.clario-dark .hover\:border-clario-navy\/30:hover {
+  border-color: #475569;
+}
+.clario-dark .hover\:border-rose-300:hover {
+  border-color: rgba(244, 63, 94, 0.55);
+}
+
+/* Form Elements, Radix Selects & Keyboard Badges */
+.clario-dark :where(input, select, textarea) {
+  accent-color: #38bdf8;
+}
+.clario-dark input:not([type='checkbox']):not([type='radio']),
+.clario-dark textarea,
+.clario-dark select {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+.clario-dark input::placeholder,
+.clario-dark textarea::placeholder {
+  color: #64748b;
+}
+.clario-dark .web-select {
+  color: #f1f5f9;
+}
+.clario-dark .web-select-menu {
+  background-color: #111827;
+  color: #f1f5f9;
+  border-color: #334155;
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.65);
+}
+.clario-dark .web-select-option {
+  color: #cbd5e1;
+}
+.clario-dark .web-select-option[data-highlighted] {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+.clario-dark .web-select-option[data-state='checked'] {
+  background-color: #162033;
+  color: #f8fafc;
+}
+.clario-dark kbd {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+/* Page Header, Prose, Tables & Preformatted Blocks */
+.clario-dark .page-header {
+  border-bottom-color: #1e293b;
+}
+.clario-dark .page-header h1 {
+  color: #f8fafc;
+}
+.clario-dark .page-header p {
+  color: #94a3b8;
+}
+.clario-dark footer a:hover {
+  color: #f8fafc;
+}
+.clario-dark .document-prose {
+  color: #e2e8f0;
+}
+.clario-dark .document-prose h1,
+.clario-dark .document-prose h2,
+.clario-dark .document-prose h3,
+.clario-dark .document-prose h4,
+.clario-dark .document-prose strong {
+  color: #f8fafc;
+}
+.clario-dark .document-prose a {
+  color: #7dd3fc;
+}
+.clario-dark .document-prose blockquote {
+  background-color: #162033;
+  border-left-color: #38bdf8;
+  color: #cbd5e1;
+}
+.clario-dark .document-prose pre,
+.clario-dark .document-prose code {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+.clario-dark .document-prose table {
+  border-color: #334155;
+}
+.clario-dark .document-prose th {
+  background-color: #162033;
+  color: #f8fafc;
+  border-bottom-color: #334155;
+}
+.clario-dark .document-prose td {
+  border-bottom-color: #1e293b;
+}
+
+/* Subtle Card Elevation & Backdrop */
+.clario-dark .shadow-subtle,
+.clario-dark .shadow-card,
+.clario-dark .shadow-elevated {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.clario-dark mark {
+  background-color: rgba(245, 158, 11, 0.28);
+  color: #f8fafc;
+}
+
+.clario-dark .bg-\[\#182235\] {
+  background-color: #131c31;
+  border-color: #334155;
+}
+.clario-dark .fill-slate-700 {
+  fill: #cbd5e1;
+}
+.clario-dark .fill-slate-400 {
+  fill: #94a3b8;
+}

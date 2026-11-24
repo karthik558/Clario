@@ -1,9 +1,10 @@
 import { RenewalPlannerPage } from './pages/RenewalPlannerPage';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PolicyPage } from './pages/PolicyPage';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BackgroundTaskProvider } from './context/BackgroundTaskContext';
+import { initTheme, toggleTheme } from './utils/theme';
 import { Layout } from './components/layout/Layout';
 import { HomePage } from './pages/HomePage';
 import { OverviewPage } from './pages/OverviewPage';
@@ -50,6 +51,25 @@ export const RootIndexRoute: React.FC = () => {
 };
 
 export const App: React.FC = () => {
+  useEffect(() => {
+    initTheme();
+
+    const handleGlobalThemeShortcut = (event: KeyboardEvent) => {
+      if (
+        event.shiftKey &&
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey &&
+        (event.key?.toLowerCase() === 'd' || event.code === 'KeyD')
+      ) {
+        event.preventDefault();
+        toggleTheme();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalThemeShortcut);
+    return () => window.removeEventListener('keydown', handleGlobalThemeShortcut);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BackgroundTaskProvider>

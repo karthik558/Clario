@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { GlobalSearchModal } from '../components/layout/GlobalSearchModal';
 import { Layout } from '../components/layout/Layout';
+import App from '../App';
 import { DocumentsPage } from '../pages/DocumentsPage';
 import { AskPage } from '../pages/AskPage';
 import { SettingsPage } from '../pages/SettingsPage';
@@ -151,6 +152,22 @@ describe('Workspace interactions', () => {
     render(<MemoryRouter><Layout /></MemoryRouter>);
     expect(screen.getByRole('button', { name: 'Expand sidebar' })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('button', { name: 'Ask Clario' })).not.toBeInTheDocument();
+    localStorage.clear();
+  });
+  it('toggles global dark mode via Ctrl+Shift+D and Cmd+Shift+D without a button', () => {
+    localStorage.clear();
+    document.documentElement.classList.remove('clario-dark', 'dark');
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    render(<App />);
+    expect(document.documentElement.classList.contains('clario-dark')).toBe(false);
+
+    fireEvent.keyDown(window, { key: 'D', ctrlKey: true, shiftKey: true });
+    expect(document.documentElement.classList.contains('clario-dark')).toBe(true);
+    expect(localStorage.getItem('clario_theme')).toBe('dark');
+
+    fireEvent.keyDown(window, { key: 'd', metaKey: true, shiftKey: true });
+    expect(document.documentElement.classList.contains('clario-dark')).toBe(false);
+    expect(localStorage.getItem('clario_theme')).toBe('light');
     localStorage.clear();
   });
 });

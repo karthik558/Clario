@@ -40,6 +40,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
       title: 'Global Commands',
       shortcuts: [
         { keys: ['⌘', 'K'], altKeys: ['Ctrl', 'K'], label: 'Open Command Palette & Passage Search' },
+        { keys: ['⌘', '⇧', 'D'], altKeys: ['Ctrl', 'Shift', 'D'], label: 'Toggle Global Dark / Light Mode' },
         { keys: ['?'], label: 'Show Keyboard Shortcuts HUD' },
         { keys: ['Esc'], label: 'Close Active Modal, Drawer, or Palette' },
       ],

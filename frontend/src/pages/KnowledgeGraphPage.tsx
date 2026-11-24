@@ -25,6 +25,7 @@ import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 import { ClauseNegotiatorModal } from '../components/negotiate/ClauseNegotiatorModal';
+import { useIsDarkTheme } from '../utils/theme';
 
 interface LayoutNode extends GraphNode {
   x: number;
@@ -33,6 +34,7 @@ interface LayoutNode extends GraphNode {
 }
 
 export const KnowledgeGraphPage: React.FC = () => {
+  const isDark = useIsDarkTheme();
   const navigate = useNavigate();
   const [data, setData] = useState<GraphDataResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -798,7 +800,7 @@ export const KnowledgeGraphPage: React.FC = () => {
               >
                 <defs>
                   <pattern id="graphGrid" width="32" height="32" patternUnits="userSpaceOnUse">
-                    <circle cx="2" cy="2" r="1" fill="#E2E8F0" />
+                    <circle cx="2" cy="2" r="1" fill={isDark ? '#334155' : '#E2E8F0'} />
                   </pattern>
                 </defs>
 
@@ -818,9 +820,13 @@ export const KnowledgeGraphPage: React.FC = () => {
                           cx={docNode.x}
                           cy={docNode.y}
                           r={140}
-                          fill={isDragged ? '#F1F5F9' : '#F8FAFC'}
-                          fillOpacity={isDragged ? 0.5 : isHovered ? 0.4 : 0.2}
-                          stroke={isDragged ? '#0F172A' : isHovered ? '#64748B' : '#E2E8F0'}
+                          fill={isDark ? (isDragged ? '#1E293B' : '#0F172A') : (isDragged ? '#F1F5F9' : '#F8FAFC')}
+                          fillOpacity={isDragged ? 0.5 : isHovered ? 0.4 : 0.25}
+                          stroke={
+                            isDark
+                              ? (isDragged ? '#38BDF8' : isHovered ? '#94A3B8' : '#334155')
+                              : (isDragged ? '#0F172A' : isHovered ? '#64748B' : '#E2E8F0')
+                          }
                           strokeWidth={isDragged ? 1.5 : 1}
                           strokeDasharray="4,4"
                           className="transition-all duration-150 pointer-events-none"
@@ -849,10 +855,10 @@ export const KnowledgeGraphPage: React.FC = () => {
                         y2={target.y}
                         stroke={
                           isHighlighted
-                            ? '#0F172A'
+                            ? (isDark ? '#38BDF8' : '#0F172A')
                             : isContradiction
-                            ? '#DC2626'
-                            : '#CBD5E1'
+                            ? '#EF4444'
+                            : (isDark ? '#475569' : '#CBD5E1')
                         }
                         strokeWidth={isHighlighted ? 2.5 : isContradiction ? 1.5 : 1.2}
                         strokeDasharray={isContradiction ? '4,4' : undefined}
@@ -876,12 +882,12 @@ export const KnowledgeGraphPage: React.FC = () => {
 
                     const nodeFill =
                       node.type === 'document'
-                        ? '#0F172A' // Clario Navy
+                        ? (isDark ? '#38BDF8' : '#0F172A') // Clario Navy / Sky accent in dark
                         : node.type === 'finding'
-                        ? '#991B1B' // Deep Rose
+                        ? (isDark ? '#EF4444' : '#991B1B') // Deep Rose
                         : node.type === 'topic'
-                        ? '#334155' // Slate-700
-                        : '#64748B'; // Slate-500
+                        ? (isDark ? '#64748B' : '#334155') // Slate-700
+                        : (isDark ? '#94A3B8' : '#64748B'); // Slate-500
 
                     return (
                       <g
@@ -900,7 +906,7 @@ export const KnowledgeGraphPage: React.FC = () => {
                           <circle
                             r={nodeRadius + 8}
                             fill="none"
-                            stroke="#0F172A"
+                            stroke={isDark ? '#38BDF8' : '#0F172A'}
                             strokeWidth={1.5}
                             strokeDasharray="3,3"
                             opacity={0.8}
@@ -912,7 +918,7 @@ export const KnowledgeGraphPage: React.FC = () => {
                           <circle
                             r={nodeRadius + 6}
                             fill="none"
-                            stroke={node.type === 'finding' ? '#DC2626' : '#0F172A'}
+                            stroke={node.type === 'finding' ? '#DC2626' : (isDark ? '#38BDF8' : '#0F172A')}
                             strokeWidth={1.5}
                             strokeDasharray={isSelected ? undefined : '3,3'}
                             opacity={0.85}
@@ -923,13 +929,13 @@ export const KnowledgeGraphPage: React.FC = () => {
                         <circle
                           r={nodeRadius}
                           fill={nodeFill}
-                          stroke="#FFFFFF"
+                          stroke={isDark ? '#0B1120' : '#FFFFFF'}
                           strokeWidth={isDoc ? 2 : 1.5}
                           className="shadow-xs"
                         />
 
                         {/* Center Inner Dot for Documents */}
-                        {isDoc && <circle r={3} fill="#FFFFFF" />}
+                        {isDoc && <circle r={3} fill={isDark ? '#0B1120' : '#FFFFFF'} />}
 
                         {/* Label */}
                         <text
@@ -937,11 +943,12 @@ export const KnowledgeGraphPage: React.FC = () => {
                           textAnchor="middle"
                           fontSize={isDoc ? '11px' : '9.5px'}
                           fontWeight={isDoc || isSelected ? '600' : '500'}
-                          fill="#0F172A"
+                          fill={isDark ? '#F1F5F9' : '#0F172A'}
                           className="pointer-events-none select-none"
                           style={{
-                            textShadow:
-                              '0 1px 2px rgba(255,255,255,0.95), 0 -1px 2px rgba(255,255,255,0.95)',
+                            textShadow: isDark
+                              ? '0 1px 3px rgba(11,17,32,0.95), 0 -1px 3px rgba(11,17,32,0.95)'
+                              : '0 1px 2px rgba(255,255,255,0.95), 0 -1px 2px rgba(255,255,255,0.95)',
                           }}
                         >
                           {node.label.length > 24 ? `${node.label.slice(0, 22)}…` : node.label}
