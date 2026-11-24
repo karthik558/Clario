@@ -77,7 +77,7 @@ export const AskPage: React.FC = () => {
   const { documents, error: sourceError } = useAskDocuments(true, selection);
   const selectedDocIds = selection.ids;
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [copiedItem, setCopiedItem] = useState<{ id: number; type: 'answer' | 'query' } | null>(null);
   const [showAuditWizard, setShowAuditWizard] = useState(false);
 
   // Local AI Gateway & Engine States
@@ -453,15 +453,15 @@ export const AskPage: React.FC = () => {
     }
   };
 
-  const handleCopy = async (text: string, index: number) => {
+  const handleCopy = async (text: string, index: number, type: 'answer' | 'query' = 'answer') => {
     try {
       await navigator.clipboard.writeText(text);
     } catch {
       setError('Could not copy text.');
       return;
     }
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
+    setCopiedItem({ id: index, type });
+    setTimeout(() => setCopiedItem(null), 2000);
   };
 
   const handleClearHistory = async () => {
@@ -528,8 +528,8 @@ export const AskPage: React.FC = () => {
         {/* Preset Starters & Welcome Hero (when history is empty) */}
         {history.length === 0 && !loading && !loadingHistory && (
           <div className="py-12 flex flex-col items-center text-center space-y-6 max-w-2xl mx-auto my-auto animate-in fade-in">
-            <div className="w-12 h-12 rounded-2xl bg-clario-navy text-white flex items-center justify-center shadow-md shadow-clario-navy/15">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 text-white flex items-center justify-center shadow-md p-2.5">
+              <img src="/favicon.svg" alt="Clario" className="w-6 h-6 object-contain" />
             </div>
             <div className="space-y-1.5">
               <h3 className="text-xl font-semibold text-slate-900 tracking-tight">
@@ -559,134 +559,147 @@ export const AskPage: React.FC = () => {
         )}
 
         {/* Conversation Thread: Modern Chat Flow */}
-        <div className="space-y-5 flex-1">
+        <div className="space-y-6 flex-1">
         {history.map((item, idx) => (
-          <div key={idx} className="space-y-3 animate-in fade-in duration-150">
-            {/* User message: clean, right-aligned, sleek rounded pill */}
+          <div key={idx} className="space-y-4 animate-in fade-in duration-150">
+            {/* User message: clean, right-aligned, light bubble */}
             <div className="flex justify-end pl-8 sm:pl-16">
-              <div className="rounded-2xl bg-slate-900 text-white px-4 py-2.5 shadow-xs max-w-[85%] sm:max-w-[70%]">
-                <p className="whitespace-pre-wrap break-words text-sm text-slate-100 leading-relaxed font-normal selection:bg-slate-700 selection:text-white">
+              <div className="rounded-2xl bg-slate-100 text-slate-800 border border-slate-200/80 px-4 py-2.5 shadow-2xs max-w-[85%] sm:max-w-[70%]">
+                <p className="whitespace-pre-wrap break-words text-sm text-slate-800 leading-relaxed font-normal selection:bg-slate-200 selection:text-slate-900">
                   {item.query}
                 </p>
               </div>
             </div>
 
-            {/* Clario message: clean left-aligned modern response */}
+            {/* Clario message: left-aligned bubble in sidebar color */}
             <div className="flex gap-3.5 items-start pr-2 sm:pr-8">
-              <div className="w-7 h-7 rounded-full bg-clario-navy text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                <Bot className="w-4 h-4 text-white" />
+              <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5 p-1">
+                <img src="/favicon.svg" alt="Clario" className="w-full h-full object-contain" />
               </div>
 
-              <div className="flex-1 min-w-0 space-y-2.5">
+              <div className="flex-1 min-w-0 space-y-2">
                 {/* Meta row */}
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-900 text-xs">Clario</span>
-                    {item.response.retrieval_latency_ms > 0 && (
-                      <span className="text-[11px] font-mono text-slate-400">
-                        {item.response.retrieval_latency_ms}ms
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(item.response.answer, idx)}
-                      className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                      title="Copy Answer"
-                    >
-                      {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
-                    </button>
-                  </div>
+                <div className="flex items-center gap-2 text-xs text-slate-500 pl-0.5">
+                  <span className="font-semibold text-slate-800 text-xs">Clario</span>
+                  {item.response.retrieval_latency_ms > 0 && (
+                    <span className="text-[11px] font-mono text-slate-400">
+                      {item.response.retrieval_latency_ms}ms
+                    </span>
+                  )}
                 </div>
 
-                {/* Thinking process if present */}
-                {thinkingMode && item.response.thinking_process && (
-                  <div className="border border-slate-200 rounded-lg bg-slate-50/80 overflow-hidden text-xs">
-                    <button
-                      type="button"
-                      onClick={() => toggleThinking(idx)}
-                      className="w-full px-3 py-1.5 flex items-center justify-between text-slate-700 hover:bg-slate-100 transition-colors"
-                    >
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <Brain className="w-3.5 h-3.5 text-clario-navy" />
-                        <span>Reasoning Process</span>
-                      </span>
-                      <span className="text-[10px] text-slate-400">{expandedThinking[idx] ? 'Hide' : 'Show'}</span>
-                    </button>
-                    {expandedThinking[idx] && (
-                      <div className="p-3 border-t border-slate-200 text-xs font-mono text-slate-700 bg-white whitespace-pre-wrap leading-relaxed select-text">
-                        {item.response.thinking_process}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Contradiction Alert if detected */}
-                {item.response.has_conflicting_evidence && (
-                  <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-semibold block mb-0.5">Divergent Terms Detected Across Sources</span>
-                      <span className="text-[11px] text-amber-800 leading-relaxed">
-                        {item.response.conflict_notes || 'Retrieved passages from differing documents state differing metrics or timelines.'}
-                      </span>
+                {/* Clario response bubble with sidebar color */}
+                <div className="rounded-2xl bg-[#182235] text-slate-200 p-4 sm:p-5 shadow-sm border border-slate-700/60 space-y-3.5">
+                  {/* Thinking process if present */}
+                  {thinkingMode && item.response.thinking_process && (
+                    <div className="border border-slate-700/80 rounded-lg bg-slate-800/80 overflow-hidden text-xs">
+                      <button
+                        type="button"
+                        onClick={() => toggleThinking(idx)}
+                        className="w-full px-3 py-1.5 flex items-center justify-between text-slate-300 hover:bg-slate-800 transition-colors"
+                      >
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <Brain className="w-3.5 h-3.5 text-sky-400" />
+                          <span>Reasoning Process</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400">{expandedThinking[idx] ? 'Hide' : 'Show'}</span>
+                      </button>
+                      {expandedThinking[idx] && (
+                        <div className="p-3 border-t border-slate-700/80 text-xs font-mono text-slate-300 bg-slate-950/60 whitespace-pre-wrap leading-relaxed select-text">
+                          {item.response.thinking_process}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Synthesis Content */}
-                <div className="text-slate-800 text-sm leading-relaxed prose prose-sm max-w-none">
-                  <Markdown>{item.response.answer}</Markdown>
+                  {/* Contradiction Alert if detected */}
+                  {item.response.has_conflicting_evidence && (
+                    <div className="p-3 rounded-lg bg-amber-950/40 border border-amber-800/80 text-amber-200 text-xs flex items-start space-x-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold block mb-0.5">Divergent Terms Detected Across Sources</span>
+                        <span className="text-[11px] text-amber-300/90 leading-relaxed">
+                          {item.response.conflict_notes || 'Retrieved passages from differing documents state differing metrics or timelines.'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Synthesis Content in bubble */}
+                  <div className="text-slate-200 text-sm leading-relaxed max-w-none">
+                    <Markdown invert>{item.response.answer}</Markdown>
+                  </div>
+
+                  {/* Collapsible Source Citations with Arrow */}
+                  {item.response.citations.length > 0 && (
+                    <div className="pt-2.5 border-t border-slate-800 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => toggleCitations(idx)}
+                        className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-slate-400 hover:text-slate-200 transition-colors py-1 px-1.5 rounded-md hover:bg-slate-800/60 cursor-pointer"
+                        title={expandedCitations[idx] ? 'Hide sources' : 'Show sources'}
+                      >
+                        <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 ${expandedCitations[idx] ? 'rotate-90' : ''}`} />
+                        <span>{item.response.citations.length} Sources cited</span>
+                      </button>
+
+                      {expandedCitations[idx] && (
+                        <div className="mt-2.5 pl-3 border-l-2 border-slate-700 space-y-1.5 animate-in fade-in duration-150">
+                          {item.response.citations.map((c) => (
+                            <div
+                              key={c.citation_id}
+                              onClick={() => setSelectedCitation(c)}
+                              className="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 transition-colors cursor-pointer group flex items-start justify-between gap-3 shadow-2xs"
+                              title={`Inspect source in ${c.document_title} (Page ${c.page_number})`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-4 h-4 rounded-full bg-slate-700 text-white text-[10px] flex items-center justify-center font-bold shrink-0">
+                                    {c.citation_id}
+                                  </span>
+                                  <span className="font-semibold text-white text-xs truncate group-hover:text-sky-300">
+                                    {c.document_title}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-mono">
+                                    Page {c.page_number}
+                                  </span>
+                                </div>
+                                <p className="text-[11.5px] text-slate-300 line-clamp-2 mt-1 font-normal leading-relaxed">
+                                  "{c.snippet}"
+                                </p>
+                              </div>
+                              <span className="text-[11px] font-semibold text-sky-400 shrink-0 group-hover:underline flex items-center gap-0.5 mt-0.5">
+                                View Source <ChevronRight className="w-3 h-3" />
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* Collapsible Source Citations with Arrow */}
-                {item.response.citations.length > 0 && (
-                  <div className="pt-2 border-t border-slate-100 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => toggleCitations(idx)}
-                      className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-slate-500 hover:text-slate-800 transition-colors py-1 px-1.5 rounded-md hover:bg-slate-50 cursor-pointer"
-                      title={expandedCitations[idx] ? 'Hide sources' : 'Show sources'}
-                    >
-                      <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 ${expandedCitations[idx] ? 'rotate-90' : ''}`} />
-                      <span>{item.response.citations.length} Sources cited</span>
-                    </button>
-
-                    {expandedCitations[idx] && (
-                      <div className="mt-2 pl-3 border-l-2 border-slate-200 space-y-1.5 animate-in fade-in duration-150">
-                        {item.response.citations.map((c) => (
-                          <div
-                            key={c.citation_id}
-                            onClick={() => setSelectedCitation(c)}
-                            className="p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-colors cursor-pointer group flex items-start justify-between gap-3 shadow-2xs"
-                            title={`Inspect source in ${c.document_title} (Page ${c.page_number})`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="w-4 h-4 rounded-full bg-clario-navy text-white text-[10px] flex items-center justify-center font-bold shrink-0">
-                                  {c.citation_id}
-                                </span>
-                                <span className="font-semibold text-slate-900 text-xs truncate group-hover:text-clario-navy">
-                                  {c.document_title}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-mono">
-                                  Page {c.page_number}
-                                </span>
-                              </div>
-                              <p className="text-[11.5px] text-slate-600 line-clamp-2 mt-1 font-normal leading-relaxed">
-                                "{c.snippet}"
-                              </p>
-                            </div>
-                            <span className="text-[11px] font-semibold text-clario-navy shrink-0 group-hover:underline flex items-center gap-0.5 mt-0.5">
-                              View Source <ChevronRight className="w-3 h-3" />
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                {/* Under Clario response: copy answer button */}
+                <div className="flex items-center gap-2 pt-0.5 pl-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(item.response.answer, idx, 'answer')}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+                    title="Copy Clario's answer"
+                  >
+                    {copiedItem?.id === idx && copiedItem.type === 'answer' ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-emerald-600 font-medium">Copied answer</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Copy answer</span>
+                      </>
                     )}
-                  </div>
-                )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -694,43 +707,47 @@ export const AskPage: React.FC = () => {
 
         {/* Realtime Streaming Turn */}
         {streaming && pendingQuery && (
-          <div className="space-y-3 animate-in fade-in duration-150">
+          <div className="space-y-4 animate-in fade-in duration-150">
             <div className="flex justify-end pl-8 sm:pl-16">
-              <div className="rounded-2xl bg-slate-900 text-white px-4 py-2.5 shadow-xs max-w-[85%] sm:max-w-[70%]">
-                <p className="whitespace-pre-wrap break-words text-sm text-slate-100 leading-relaxed font-normal">
+              <div className="rounded-2xl bg-slate-100 text-slate-800 border border-slate-200/80 px-4 py-2.5 shadow-2xs max-w-[85%] sm:max-w-[70%]">
+                <p className="whitespace-pre-wrap break-words text-sm text-slate-800 leading-relaxed font-normal">
                   {pendingQuery}
                 </p>
               </div>
             </div>
 
             <div className="flex gap-3.5 items-start pr-2 sm:pr-8">
-              <div className="w-7 h-7 rounded-full bg-clario-navy text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                <Bot className="w-4 h-4 text-white" />
+              <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5 p-1">
+                <img src="/favicon.svg" alt="Clario" className="w-full h-full object-contain" />
               </div>
               <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-semibold text-slate-900">Clario</span>
+                <div className="flex items-center gap-2 text-xs pl-0.5">
+                  <span className="font-semibold text-slate-800">Clario</span>
                 </div>
 
-                {thinkingMode && streamThinking && (
-                  <div className="border border-slate-200 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-700 font-mono whitespace-pre-wrap leading-relaxed">
-                    <div className="flex items-center gap-1.5 font-sans font-semibold text-clario-navy mb-1">
-                      <Brain className="w-3.5 h-3.5 text-clario-navy animate-pulse" />
-                      <span>Live Reasoning Chain:</span>
-                    </div>
-                    {streamThinking}
-                  </div>
-                )}
-
-                <div className="text-slate-800 text-sm leading-relaxed prose prose-sm max-w-none">
-                  {streamAnswer ? (
-                    <Markdown>{streamAnswer}</Markdown>
-                  ) : (
-                    <div className="flex items-center space-x-2 text-xs text-slate-500 italic py-1">
-                      <span className="w-3 h-3 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin" />
-                      <span>Retrieving relevant passages and synthesizing evidence...</span>
+                <div className="rounded-2xl bg-[#182235] text-slate-200 p-4 sm:p-5 shadow-sm border border-slate-700/60 space-y-3.5">
+                  {thinkingMode && streamThinking && (
+                    <div className="border border-slate-700/80 rounded-lg bg-slate-800/80 overflow-hidden text-xs">
+                      <div className="px-3 py-1.5 flex items-center gap-1.5 font-medium text-slate-300">
+                        <Brain className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+                        <span>Live Reasoning Chain:</span>
+                      </div>
+                      <div className="p-3 border-t border-slate-700/80 text-xs font-mono text-slate-300 bg-slate-950/60 whitespace-pre-wrap leading-relaxed select-text">
+                        {streamThinking}
+                      </div>
                     </div>
                   )}
+
+                  <div className="text-slate-200 text-sm leading-relaxed max-w-none">
+                    {streamAnswer ? (
+                      <Markdown invert>{streamAnswer}</Markdown>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-xs text-slate-400 italic py-1">
+                        <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-white rounded-full animate-spin" />
+                        <span>Retrieving relevant passages and synthesizing evidence...</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -739,10 +756,10 @@ export const AskPage: React.FC = () => {
 
         {/* Non-Streaming Pending Query */}
         {!streaming && pendingQuery && (
-          <div className="space-y-3 animate-in fade-in duration-150">
+          <div className="space-y-4 animate-in fade-in duration-150">
             <div className="flex justify-end pl-8 sm:pl-16">
-              <div className="rounded-2xl bg-slate-900 text-white px-4 py-2.5 shadow-xs max-w-[85%] sm:max-w-[70%]">
-                <p className="whitespace-pre-wrap break-words text-sm text-slate-100 leading-relaxed font-normal">
+              <div className="rounded-2xl bg-slate-100 text-slate-800 border border-slate-200/80 px-4 py-2.5 shadow-2xs max-w-[85%] sm:max-w-[70%]">
+                <p className="whitespace-pre-wrap break-words text-sm text-slate-800 leading-relaxed font-normal">
                   {pendingQuery}
                 </p>
               </div>
@@ -750,17 +767,17 @@ export const AskPage: React.FC = () => {
 
             {loading && (
               <div className="flex gap-3.5 items-start pr-2 sm:pr-8">
-                <div className="w-7 h-7 rounded-full bg-clario-navy text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                  <Bot className="w-4 h-4 text-white" />
+                <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5 p-1">
+                  <img src="/favicon.svg" alt="Clario" className="w-full h-full object-contain" />
                 </div>
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="font-semibold text-slate-900">Clario</span>
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-center gap-2 text-xs pl-0.5">
+                    <span className="font-semibold text-slate-800">Clario</span>
                     <span className="text-slate-400">•</span>
                     <span className="text-slate-500">Generating</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600 py-1">
-                    <span className="w-3.5 h-3.5 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin shrink-0" />
+                  <div className="rounded-2xl bg-[#182235] text-slate-200 p-4 sm:p-5 shadow-sm border border-slate-700/60 flex items-center gap-2.5 text-xs">
+                    <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-white rounded-full animate-spin shrink-0" />
                     <p role="status">{activeAskTask?.stage || 'Looking for supporting passages…'}</p>
                   </div>
                 </div>
@@ -771,13 +788,15 @@ export const AskPage: React.FC = () => {
 
         {loading && !streaming && !pendingQuery && (
           <div className="flex gap-3.5 items-start pr-2 sm:pr-8 animate-in fade-in">
-            <div className="w-7 h-7 rounded-full bg-clario-navy text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-              <Bot className="w-4 h-4 text-white" />
+            <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5 p-1">
+              <img src="/favicon.svg" alt="Clario" className="w-full h-full object-contain" />
             </div>
-            <div className="flex-1 min-w-0 space-y-1">
-              <span className="font-semibold text-slate-900 text-xs">Clario</span>
-              <div className="flex items-center gap-2 text-xs text-slate-600 py-1">
-                <span className="w-3.5 h-3.5 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin shrink-0" />
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex items-center gap-2 text-xs pl-0.5">
+                <span className="font-semibold text-slate-800 text-xs">Clario</span>
+              </div>
+              <div className="rounded-2xl bg-[#182235] text-slate-200 p-4 sm:p-5 shadow-sm border border-slate-700/60 flex items-center gap-2.5 text-xs">
+                <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-white rounded-full animate-spin shrink-0" />
                 <p role="status">{activeAskTask?.stage || 'Looking for supporting passages…'}</p>
               </div>
             </div>

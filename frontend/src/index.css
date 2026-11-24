@@ -97,6 +97,21 @@
 .document-prose th, .document-prose td { padding: .5rem .75rem; border: 1px solid theme('colors.slate.200'); text-align: left; }
 .document-prose th { background: theme('colors.slate.50'); }
 
+/* Inverted / Dark Bubble prose */
+.document-prose-invert,
+.document-prose.document-prose-invert { color: theme('colors.slate.200') !important; }
+.document-prose-invert h1, .document-prose-invert h2, .document-prose-invert h3, .document-prose-invert h4,
+.document-prose.document-prose-invert h1, .document-prose.document-prose-invert h2, .document-prose.document-prose-invert h3, .document-prose.document-prose-invert h4 { color: theme('colors.white') !important; }
+.document-prose-invert p, .document-prose-invert li, .document-prose-invert span, .document-prose-invert strong,
+.document-prose.document-prose-invert p, .document-prose.document-prose-invert li, .document-prose.document-prose-invert span, .document-prose.document-prose-invert strong { color: theme('colors.slate.200') !important; }
+.document-prose-invert a, .document-prose.document-prose-invert a { color: theme('colors.sky.300') !important; }
+.document-prose-invert code, .document-prose.document-prose-invert code { color: theme('colors.slate.100') !important; background: rgba(255, 255, 255, 0.12) !important; padding: 2px 5px; border-radius: 4px; }
+.document-prose-invert pre, .document-prose.document-prose-invert pre { background: rgba(0, 0, 0, 0.45) !important; color: theme('colors.slate.200') !important; border: 1px solid theme('colors.slate.700'); }
+.document-prose-invert blockquote, .document-prose.document-prose-invert blockquote { border-left-color: theme('colors.sky.500') !important; background: rgba(255, 255, 255, 0.05) !important; color: theme('colors.slate.300') !important; }
+.document-prose-invert th, .document-prose-invert td,
+.document-prose.document-prose-invert th, .document-prose.document-prose-invert td { border-color: theme('colors.slate.700') !important; color: theme('colors.slate.200') !important; }
+.document-prose-invert th, .document-prose.document-prose-invert th { background: rgba(255, 255, 255, 0.08) !important; }
+
 .page-header {
   display: flex;
   flex-wrap: wrap;
