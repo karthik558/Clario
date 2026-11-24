@@ -548,8 +548,8 @@ export const AskPage: React.FC = () => {
   }, [documents, selectedDocIds]);
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-8rem)] max-w-5xl mx-auto space-y-4">
-      {/* Page Header */}
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] w-full space-y-4">
+      {/* Page Header - Fully Flushed to the Screen Edge */}
       <PageHeader
         title="Ask Clario"
         description="Ask questions across your documents and follow each answer back to its sources."
@@ -560,48 +560,50 @@ export const AskPage: React.FC = () => {
         <AskSources documents={documents} selection={selection} error={sourceError} disabled={loading} />
       </div>
 
-      {error && (
-        <div role="alert" className="p-3.5 border border-rose-200 bg-rose-50 text-rose-800 rounded-md text-sm">
-          {error}
-        </div>
-      )}
-      {loadingHistory && <p role="status" className="text-sm text-slate-500">Loading saved answers…</p>}
-
-      {/* Preset Starters & Welcome Hero (when history is empty) */}
-      {history.length === 0 && !loading && !loadingHistory && (
-        <div className="py-8 flex flex-col items-center text-center space-y-6 max-w-2xl mx-auto my-auto animate-in fade-in">
-          <div className="w-12 h-12 rounded-2xl bg-clario-navy text-white flex items-center justify-center shadow-md shadow-clario-navy/15">
-            <Bot className="w-6 h-6 text-white" />
+      {/* Main Conversation & Input Area (Centered ChatGPT Style) */}
+      <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col space-y-5">
+        {error && (
+          <div role="alert" className="p-3.5 border border-rose-200 bg-rose-50 text-rose-800 rounded-md text-sm">
+            {error}
           </div>
-          <div className="space-y-1.5">
-            <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
-              Every document. A clearer answer.
-            </h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-              Ask questions about liabilities, breach notification SLAs, or compare terms across documents with source citations.
-            </p>
-          </div>
+        )}
+        {loadingHistory && <p role="status" className="text-sm text-slate-500">Loading saved answers…</p>}
 
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left pt-2">
-            {presets.map((p, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleAsk(p)}
-                className="p-3 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/80 transition-all text-left group flex items-start space-x-2.5 shadow-2xs cursor-pointer"
-              >
-                <SearchCheck className="w-4 h-4 text-clario-navy shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-medium text-slate-700 group-hover:text-clario-navy leading-relaxed line-clamp-2">
-                  {p}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+        {/* Preset Starters & Welcome Hero (when history is empty) */}
+        {history.length === 0 && !loading && !loadingHistory && (
+          <div className="py-12 flex flex-col items-center text-center space-y-6 max-w-2xl mx-auto my-auto animate-in fade-in">
+            <div className="w-12 h-12 rounded-2xl bg-clario-navy text-white flex items-center justify-center shadow-md shadow-clario-navy/15">
+              <Bot className="w-6 h-6 text-white" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-xl font-semibold text-slate-900 tracking-tight">
+                Every document. A clearer answer.
+              </h3>
+              <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                Ask questions about liabilities, breach notification SLAs, or compare terms across documents with source citations.
+              </p>
+            </div>
 
-      {/* Conversation Thread: Modern Chat Flow */}
-      <div className="space-y-5 flex-1">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left pt-2">
+              {presets.map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleAsk(p)}
+                  className="p-3.5 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/80 transition-all text-left group flex items-start space-x-2.5 shadow-2xs cursor-pointer"
+                >
+                  <SearchCheck className="w-4 h-4 text-clario-navy shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-slate-700 group-hover:text-clario-navy leading-relaxed line-clamp-2">
+                    {p}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Conversation Thread: Modern Chat Flow */}
+        <div className="space-y-5 flex-1">
         {history.map((item, idx) => (
           <div key={idx} className="space-y-3 animate-in fade-in duration-150">
             {/* User message: clean, right-aligned, sleek rounded pill */}
@@ -727,27 +729,51 @@ export const AskPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Compact Source Citation Badges */}
+                {/* Collapsible Source Citations with Arrow */}
                 {item.response.citations.length > 0 && (
-                  <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-                      Sources:
-                    </span>
-                    {item.response.citations.map((c) => (
-                      <button
-                        key={c.citation_id}
-                        type="button"
-                        onClick={() => setSelectedCitation(c)}
-                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200/80 transition-colors cursor-pointer"
-                        title={`View ${c.document_title} (Page ${c.page_number})`}
-                      >
-                        <span className="w-3.5 h-3.5 rounded-full bg-clario-navy text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                          {c.citation_id}
-                        </span>
-                        <span className="truncate max-w-[160px]">{c.document_title}</span>
-                        <span className="text-slate-400 font-mono text-[10px]">p.{c.page_number}</span>
-                      </button>
-                    ))}
+                  <div className="pt-2 border-t border-slate-100 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => toggleCitations(idx)}
+                      className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-slate-500 hover:text-slate-800 transition-colors py-1 px-1.5 rounded-md hover:bg-slate-50 cursor-pointer"
+                      title={expandedCitations[idx] ? 'Hide sources' : 'Show sources'}
+                    >
+                      <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 ${expandedCitations[idx] ? 'rotate-90' : ''}`} />
+                      <span>{item.response.citations.length} Sources cited</span>
+                    </button>
+
+                    {expandedCitations[idx] && (
+                      <div className="mt-2 pl-3 border-l-2 border-slate-200 space-y-1.5 animate-in fade-in duration-150">
+                        {item.response.citations.map((c) => (
+                          <div
+                            key={c.citation_id}
+                            onClick={() => setSelectedCitation(c)}
+                            className="p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-colors cursor-pointer group flex items-start justify-between gap-3 shadow-2xs"
+                            title={`Inspect source in ${c.document_title} (Page ${c.page_number})`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="w-4 h-4 rounded-full bg-clario-navy text-white text-[10px] flex items-center justify-center font-bold shrink-0">
+                                  {c.citation_id}
+                                </span>
+                                <span className="font-semibold text-slate-900 text-xs truncate group-hover:text-clario-navy">
+                                  {c.document_title}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  Page {c.page_number}
+                                </span>
+                              </div>
+                              <p className="text-[11.5px] text-slate-600 line-clamp-2 mt-1 font-normal leading-relaxed">
+                                "{c.snippet}"
+                              </p>
+                            </div>
+                            <span className="text-[11px] font-semibold text-clario-navy shrink-0 group-hover:underline flex items-center gap-0.5 mt-0.5">
+                              View Source <ChevronRight className="w-3 h-3" />
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -939,6 +965,7 @@ export const AskPage: React.FC = () => {
             </div>
           </form>
         </Card>
+      </div>
       </div>
 
       {/* Answer & AI Settings Modal */}
