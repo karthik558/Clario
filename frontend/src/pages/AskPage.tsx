@@ -218,6 +218,10 @@ export const AskPage: React.FC = () => {
   };
 
   useEffect(() => {
+    try {
+      localStorage.removeItem('clario_ask_cache');
+    } catch {}
+
     api.getSettings().then((s) => {
       if (s.thinking_mode !== undefined) {
         setThinkingMode(s.thinking_mode);
@@ -329,33 +333,6 @@ export const AskPage: React.FC = () => {
     const targetScope = docIds && docIds.length > 0 ? `${docIds.length} Document${docIds.length > 1 ? 's' : ''}` : 'All Workspace Documents';
     const topK = researchMode ? 10 : undefined;
 
-    // Check localStorage QA cache first
-    const cacheKey = `${q.toLowerCase()}__${(docIds || []).sort().join(',')}`;
-    try {
-      const stored = localStorage.getItem('clario_ask_cache');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && parsed[cacheKey]) {
-          const cachedRes = parsed[cacheKey];
-          if (cachedRes?.answer && !cachedRes.answer.includes('Thinking Process:') && !cachedRes.answer.includes('Role: Clario')) {
-            setResponse(cachedRes);
-            setHistory((prev) => {
-              if (prev.some((h) => h.query === q && h.response.answer === cachedRes.answer)) return prev;
-              return [...prev, { query: q, response: cachedRes }];
-            });
-            setLoading(false);
-            setPendingQuery('');
-            setTimeout(() => {
-              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
-            return;
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-
     // Streaming SSE Path
     if (streamingMode) {
       setStreaming(true);
@@ -402,16 +379,6 @@ export const AskPage: React.FC = () => {
             return result;
           }
         });
-
-        // Cache in localStorage
-        try {
-          const stored = localStorage.getItem('clario_ask_cache');
-          const parsed = stored ? JSON.parse(stored) : {};
-          parsed[cacheKey] = doneResponse;
-          const keys = Object.keys(parsed);
-          if (keys.length > 30) delete parsed[keys[0]];
-          localStorage.setItem('clario_ask_cache', JSON.stringify(parsed));
-        } catch {}
 
         setResponse(doneResponse);
         setHistory((prev) => {
@@ -468,16 +435,6 @@ export const AskPage: React.FC = () => {
           return answerRes;
         }
       });
-
-      // Cache in localStorage
-      try {
-        const stored = localStorage.getItem('clario_ask_cache');
-        const parsed = stored ? JSON.parse(stored) : {};
-        parsed[cacheKey] = res;
-        const keys = Object.keys(parsed);
-        if (keys.length > 30) delete parsed[keys[0]];
-        localStorage.setItem('clario_ask_cache', JSON.stringify(parsed));
-      } catch {}
 
       setResponse(res);
       setHistory((prev) => {
@@ -1158,17 +1115,30 @@ export const AskPage: React.FC = () => {
                 className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 text-slate-800 focus:outline-none focus:ring-1 focus:ring-clario-navy"
               />
               <div className="flex items-center justify-between text-xs">
-                <button
-                  type="button"
-                  onClick={() => selection.select([])}
-                  className={`px-2.5 py-1 rounded-md font-medium text-xs transition-colors cursor-pointer ${
-                    selectedDocIds.length === 0
-                      ? 'bg-clario-navy text-white shadow-2xs'
-                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  Entire Workspace ({documents.length} files)
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => selection.select([])}
+                    className={`px-2.5 py-1 rounded-md font-medium text-xs transition-colors cursor-pointer ${
+                      selectedDocIds.length === 0
+                        ? 'bg-clario-navy text-white shadow-2xs'
+                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    Entire Workspace ({documents.length} files)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => selection.select(documents.map((d) => d.id))}
+                    className={`px-2 py-1 rounded-md font-medium text-xs transition-colors cursor-pointer ${
+                      selectedDocIds.length === documents.length && documents.length > 0
+                        ? 'bg-slate-800 text-white shadow-2xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    Select All
+                  </button>
+                </div>
                 <span className="text-slate-500 font-medium">
                   {selectedDocIds.length > 0
                     ? `${selectedDocIds.length} of ${documents.length} selected`

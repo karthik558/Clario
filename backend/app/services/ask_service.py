@@ -345,7 +345,7 @@ class AskService:
         if not terms and not overview:
             return [], 0.0, refusal
 
-        count = max(request.top_k or settings.DEFAULT_TOP_K, 6 if comparative else 5)
+        count = max(request.top_k or settings.DEFAULT_TOP_K, len(scope) if len(scope) > 1 else (6 if comparative else 5))
         start = time.perf_counter()
         groups = []
         if overview:
@@ -360,17 +360,39 @@ class AskService:
                 groups.append([dict(chunk_id=row.id, document_id=doc.id, document_title=doc.title,
                                     page_number=row.page_number, snippet=row.content, score=0.0) for row in chosen])
         else:
-            scopes = [[d.id] for d in scope] if comparative else [[d.id for d in scope]]
             keywords = {word.rstrip("s") for word in terms}
             search_query = subject.strip() if subject.strip() else (" ".join(sorted(terms)) if terms else query)
-            for ids in scopes:
+            if len(scope) > 1:
+                # Actively query each document in scope to ensure comprehensive cross-contract analysis
+                for doc in scope:
+                    hits, _ = search_service.search(query=search_query, mode="hybrid", top_k=2,
+                                                   document_ids=[doc.id], db=db)
+                    matched = [hit for hit in hits if keywords.intersection(
+                        word.rstrip("s") for word in tokenize(hit["snippet"]))]
+                    doc_hits = matched if matched else hits
+                    if not doc_hits:
+                        first_chunk = db.query(DocumentChunk).filter(
+                            DocumentChunk.document_id == doc.id
+                        ).order_by(DocumentChunk.chunk_index).first()
+                        if first_chunk:
+                            doc_hits = [dict(
+                                chunk_id=first_chunk.id,
+                                document_id=doc.id,
+                                document_title=doc.title,
+                                page_number=first_chunk.page_number or 1,
+                                snippet=first_chunk.content,
+                                score=0.1
+                            )]
+                    groups.append(doc_hits)
+            else:
                 hits, _ = search_service.search(query=search_query, mode="hybrid", top_k=count,
-                                               document_ids=ids, db=db)
+                                               document_ids=[d.id for d in scope], db=db)
                 matched = [hit for hit in hits if keywords.intersection(
                     word.rstrip("s") for word in tokenize(hit["snippet"]))]
                 groups.append(matched if matched else hits)
         balanced = [hit for row in zip_longest(*groups) for hit in row if hit]
-        return balanced[:count], round((time.perf_counter() - start) * 1000, 2), missing
+        max_limit = max(count, len(scope)) if len(scope) > 1 else count
+        return balanced[:max_limit], round((time.perf_counter() - start) * 1000, 2), missing
 
     @staticmethod
     def answer_question(request: AskRequest, db: Session) -> AskResponse:
@@ -563,9 +585,9 @@ class AskService:
     @staticmethod
     def _generate_ollama_answer(query: str, citations: List[CitationItem], model_override: Optional[str] = None) -> str:
         url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
-        top_citations = citations[:5]
+        top_citations = citations[:14]
         context_str = "\n\n".join([
-            f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:1500]}"
+            f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:650]}"
             for c in top_citations
         ])
 
@@ -625,9 +647,9 @@ class AskService:
         Connects to any OpenAI-compatible local AI server:
         LM Studio (localhost:1234/v1), vLLM (localhost:8000/v1), LocalAI, llama.cpp, Jan, etc.
         """
-        top_citations = citations[:5]
+        top_citations = citations[:14]
         context_str = "\n\n".join([
-            f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:1500]}"
+            f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:650]}"
             for c in top_citations
         ])
 
@@ -743,8 +765,8 @@ class AskService:
 
         full_text = ""
         url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
-        top_citations = citations[:5]
-        context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:1500]}" for c in top_citations])
+        top_citations = citations[:14]
+        context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:650]}" for c in top_citations])
         ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
         stream_tokens = 250 if ans_len == "concise" else (850 if ans_len == "comprehensive" else 450)
         len_hint = " Keep it ultra-concise in 1-2 short bullet points." if ans_len == "concise" else ""
