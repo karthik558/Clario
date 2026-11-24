@@ -94,8 +94,19 @@
 .document-prose a { text-decoration: underline; color: theme('colors.slate.900'); font-weight: 500; }
 .document-prose pre { overflow-x: auto; padding: 1rem; background: theme('colors.slate.100'); border-radius: 4px; }
 .document-prose code { font-size: .875em; }
-.document-prose th, .document-prose td { padding: .5rem .75rem; border: 1px solid theme('colors.slate.200'); text-align: left; }
-.document-prose th { background: theme('colors.slate.50'); }
+.document-prose table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid theme('colors.slate.200');
+  font-size: 0.8125rem;
+}
+.document-prose th, .document-prose td { padding: .6rem .85rem; border-bottom: 1px solid theme('colors.slate.200'); text-align: left; }
+.document-prose th { background: theme('colors.slate.100'); font-weight: 600; color: theme('colors.slate.800'); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em; }
+.document-prose tr:last-child td { border-bottom: none; }
 
 /* Inverted / Dark Bubble prose */
 .document-prose-invert,
@@ -108,9 +119,45 @@
 .document-prose-invert code, .document-prose.document-prose-invert code { color: theme('colors.slate.100') !important; background: rgba(255, 255, 255, 0.12) !important; padding: 2px 5px; border-radius: 4px; }
 .document-prose-invert pre, .document-prose.document-prose-invert pre { background: rgba(0, 0, 0, 0.45) !important; color: theme('colors.slate.200') !important; border: 1px solid theme('colors.slate.700'); }
 .document-prose-invert blockquote, .document-prose.document-prose-invert blockquote { border-left-color: theme('colors.sky.500') !important; background: rgba(255, 255, 255, 0.05) !important; color: theme('colors.slate.300') !important; }
-.document-prose-invert th, .document-prose-invert td,
-.document-prose.document-prose-invert th, .document-prose.document-prose-invert td { border-color: theme('colors.slate.700') !important; color: theme('colors.slate.200') !important; }
-.document-prose-invert th, .document-prose.document-prose-invert th { background: rgba(255, 255, 255, 0.08) !important; }
+.document-prose-invert table,
+.document-prose.document-prose-invert table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0.85rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(15, 23, 42, 0.4) !important;
+}
+.document-prose-invert th,
+.document-prose.document-prose-invert th {
+  background: rgba(255, 255, 255, 0.09) !important;
+  color: theme('colors.white') !important;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+.document-prose-invert th:last-child,
+.document-prose.document-prose-invert th:last-child { border-right: none; }
+.document-prose-invert td,
+.document-prose.document-prose-invert td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  color: theme('colors.slate.200') !important;
+  font-size: 0.8125rem;
+}
+.document-prose-invert td:last-child,
+.document-prose.document-prose-invert td:last-child { border-right: none; }
+.document-prose-invert tr:last-child td,
+.document-prose.document-prose-invert tr:last-child td { border-bottom: none !important; }
+.document-prose-invert tr:hover td,
+.document-prose.document-prose-invert tr:hover td { background: rgba(255, 255, 255, 0.04) !important; }
 
 .page-header {
   display: flex;

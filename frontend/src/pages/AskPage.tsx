@@ -29,7 +29,8 @@ import {
   CheckCheck,
   FileSearch,
   GitCompare,
-  ArrowRight
+  ArrowRight,
+  Table
 } from 'lucide-react';
 import { api } from '../services/api';
 import { AskResponse, CitationItem } from '../types';
@@ -79,10 +80,10 @@ export function getFollowUpQuestions(
   ) {
     return [
       'Do any of these agreements permit customer confidential data to train foundation models?',
+      'Tabulate these findings into a structured table',
       'Compare the security incident and breach notification timelines across these policies.',
       'Which agreement contains the most protective limitation of liability clause?',
-      'What are the termination for convenience terms and data deletion commitments?',
-      'Summarize the governing law, dispute resolution, and jurisdiction for each document.'
+      'What are the termination for convenience terms and data deletion commitments?'
     ];
   }
 
@@ -192,11 +193,11 @@ export function getFollowUpQuestions(
 
   // 7. General High-Value Contract Intelligence Fallback
   return [
+    'Tabulate these findings into a structured table',
     'What are the key liability and indemnification terms across these agreements?',
     'Do any of the contracts contain unilateral modification or auto-renewal clauses?',
     'Compare the data breach notification deadlines across all selected documents.',
-    'What audit and compliance verification rights are granted to the customer?',
-    'Summarize the termination for convenience notice periods.'
+    'What audit and compliance verification rights are granted to the customer?'
   ];
 }
 
@@ -830,7 +831,7 @@ export const AskPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Under Clario response: copy answer button */}
+                {/* Under Clario response: copy answer & tabulate buttons */}
                 <div className="flex items-center gap-2 pt-0.5 pl-0.5">
                   <button
                     type="button"
@@ -849,6 +850,20 @@ export const AskPage: React.FC = () => {
                         <span>Copy answer</span>
                       </>
                     )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cleanQ = item.query.replace(/^Tabulate (?:the findings|this) for ["']?([^"']+)["']? into.*$/i, '$1');
+                      handleAsk(`Tabulate the findings for "${cleanQ}" into a comparative table with all metrics, documents, and key terms.`);
+                    }}
+                    disabled={loading || streaming}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Tabulate these findings into a structured table"
+                  >
+                    <Table className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Tabulate data</span>
                   </button>
                 </div>
 

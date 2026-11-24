@@ -98,18 +98,18 @@ class AskService:
                 citations = []
             else:
                 lines = [
-                    f"I am actively referencing the following **{len(docs)}** document(s) in your workspace:\n"
+                    f"I am actively referencing the following **{len(docs)}** document(s) in your workspace:\n",
+                    "| # | Document Title | Format | Volume | Searchable Chunks | Word Count | Status |",
+                    "|:---:|:---|:---:|:---:|:---:|:---:|:---:|"
                 ]
                 citations = []
                 for idx, doc in enumerate(docs, start=1):
-                    ext = doc.file_type.upper() if doc.file_type else "DOC"
-                    pages_info = f"{doc.page_count} pages" if doc.page_count and doc.page_count > 1 else "1 page"
-                    lines.append(f"{idx}. **{doc.title}** ({pages_info}, {ext})")
-                    lines.append(f"   • *Status*: Indexed & Searchable")
-                    lines.append(f"   • *Searchable Passages*: {doc.chunk_count} dense vector chunks")
-                    if doc.word_count:
-                        lines.append(f"   • *Word Count*: ~{doc.word_count:,} words")
-                    lines.append("")
+                    ext = (doc.file_type or "DOC").upper()
+                    pages_count = doc.page_count or 1
+                    pages_info = f"{pages_count} pages" if pages_count > 1 else "1 page"
+                    words = f"~{doc.word_count:,}" if doc.word_count else "—"
+                    chunks = f"{doc.chunk_count or 0} chunks"
+                    lines.append(f"| {idx} | **{doc.title}** | `{ext}` | {pages_info} | {chunks} | {words} | `Ready` |")
 
                     # First chunk as reference citation
                     first_chunk = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).order_by(DocumentChunk.chunk_index).first()
@@ -127,7 +127,7 @@ class AskService:
                     )
 
                 lines.append(
-                    "You can ask me to compare these documents, verify regulatory compliance (GDPR, HIPAA, EU AI Act, SOC 2), "
+                    "\nYou can ask me to compare these documents, verify regulatory compliance (GDPR, HIPAA, EU AI Act, SOC 2), "
                     "inspect key obligations (breach notification, termination notice, liability super-caps), or draft clause redlines."
                 )
                 ans = "\n".join(lines)
@@ -162,12 +162,20 @@ class AskService:
             docs = ready_query.order_by(Document.title).all()
 
             if docs:
-                lines = [f"I am currently checking all **{len(docs)} documents** in your active workspace scope:\n"]
+                lines = [
+                    f"I am actively checking all **{len(docs)} documents** in your active workspace scope:\n",
+                    "| # | Document Title | Format | Volume | Searchable Passages | Scope Status |",
+                    "|:---:|:---|:---:|:---:|:---:|:---:|"
+                ]
                 citations = []
                 for idx, doc in enumerate(docs, start=1):
                     first_chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).order_by(DocumentChunk.chunk_index).limit(1).all()
                     summary_snip = first_chunks[0].content[:200].strip() if first_chunks else f"{doc.title} ({doc.page_count or 1} pages)"
-                    lines.append(f"{idx}. **{doc.title}** ({doc.page_count or 1} pages)")
+                    ext = (doc.file_type or "PDF").upper()
+                    pages_count = doc.page_count or 1
+                    pages_str = f"{pages_count} pages" if pages_count > 1 else "1 page"
+                    chunks_str = f"{doc.chunk_count or 0} passages"
+                    lines.append(f"| {idx} | **{doc.title}** | `{ext}` | {pages_str} | {chunks_str} | Active Scope |")
                     if first_chunks:
                         citations.append(
                             CitationItem(
@@ -180,7 +188,7 @@ class AskService:
                                 relevance_score=1.0
                             )
                         )
-                lines.append("\nYou can ask questions across all of these documents or filter specific ones using the workspace scope at the bottom.")
+                lines.append("\nYou can ask questions across all of these documents or click **Tabulate data** below to compare specific clauses.")
                 scope_ans = "\n".join(lines)
                 return AskResponse(
                     query=request.query,
@@ -221,19 +229,22 @@ class AskService:
         identity_patterns = [
             r"\b(?:what\s+is\s+your\s+name|what's\s+your\s+name|whats\s+your\s+name|your\s+name)\b",
             r"\b(?:who\s+(?:are|r)\s+you|who\s+you\s+are|what\s+are\s+you)\b",
-            r"\b(?:what\s+is\s+clario|tell\s+me\s+about\s+(?:yourself|clario))\b",
+            r"\b(?:what\s+is\s+clario|tell\s+me\s+about\s+(?:yourself|clario)|clario\s+details|details\s+about\s+clario|details\s+of\s+clario|about\s+clario)\b",
             r"\b(?:who\s+made\s+you|who\s+created\s+you)\b"
         ]
         if any(re.search(pat, query_raw) for pat in identity_patterns):
             ans = (
                 "I am **Clario**, your enterprise legal document intelligence and contract analysis assistant.\n\n"
-                "I specialize in analyzing complex enterprise agreements, policies, and spreadsheets:\n"
-                "- **Evidence-Backed Q&A**: Ask targeted questions across your uploaded documents with precise page-level citations.\n"
-                "- **Side-by-Side Comparison**: Uncover subtle discrepancies, numerical variance, and changed covenants between versions.\n"
-                "- **Autonomous Clause Redlines**: Synthesize balanced, customer-protective, or vendor-favorable redlines and export tracked changes to Word (.docx).\n"
-                "- **Compliance & Obligations**: Audit policies against the EU AI Act, GDPR, HIPAA, and SOC 2, and sync extracted notice deadlines to your calendar (.ics).\n"
-                "- **Contract Risk Scorecards**: Benchmark contracts across 6 core risk pillars to evaluate customer protection.\n\n"
-                "Upload or select a document in your workspace, and ask me any question to get started!"
+                "Here is a summary of my core capabilities, analysis modules, and deliverables:\n\n"
+                "| Capability / Module | Core Functionality | Deliverable & Output |\n"
+                "|:---|:---|:---|\n"
+                "| **Evidence-Backed Q&A** | Deep dense vector retrieval across multi-page contracts | Verified answers with exact page citations |\n"
+                "| **Side-by-Side Comparison** | Semantic diffing across agreement versions and amendments | Clause discrepancy & numerical variance analysis |\n"
+                "| **Autonomous Clause Redlines** | Risk-calibrated redline synthesis (Customer / Balanced / Vendor) | Tracked-changes Word document (`.docx`) |\n"
+                "| **Regulatory Compliance Audit** | Automated clause mapping to GDPR, HIPAA, EU AI Act, SOC 2 | Compliance checklist & remediation actions |\n"
+                "| **Obligation Calendar Sync** | Automated extraction of notice periods, renewal & breach windows | Native iCalendar (`.ics`) event sync |\n"
+                "| **Contract Risk Scorecards** | 6-pillar risk scoring (Liability, IP, Indemnity, Data, Termination) | Benchmark scorecard & executive rating |\n\n"
+                "Upload or select a document in your workspace, and ask me any question or click **Tabulate data** to get started!"
             )
             return AskResponse(
                 query=request.query,
@@ -299,6 +310,28 @@ class AskService:
     @staticmethod
     def _retrieve_evidence(request: AskRequest, db: Session):
         query = request.query.lower().replace("’", "'")
+
+        # Resolve referenced subject for tabulation requests
+        quoted_match = re.search(r'for\s+["\']([^"\']+)["\']', request.query)
+        if quoted_match:
+            query = quoted_match.group(1).lower().replace("’", "'")
+        elif AskService._is_bare_tabulate_query(request.query):
+            last_rec = (
+                db.query(AnswerRecord)
+                .filter(~AnswerRecord.query.ilike("tabulate%"))
+                .order_by(AnswerRecord.created_at.desc())
+                .first()
+            )
+            if last_rec and last_rec.query:
+                query = last_rec.query.lower().replace("’", "'")
+                if not request.document_ids and last_rec.document_ids_json:
+                    try:
+                        p_ids = json.loads(last_rec.document_ids_json)
+                        if p_ids and isinstance(p_ids, list):
+                            request.document_ids = p_ids
+                    except Exception:
+                        pass
+
         # Question contractions are framing, not evidence terms (e.g. "whats the difference").
         query = re.sub(r"\b(what|who|where|when|how|why|that|there|it)'?s\b", r"\1 is", query)
         refusal = "I can only answer questions about your uploaded documents. Ask about a passage, obligation, or difference between documents."
@@ -320,11 +353,30 @@ class AskService:
             documents = matching_docs if matching_docs else all_ready
         else:
             documents = all_ready
-        named = [doc for doc in documents if doc.title and doc.title.lower() in query]
+        def _doc_matches_query(doc_title: str, query_str: str) -> bool:
+            title_lower = doc_title.lower()
+            if title_lower in query_str:
+                return True
+            distinctive_tokens = [w for w in re.split(r'[\s_—–-]+', title_lower) if w not in {
+                'enterprise', 'commercial', 'policy', 'services', 'agreement', 'license', '2024', '2025', '2026', 'api', 'terms', 'cognitive', 'ai'
+            }]
+            for i in range(len(distinctive_tokens) - 1):
+                bigram = f"{distinctive_tokens[i]} {distinctive_tokens[i+1]}"
+                if bigram in query_str:
+                    return True
+            brand_tokens = {'azure', 'claude', 'perplexity', 'deepseek', 'gemini', 'llama'}
+            for token in distinctive_tokens:
+                if token in brand_tokens and token in query_str:
+                    return True
+            return False
+
+        named = [doc for doc in documents if doc.title and _doc_matches_query(doc.title, query)]
         scope = named or documents
         subject = query
         for doc in sorted(named, key=lambda d: len(d.title), reverse=True):
             subject = subject.replace(doc.title.lower(), " ")
+            for b in ['microsoft azure', 'anthropic claude', 'azure', 'claude', 'perplexity', 'deepseek', 'gemini', 'llama']:
+                subject = subject.replace(b, " ")
         generic = set("""can please tell explain give say says according uploaded selected these those both document
                          documents policy policies file files contract contracts summarize summarise summary summaries
                          compare comparing comparison differences difference different key main two them between vs versus
@@ -517,6 +569,24 @@ class AskService:
         )
 
     @staticmethod
+    def _is_bare_tabulate_query(query: str) -> bool:
+        q = (query or "").lower().strip()
+        bare_patterns = [
+            r"^(?:can\s+you\s+)?(?:please\s+)?(?:tabulate(?:\s+(?:this|it|data|findings?|results?|everything))?|show(?:\s+it|\s+this|\s+data)?\s+(?:in|as)\s+(?:a\s+)?table|give(?:\s+me)?\s+(?:all\s+)?(?:the\s+)?data\s+in\s+(?:a\s+)?table|format(?:\s+as|\s+in)\s+(?:a\s+)?table|table\s+format|put\s+(?:this|it)\s+(?:in|into)\s+(?:a\s+)?table|make\s+(?:a\s+)?table)\s*\??$",
+            r"^tabulate\s+this\s+into\s+a\s+comparative\s+table\s+with\s+all\s+metrics,\s+documents,\s+and\s+key\s+terms\.?$",
+            r"^tabulate\s+these\s+findings\s+into\s+a\s+structured\s+table\.?$"
+        ]
+        return any(re.match(pat, q) for pat in bare_patterns)
+
+    @staticmethod
+    def _is_tabulate_query(query: str) -> bool:
+        q = (query or "").lower()
+        patterns = [
+            r"\b(?:tabulate|tabular|table\s+format|in\s+(?:a\s+)?table|as\s+(?:a\s+)?table|make\s+(?:a\s+)?table|give\s+(?:me\s+)?(?:all\s+)?(?:the\s+)?data\s+in\s+(?:a\s+)?table|put\s+(?:this|it)\s+(?:in|into)\s+(?:a\s+)?table|matrix)\b"
+        ]
+        return any(re.search(pat, q) for pat in patterns)
+
+    @staticmethod
     def _generate_follow_up_questions(query: str, answer: str, citations: List[CitationItem]) -> List[str]:
         q = query.lower()
         ans = answer.lower()
@@ -524,11 +594,11 @@ class AskService:
         # 1. Document Scope / Overview / Which documents are checked
         if any(w in q or w in ans for w in ['which all document', 'what document', 'which document', 'checking', 'referencing', 'inventory', 'list all', 'files in scope', 'available files']):
             return [
+                "Tabulate these findings into a structured table",
                 "Do any of these agreements permit customer confidential data to train foundation models?",
                 "Compare the security incident and breach notification timelines across these policies.",
                 "Which agreement contains the most protective limitation of liability clause?",
-                "What are the termination for convenience terms and data deletion commitments?",
-                "Summarize the governing law, dispute resolution, and jurisdiction for each document."
+                "What are the termination for convenience terms and data deletion commitments?"
             ]
 
         # 2. AI Model Training / Customer Confidential Data / Input Rights
@@ -575,28 +645,28 @@ class AskService:
         doc_names = list(dict.fromkeys(c.document_title for c in citations if c.document_title))
         if len(doc_names) >= 2:
             return [
+                "Tabulate these findings into a structured table",
                 f"Compare the limitation of liability between {doc_names[0]} and {doc_names[1]}.",
                 f"What are the key differences in confidentiality and data privacy between these two?",
                 f"What breach notification timelines apply under {doc_names[0]}?",
-                f"How do termination notice periods compare between {doc_names[0]} and {doc_names[1]}?",
-                "Summarize the governing law and dispute resolution mechanisms."
+                f"How do termination notice periods compare between {doc_names[0]} and {doc_names[1]}?"
             ]
         elif len(doc_names) == 1:
             return [
+                "Tabulate these findings into a structured table",
                 f"What are the limitation of liability caps in {doc_names[0]}?",
                 f"What are the customer termination rights and notice periods in {doc_names[0]}?",
                 f"What security warranties or certifications are specified in {doc_names[0]}?",
-                f"Does {doc_names[0]} permit unilateral amendments by the vendor?",
-                f"What governing law and jurisdiction apply to {doc_names[0]}?"
+                f"Does {doc_names[0]} permit unilateral amendments by the vendor?"
             ]
 
         # 7. General fallback
         return [
+            "Tabulate these findings into a structured table",
             "What are the key liability and indemnification terms across these agreements?",
             "Do any of the contracts contain unilateral modification or auto-renewal clauses?",
             "Compare the data breach notification deadlines across all selected documents.",
-            "What audit and compliance verification rights are granted to the customer?",
-            "Summarize the termination for convenience notice periods."
+            "What audit and compliance verification rights are granted to the customer?"
         ]
 
     @staticmethod
@@ -680,7 +750,11 @@ class AskService:
         ])
 
         ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
-        if ans_len == "concise":
+        is_tab = AskService._is_tabulate_query(query)
+        if is_tab:
+            len_instruction = "Synthesize all data, provisions, and key terms into a clean Markdown table comparing documents and metrics with bracketed citations like [1], [2]."
+            num_tokens = 750
+        elif ans_len == "concise":
             len_instruction = "Limit to 1-2 punchy sentences or short bullet points without conversational preamble."
             num_tokens = 250
         elif ans_len == "comprehensive":
@@ -856,8 +930,19 @@ class AskService:
         top_citations = citations[:14]
         context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:650]}" for c in top_citations])
         ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
-        stream_tokens = 250 if ans_len == "concise" else (850 if ans_len == "comprehensive" else 450)
-        len_hint = " Keep it ultra-concise in 1-2 short bullet points." if ans_len == "concise" else ""
+        is_tab = AskService._is_tabulate_query(request.query)
+        if is_tab:
+            stream_tokens = 750
+            len_hint = " Format the response primarily as a structured, clean Markdown table comparing documents, provisions, and metrics with bracketed citations [1], [2]."
+        elif ans_len == "concise":
+            stream_tokens = 250
+            len_hint = " Keep it ultra-concise in 1-2 short bullet points."
+        elif ans_len == "comprehensive":
+            stream_tokens = 850
+            len_hint = ""
+        else:
+            stream_tokens = 450
+            len_hint = ""
         prompt = (
             f"Answer directly and accurately using ONLY the retrieved context below.{len_hint} "
             f"Cite claims with bracketed numbers like [1], [2]. Answer directly without preamble, role definitions, or thinking steps.\n\n"
@@ -931,6 +1016,45 @@ class AskService:
         doc_citations: Dict[str, List[CitationItem]] = {}
         for c in citations:
             doc_citations.setdefault(c.document_title, []).append(c)
+
+        if AskService._is_tabulate_query(query):
+            lines = [
+                "#### Tabulated Comparative Synthesis\n",
+                "| Document / Agreement | Key Contractual Terms & Provisions | Page Coordinates | Citations |",
+                "|:---|:---|:---:|:---:|"
+            ]
+            for doc_title, cits in doc_citations.items():
+                points = []
+                pages = []
+                cit_refs = []
+                for c in cits[:3]:
+                    clean_snip = c.snippet.strip().replace("\r\n", " ").replace("\n", " ")
+                    clean_snip = re.sub(r'^CONFIDENTIAL\s+ENTERPRISE\s+POLICY\s*•[^•]+•\s*PAGE\s+\d+\s+OF\s+\d+\s*', '', clean_snip, flags=re.IGNORECASE)
+                    m_clause = re.search(r'(\d+\.\d+(?:\.\d+)?\s+[A-Z][^:]+:\s*.+)', clean_snip)
+                    if m_clause:
+                        clean_snip = m_clause.group(1)
+                    sentences = [s.strip() for s in clean_snip.split(". ") if s.strip()]
+                    summary = ". ".join(sentences[:2])
+                    if summary:
+                        if not summary.endswith("."):
+                            summary += "."
+                        points.append(summary)
+                    pages.append(f"Page {c.page_number}")
+                    cit_refs.append(f"[{c.citation_id}]")
+                summary_combined = " ".join(points)
+                pages_str = ", ".join(list(dict.fromkeys(pages)))
+                cits_str = ", ".join(cit_refs)
+                lines.append(f"| **{doc_title}** | {summary_combined} | {pages_str} | {cits_str} |")
+            lines.append("\n#### Detailed Evidence & Source Passages")
+            for cit in citations:
+                snippet_clean = cit.snippet.strip().replace("\r\n", "\n")
+                lines.append(
+                    f"\n*   **Source: [{cit.citation_id}] Page {cit.page_number} ({cit.document_title}):**\n"
+                    f"    {snippet_clean}"
+                )
+            if has_conflict and conflict_notes:
+                lines.append(f"\n\n**Discrepancy Note:** {conflict_notes}")
+            return "\n".join(lines).strip()
 
         lines = []
         is_comp = AskService._is_comparative_query(query)
