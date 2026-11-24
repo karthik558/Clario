@@ -390,10 +390,14 @@ export const AskPage: React.FC = () => {
     }
   }, []);
 
+  const defaultCitationsOpen = (() => {
+    try { return localStorage.getItem('clario_show_citations_default') === 'true'; } catch { return false; }
+  })();
+
   const toggleCitations = (idx: number) => {
     setExpandedCitations(prev => ({
       ...prev,
-      [idx]: !prev[idx]
+      [idx]: !(prev[idx] ?? defaultCitationsOpen)
     }));
   };
 
@@ -878,19 +882,21 @@ export const AskPage: React.FC = () => {
                   </div>
 
                   {/* Collapsible Source Citations with Arrow */}
-                  {item.response.citations.length > 0 && (
+                  {item.response.citations.length > 0 && (() => {
+                    const isCitationsOpen = expandedCitations[idx] ?? defaultCitationsOpen;
+                    return (
                     <div className="pt-2.5 border-t border-slate-800 text-xs">
                       <button
                         type="button"
                         onClick={() => toggleCitations(idx)}
                         className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-slate-400 hover:text-slate-200 transition-colors py-1 px-1.5 rounded-md hover:bg-slate-800/60 cursor-pointer"
-                        title={expandedCitations[idx] ? 'Hide sources' : 'Show sources'}
+                        title={isCitationsOpen ? 'Hide sources' : 'Show sources'}
                       >
-                        <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 ${expandedCitations[idx] ? 'rotate-90' : ''}`} />
+                        <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 ${isCitationsOpen ? 'rotate-90' : ''}`} />
                         <span>{item.response.citations.length} Sources cited</span>
                       </button>
 
-                      {expandedCitations[idx] && (
+                      {isCitationsOpen && (
                         <div className="mt-2.5 pl-3 border-l-2 border-slate-700 space-y-1.5 animate-in fade-in duration-150">
                           {item.response.citations.map((c) => (
                             <div
@@ -923,7 +929,8 @@ export const AskPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 {/* Under Clario response: copy answer / table & tabulate buttons */}
@@ -1038,7 +1045,10 @@ export const AskPage: React.FC = () => {
                     'assistant_identity',
                     'help_and_instructions',
                   ]);
-                  if (nonFollowUpModes.has(item.response.mode)) {
+                  const hideFollowUps = (() => {
+                    try { return localStorage.getItem('clario_show_followups') === 'false'; } catch { return false; }
+                  })();
+                  if (hideFollowUps || nonFollowUpModes.has(item.response.mode)) {
                     return null;
                   }
                   const followUps = getFollowUpQuestions(

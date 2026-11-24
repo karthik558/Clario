@@ -47,7 +47,13 @@ export const DocumentsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [collectionFilter, setCollectionFilter] = useState('');
   const [smartPreset, setSmartPreset] = useState<'all' | 'policies' | 'long' | 'short'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+    try {
+      const saved = localStorage.getItem('clario_docs_default_view');
+      if (saved === 'table' || saved === 'grid') return saved;
+    } catch {}
+    return 'grid';
+  });
   const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
     return (localStorage.getItem('clario_table_density') as 'comfortable' | 'compact') || 'comfortable';
   });

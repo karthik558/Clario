@@ -10,6 +10,7 @@ import { BackgroundTaskDrawer } from './BackgroundTaskDrawer';
 import { DocumentViewerModal } from '../documents/DocumentViewerModal';
 import { SearchResultItem } from '../../types';
 import { Keyboard } from 'lucide-react';
+import { loadWorkspacePreferences, PREFERENCE_KEYS, UI_PREFERENCES_EVENT } from '../../utils/preferences';
 
 export const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -38,15 +39,38 @@ export const Layout: React.FC = () => {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem('clario_sidebar_collapsed');
+      const saved = localStorage.getItem(PREFERENCE_KEYS.sidebarCollapsed);
       if (saved !== null) {
         return saved === 'true';
+      }
+      const fallbackDefault = localStorage.getItem(PREFERENCE_KEYS.sidebarCollapsedDefault);
+      if (fallbackDefault !== null) {
+        return fallbackDefault === 'true';
       }
     } catch {
       // Non-fatal if storage is unavailable
     }
     return false;
   });
+
+  const [showQuickAsk, setShowQuickAsk] = useState<boolean>(() => loadWorkspacePreferences().show_quick_ask);
+  const [showFooterShortcuts, setShowFooterShortcuts] = useState<boolean>(
+    () => loadWorkspacePreferences().show_footer_shortcuts
+  );
+
+  useEffect(() => {
+    const onPrefsUpdated = (ev: Event) => {
+      const custom = ev as CustomEvent<{ prefs?: ReturnType<typeof loadWorkspacePreferences>; syncSidebarState?: boolean }>;
+      const prefs = custom.detail?.prefs || loadWorkspacePreferences();
+      setShowQuickAsk(prefs.show_quick_ask);
+      setShowFooterShortcuts(prefs.show_footer_shortcuts);
+      if (custom.detail?.syncSidebarState) {
+        setSidebarCollapsed(prefs.sidebar_collapsed_default);
+      }
+    };
+    window.addEventListener(UI_PREFERENCES_EVENT, onPrefsUpdated);
+    return () => window.removeEventListener(UI_PREFERENCES_EVENT, onPrefsUpdated);
+  }, []);
 
   const handleToggleSidebar = () => {
     setSidebarCollapsed((prev) => {
@@ -175,20 +199,22 @@ export const Layout: React.FC = () => {
               <Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/cookies">Cookies</Link>
             </nav>
           </div>
-          <button
-            type="button"
-            onClick={() => setShortcutsModalOpen(true)}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-slate-700 transition-colors font-medium cursor-pointer"
-            title="Keyboard shortcuts HUD (?)"
-          >
-            <Keyboard className="w-3.5 h-3.5" />
-            <span>Shortcuts <kbd className="px-1.5 py-0.2 bg-slate-100 rounded-md border text-[10px] text-slate-500 font-mono">?</kbd></span>
-          </button>
+          {showFooterShortcuts && (
+            <button
+              type="button"
+              onClick={() => setShortcutsModalOpen(true)}
+              className="flex items-center gap-1.5 text-slate-400 hover:text-slate-700 transition-colors font-medium cursor-pointer"
+              title="Keyboard shortcuts HUD (?)"
+            >
+              <Keyboard className="w-3.5 h-3.5" />
+              <span>Shortcuts <kbd className="px-1.5 py-0.2 bg-slate-100 rounded-md border text-[10px] text-slate-500 font-mono">?</kbd></span>
+            </button>
+          )}
         </footer>
-        {pathname.replace(/\/$/, '') !== '/ask' && <div className="h-12" aria-hidden="true" />}
+        {showQuickAsk && pathname.replace(/\/$/, '') !== '/ask' && <div className="h-12" aria-hidden="true" />}
       </div>
 
-      {pathname.replace(/\/$/, '') !== '/ask' && <QuickAsk selection={selection}
+      {showQuickAsk && pathname.replace(/\/$/, '') !== '/ask' && <QuickAsk selection={selection}
         onExpand={draft => { setAskDraft(draft); navigate('/ask'); }}
         onSearch={() => setSearchModalOpen(true)}
         onSource={setSelectedResult}

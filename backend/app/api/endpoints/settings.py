@@ -29,6 +29,9 @@ class SettingsUpdateRequest(BaseModel):
     bm25_b: Optional[float] = Field(default=None, ge=0, le=1, allow_inf_nan=False)
     rrf_k: Optional[int] = Field(default=None, ge=1, le=1000)
     default_top_k: Optional[int] = Field(default=None, ge=1, le=50)
+    chunk_size: Optional[int] = Field(default=None, ge=200, le=4000)
+    chunk_overlap: Optional[int] = Field(default=None, ge=0, le=1000)
+    ui_preferences: Optional[Dict[str, Any]] = None
 
     @field_validator("ollama_base_url", "local_ai_base_url")
     @classmethod
@@ -68,6 +71,7 @@ def get_system_settings():
         "default_top_k": settings.DEFAULT_TOP_K,
         "chunk_size": settings.CHUNK_SIZE,
         "chunk_overlap": settings.CHUNK_OVERLAP,
+        "ui_preferences": getattr(settings, "UI_PREFERENCES", {}),
         "storage_dir": str(settings.DOCUMENTS_DIR),
         "database_url": settings.DATABASE_URL
     }
@@ -97,7 +101,10 @@ def update_system_settings(data: SettingsUpdateRequest, db: Session = Depends(ge
             "bm25_k1": settings.BM25_K1,
             "bm25_b": settings.BM25_B,
             "rrf_k": settings.RRF_K,
-            "default_top_k": settings.DEFAULT_TOP_K
+            "default_top_k": settings.DEFAULT_TOP_K,
+            "chunk_size": settings.CHUNK_SIZE,
+            "chunk_overlap": settings.CHUNK_OVERLAP,
+            "ui_preferences": getattr(settings, "UI_PREFERENCES", {}),
         }
     }
 

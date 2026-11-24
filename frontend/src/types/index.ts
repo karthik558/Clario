@@ -248,6 +248,7 @@ export interface SystemSettings {
   local_ai_base_url?: string;
   local_ai_model?: string;
   local_ai_provider?: string;
+  local_ai_api_key?: string;
   thinking_mode?: boolean;
   answer_length?: 'concise' | 'standard' | 'comprehensive';
   gemini_api_key?: string;
@@ -260,6 +261,7 @@ export interface SystemSettings {
   default_top_k: number;
   chunk_size: number;
   chunk_overlap: number;
+  ui_preferences?: Record<string, any>;
   storage_dir?: string;
   database_url?: string;
 }

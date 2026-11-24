@@ -57,7 +57,13 @@ export const ReportsPage: React.FC = () => {
   const [reportType, setReportType] = useState('comparative');
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [customNotes, setCustomNotes] = useState('');
-  const [useAi, setUseAi] = useState(false);
+  const [useAi, setUseAi] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('clario_critique_use_ai') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const fetchReports = async () => {
     setLoading(true);

@@ -18,19 +18,33 @@ SETTINGS_FIELDS = (
     "bm25_k1",
     "bm25_b",
     "rrf_k",
-    "default_top_k"
+    "default_top_k",
+    "chunk_size",
+    "chunk_overlap",
+    "ui_preferences",
 )
 settings_lock = RLock()
 
 
 def apply_settings(values):
     from app.services.search_service import search_service
+    from app.services import document_service
+    from app.ingestion.chunker import SemanticChunker
     for key in SETTINGS_FIELDS:
         if key in values:
-            setattr(settings, key.upper(), values[key])
+            if key == "ui_preferences" and isinstance(values[key], dict):
+                merged = dict(getattr(settings, "UI_PREFERENCES", {}) or {})
+                merged.update(values[key])
+                settings.UI_PREFERENCES = merged
+            else:
+                setattr(settings, key.upper(), values[key])
     search_service.bm25_engine.k1 = settings.BM25_K1
     search_service.bm25_engine.b = settings.BM25_B
     search_service.hybrid_engine.rrf_k = settings.RRF_K
+    document_service.chunker = SemanticChunker(
+        target_chunk_size=settings.CHUNK_SIZE,
+        chunk_overlap=min(settings.CHUNK_OVERLAP, max(0, settings.CHUNK_SIZE - 50)),
+    )
     # Rebuild on the next retrieval using the loaded parameters.
     search_service._last_chunk_count = -1
 

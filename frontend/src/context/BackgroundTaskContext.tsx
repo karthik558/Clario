@@ -151,6 +151,14 @@ export const BackgroundTaskProvider: React.FC<{ children: React.ReactNode }> = (
 
     setTasks((prev) => [newTask, ...prev.slice(0, 19)]);
 
+    try {
+      if (localStorage.getItem('clario_auto_open_tasks') === 'true') {
+        setIsDrawerOpen(true);
+      }
+    } catch {
+      // Non-fatal
+    }
+
     const updateProgress = (progress: number, stage: string, logMessage?: string) => {
       setTasks((prev) =>
         prev.map((t) => {

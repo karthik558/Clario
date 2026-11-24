@@ -50,6 +50,20 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-flash"
     OPENAI_MODEL: str = "gpt-4o-mini"
+    UI_PREFERENCES: dict = {
+        "sidebar_collapsed_default": False,
+        "show_quick_ask": True,
+        "show_footer_shortcuts": True,
+        "table_density": "comfortable",
+        "default_documents_view": "grid",
+        "default_search_mode": "hybrid",
+        "ask_streaming_default": False,
+        "ask_research_mode_default": False,
+        "show_citations_default": False,
+        "show_followups": True,
+        "auto_open_task_drawer": False,
+        "ai_critique_default": False,
+    }
 
 settings = Settings()
 

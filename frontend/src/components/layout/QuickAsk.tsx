@@ -30,6 +30,9 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
   const [pending, setPending] = useState(false);
   const [messages, setMessages] = useState<QuickMessage[]>([]);
   const [expandedCitations, setExpandedCitations] = useState<Record<string, boolean>>({});
+  const defaultCitationsOpen = (() => {
+    try { return localStorage.getItem('clario_show_citations_default') === 'true'; } catch { return false; }
+  })();
   const { documents, error: sourceError } = useAskDocuments(open);
 
   const thread = useRef<HTMLDivElement>(null);
@@ -82,7 +85,10 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
   }
 
   function toggleCitations(id: string) {
-    setExpandedCitations((prev) => ({ ...prev, [id]: !prev[id] }));
+    setExpandedCitations((prev) => ({
+      ...prev,
+      [id]: !(prev[id] ?? defaultCitationsOpen),
+    }));
   }
 
   async function handleClearHistory() {
@@ -262,7 +268,7 @@ export function QuickAsk({ selection, onExpand, onSearch, onSource }: Props) {
             ) : (
               <>
                 {messages.map((msg) => {
-                  const isCitationsOpen = !!expandedCitations[msg.id];
+                  const isCitationsOpen = expandedCitations[msg.id] ?? defaultCitationsOpen;
                   return (
                     <div key={msg.id} className="space-y-3.5">
                       {/* User message: right-aligned light bubble matching AskPage */}

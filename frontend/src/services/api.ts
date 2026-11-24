@@ -366,9 +366,10 @@ export const api = {
   },
 
   // Local AI Gateway & Status
-  getLocalAIStatus: async (provider?: string): Promise<LocalAIStatus> => {
+  getLocalAIStatus: async (provider?: string, baseUrl?: string): Promise<LocalAIStatus> => {
     const params = new URLSearchParams();
     if (provider) params.append('provider', provider);
+    if (baseUrl) params.append('base_url', baseUrl);
     const res = await fetch(`${API_BASE}/settings/local-ai/status?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to check Local AI status');
     return res.json();

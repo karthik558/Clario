@@ -117,4 +117,40 @@ describe('Workspace interactions', () => {
     fireEvent.click(await screen.findByRole('button', { name: /findings/ }));
     await waitFor(() => expect(inspect).toHaveBeenLastCalledWith('findings', 20));
   });
+  it('applies sidebar-collapsed and quick-ask visibility settings across Layout', async () => {
+    localStorage.clear();
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    vi.spyOn(api, 'getSettings').mockResolvedValue({
+      llm_provider: 'extractive',
+      ollama_model: 'qwen3.5:4b',
+      bm25_k1: 1.5,
+      bm25_b: 0.75,
+      rrf_k: 60,
+      default_top_k: 5,
+    } as SystemSettings);
+    vi.spyOn(api, 'getOllamaStatus').mockResolvedValue({ running: false, models: [], active_model: '', url: 'http://localhost:11434', message: '' });
+    vi.spyOn(api, 'getDatabaseTables').mockResolvedValue({ database_file: '', tables: [] });
+    vi.spyOn(api, 'updateSettings').mockResolvedValue({ status: 'success' });
+
+    const { unmount } = render(<SettingsPage />);
+    const sidebarSwitch = await screen.findByRole('switch', { name: /Hide \/ Collapse Sidebar by Default/i });
+    const quickAskSwitch = screen.getByRole('switch', { name: /Show Floating Ask Clario Launcher/i });
+
+    expect(sidebarSwitch).toHaveAttribute('aria-checked', 'false');
+    expect(quickAskSwitch).toHaveAttribute('aria-checked', 'true');
+
+    fireEvent.click(sidebarSwitch);
+    fireEvent.click(quickAskSwitch);
+
+    expect(sidebarSwitch).toHaveAttribute('aria-checked', 'true');
+    expect(quickAskSwitch).toHaveAttribute('aria-checked', 'false');
+    expect(localStorage.getItem('clario_sidebar_collapsed')).toBe('true');
+    expect(localStorage.getItem('clario_show_quick_ask')).toBe('false');
+    unmount();
+
+    render(<MemoryRouter><Layout /></MemoryRouter>);
+    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: 'Ask Clario' })).not.toBeInTheDocument();
+    localStorage.clear();
+  });
 });

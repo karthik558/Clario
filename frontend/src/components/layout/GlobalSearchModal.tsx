@@ -34,7 +34,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onSelectResult,
 }) => {
   const [query, setQuery] = useState('');
-  const [mode, setMode] = useState<'hybrid' | 'bm25' | 'vector'>('hybrid');
+  const [mode, setMode] = useState<'hybrid' | 'bm25' | 'vector'>(() => {
+    try {
+      const saved = localStorage.getItem('clario_default_search_mode');
+      if (saved === 'bm25' || saved === 'vector' || saved === 'hybrid') return saved;
+    } catch {}
+    return 'hybrid';
+  });
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [latency, setLatency] = useState<number | null>(null);
