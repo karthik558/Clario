@@ -92,6 +92,51 @@ const sampleDistribution = [
   { label: 'Compliance', count: 6 },
 ];
 
+const FAQ_CARDS = [
+  {
+    category: 'Architecture & Purpose',
+    question: 'Why Clario, and why are we using it?',
+    answer: 'Standard AI models hallucinate legal terms and upload confidential agreements to third-party public clouds. Clario was engineered for legal teams and auditors who need zero-leakage, deterministic intelligence with exact bracketed citations [1], [2], verifiable page proofs, and automated contradiction detection across multi-party contracts.',
+    highlight: 'Verifiable legal intelligence · Zero cloud leakage'
+  },
+  {
+    category: 'Model Training',
+    question: 'Did we train a model on our documents?',
+    answer: 'No. Clario never trains, fine-tunes, or adapts model weights on your confidential files. All intelligence operates via local Retrieval-Augmented Generation (RAG): documents are indexed into local vector and BM25 tables, and passages are only temporarily cited in context during query execution.',
+    highlight: 'Zero training retention · 100% data sovereignty'
+  },
+  {
+    category: 'Document Preparation',
+    question: 'How to prepare documents for research?',
+    answer: 'Upload PDF, Word (DOCX), Excel (XLSX, XLS), Markdown, or plain text files. Clario automatically handles structure parsing, tabular preservation, OCR on scans, and semantic passage segmentation (200–500 tokens). To optimize research, ensure scans are legible and organize files into Collections.',
+    highlight: 'Auto-OCR · Multi-format parsing · Semantic chunking'
+  },
+  {
+    category: 'Verification & Reliability',
+    question: 'How can we verify AI responses?',
+    answer: 'Every factual claim includes clickable bracketed citations [1], [2] opening the exact source page and highlighted paragraph in the Document Viewer. Automated Contradiction Detection flags diverging terms across contracts, and Reasoning Process shows the full evaluation chain.',
+    highlight: 'Verbatim citations · Contradiction alerts · Audit logs'
+  },
+  {
+    category: 'Deployment & Security',
+    question: 'Is this offline or online?',
+    answer: '100% offline capable by default. Running with local Ollama open-weights models and local SQLite/vector indices, all document parsing, embeddings, search, and answer generation execute entirely on your workstation without internet connectivity or external telemetry.',
+    highlight: 'Air-gapped operation · Zero external telemetry'
+  },
+  {
+    category: 'Cloud AI Integration',
+    question: 'Can we use cloud AI?',
+    answer: 'Yes, optionally. Clario includes a pluggable Multi-Engine Gateway in Settings. Administrators can connect enterprise OpenAI, Azure, Anthropic Claude, or Google Gemini keys if permitted, with zero-data-retention policies strictly enforced.',
+    highlight: 'Pluggable multi-provider gateway · Zero-retention flags'
+  },
+  {
+    category: 'Data Lifecycle & Universalization',
+    question: 'What happens to document data and the universalization method?',
+    answer: 'All files, embeddings, and chat histories persist strictly inside your local workspace. The Universal Document Normalizer standardizes heterogeneous formats (scanned PDFs, Excel spreadsheets, Word redlines) into uniform Markdown streams with page coordinates. You retain full custody and can purge all data with one click.',
+    highlight: 'Local file custody · Universal normalizer · One-click purge'
+  }
+];
+
 export function HomePage() {
   const [showPreloader, setShowPreloader] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
@@ -150,6 +195,7 @@ export function HomePage() {
           <nav className="flex items-center gap-6 text-xs uppercase tracking-wider text-slate-300">
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
             <a href="#capabilities" className="hover:text-white transition-colors">Capabilities</a>
+            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
             <a href="#attribution" className="hover:text-white transition-colors">Attribution</a>
             <Link to="/terms" className="hover:text-white transition-colors">Policies</Link>
           </nav>
@@ -389,6 +435,50 @@ export function HomePage() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Project Architecture & Frequently Asked Questions (Questionnaire) */}
+        <section id="faq" className="border-t border-clario-border bg-white">
+          <div className="mx-auto max-w-7xl px-5 py-14 sm:px-10 lg:py-20">
+            <div className="max-w-xl mb-10">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Questionnaire</p>
+              <h2 className="text-3xl font-semibold tracking-tight text-slate-900">
+                Project details & architecture questionnaire
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Key details on data sovereignty, model training policies, verification proofs, and offline deployment.
+              </p>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {FAQ_CARDS.map((card, idx) => {
+                const isWide = idx === FAQ_CARDS.length - 1;
+                return (
+                  <div
+                    key={idx}
+                    className={`rounded-clario border border-clario-border bg-white p-6 transition-all hover:border-slate-400 hover:shadow-subtle flex flex-col justify-between ${
+                      isWide ? 'md:col-span-2 lg:col-span-3' : ''
+                    }`}
+                  >
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                        {card.category}
+                      </span>
+                      <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
+                        {card.question}
+                      </h3>
+                      <p className="text-sm leading-relaxed text-slate-600">
+                        {card.answer}
+                      </p>
+                    </div>
+                    <div className="mt-6 pt-3 border-t border-slate-100 text-xs font-medium text-slate-500">
+                      {card.highlight}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

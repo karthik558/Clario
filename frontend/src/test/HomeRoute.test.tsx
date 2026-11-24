@@ -70,3 +70,18 @@ it('renders redesigned homepage with interactive contract review and sample brea
   expect(screen.getByText('What is the breach notification window?')).toBeInTheDocument();
   expect(screen.getAllByText(/within 48 hours of confirmation/i)[0]).toBeInTheDocument();
 });
+
+it('renders project architecture and FAQ questionnaire at the bottom of the homepage', () => {
+  window.history.replaceState(null, '', '/home');
+  render(<App />);
+
+  // Verify FAQ header and key questions
+  expect(screen.getByText('Project details & architecture questionnaire')).toBeInTheDocument();
+  expect(screen.getByText('Did we train a model on our documents?')).toBeInTheDocument();
+  expect(screen.getByText('Is this offline or online?')).toBeInTheDocument();
+  expect(screen.getByText('Can we use cloud AI?')).toBeInTheDocument();
+
+  // Verify answers are directly readable in clean card layout
+  expect(screen.getByText(/Clario never trains, fine-tunes, or adapts model weights on your confidential files/i)).toBeInTheDocument();
+  expect(screen.getByText(/100% offline capable by default/i)).toBeInTheDocument();
+});
