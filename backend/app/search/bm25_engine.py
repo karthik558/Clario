@@ -53,7 +53,9 @@ class BM25SearchEngine:
         
         # Pair with chunk data
         scored_results: List[Tuple[float, Dict[str, Any]]] = []
-        for i, score in enumerate(doc_scores):
+        limit = min(len(doc_scores), len(self.chunks))
+        for i in range(limit):
+            score = doc_scores[i]
             chunk = self.chunks[i]
             if document_ids and chunk.get("document_id") not in document_ids:
                 continue
@@ -71,8 +73,8 @@ class BM25SearchEngine:
             results.append({
                 "chunk_id": chunk["id"],
                 "document_id": chunk["document_id"],
-                "document_title": chunk.get("document_title", "Document"),
-                "page_number": chunk.get("page_number", 1),
+                "document_title": chunk.get("document_title") or "Document",
+                "page_number": int(chunk.get("page_number") or 1),
                 "snippet": chunk["content"],
                 "raw_score": round(score, 4),
                 "score": round(normalized_score, 4),

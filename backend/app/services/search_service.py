@@ -1,5 +1,6 @@
 import time
 import json
+from threading import RLock
 from typing import List, Dict, Any, Optional, Tuple
 from sqlalchemy.orm import Session
 
@@ -17,42 +18,47 @@ class SearchService:
         self.hybrid_engine = HybridSearchEngine(self.bm25_engine, self.vector_engine)
         self.benchmark_engine = IREvaluationBenchmark(self.hybrid_engine)
         self._last_chunk_count = -1
+        self._index_lock = RLock()
 
     def reload_index(self, db: Session):
         """
         Reloads chunks from the database into the memory search indices.
         """
-        chunks = (
-            db.query(DocumentChunk, Document.title)
-            .join(Document, DocumentChunk.document_id == Document.id)
-            .filter(Document.status == "READY")
-            .all()
-        )
+        with self._index_lock:
+            chunks = (
+                db.query(DocumentChunk, Document.title)
+                .join(Document, DocumentChunk.document_id == Document.id)
+                .filter(Document.status == "READY")
+                .all()
+            )
 
-        chunk_dicts = []
-        for chunk, doc_title in chunks:
-            chunk_dicts.append({
-                "id": chunk.id,
-                "document_id": chunk.document_id,
-                "document_title": doc_title,
-                "page_number": chunk.page_number,
-                "content": chunk.content,
-                "embedding": chunk.embedding_json,
-            })
+            chunk_dicts = []
+            for chunk, doc_title in chunks:
+                chunk_dicts.append({
+                    "id": chunk.id,
+                    "document_id": chunk.document_id,
+                    "document_title": doc_title or "Document",
+                    "page_number": chunk.page_number or 1,
+                    "content": chunk.content or "",
+                    "embedding": chunk.embedding_json,
+                })
 
-        self.bm25_engine.index_chunks(chunk_dicts)
-        self.vector_engine.index_chunks(chunk_dicts)
-        self._last_chunk_count = len(chunk_dicts)
+            self.bm25_engine.index_chunks(chunk_dicts)
+            self.vector_engine.index_chunks(chunk_dicts)
+            self._last_chunk_count = len(chunk_dicts)
 
     def ensure_index(self, db: Session):
-        current_count = (
-            db.query(DocumentChunk)
-            .join(Document, DocumentChunk.document_id == Document.id)
-            .filter(Document.status == "READY")
-            .count()
-        )
-        if current_count != self._last_chunk_count:
-            self.reload_index(db)
+        with self._index_lock:
+            current_count = (
+                db.query(DocumentChunk)
+                .join(Document, DocumentChunk.document_id == Document.id)
+                .filter(Document.status == "READY")
+                .count()
+            )
+            vectors_out_of_sync = len(self.vector_engine.chunk_vectors) != len(self.vector_engine.chunks)
+            bm25_missing = current_count > 0 and self.bm25_engine.bm25 is None
+            if current_count != self._last_chunk_count or vectors_out_of_sync or bm25_missing:
+                self.reload_index(db)
 
     def search(
         self,
@@ -96,9 +102,9 @@ class SearchService:
 
         return results, latency_ms
 
-    def compare_methods(self, query: str, top_k: int, db: Session) -> Dict[str, Any]:
+    def compare_methods(self, query: str, top_k: int, db: Session, document_ids: Optional[List[str]] = None) -> Dict[str, Any]:
         self.ensure_index(db)
-        _, stats = self.hybrid_engine.search(query, top_k=top_k)
+        _, stats = self.hybrid_engine.search(query, top_k=top_k, document_ids=document_ids)
         return stats
 
     def run_benchmark(self, custom_queries: Optional[List[Dict[str, Any]]], db: Session) -> BenchmarkSummaryResponse:

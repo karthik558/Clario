@@ -20,6 +20,7 @@ import {
   ComplianceAuditResponse,
   ObligationsResponse,
   CritiqueResponse,
+  CritiquePersona,
   ClauseLibraryResponse,
   ClauseAnalysisResult,
   BriefResponse,
@@ -110,11 +111,11 @@ export const api = {
     return res.json();
   },
 
-  compareSearchMethods: async (query: string, top_k: number = 5): Promise<SearchMethodComparison> => {
+  compareSearchMethods: async (query: string, top_k: number = 5, document_ids?: string[]): Promise<SearchMethodComparison> => {
     const res = await fetch(`${API_BASE}/search/compare-methods`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, top_k }),
+      body: JSON.stringify({ query, top_k, document_ids }),
     });
     if (!res.ok) throw new Error('Search comparison failed');
     return res.json();
@@ -429,10 +430,11 @@ export const api = {
   },
 
   // Obligations & Timeline
-  getObligations: async (category?: string, risk?: string): Promise<ObligationsResponse> => {
+  getObligations: async (category?: string, risk?: string, documentIds?: string[]): Promise<ObligationsResponse> => {
     const params = new URLSearchParams();
     if (category) params.append('category', category);
     if (risk) params.append('risk', risk);
+    if (documentIds && documentIds.length > 0) params.append('document_ids', documentIds.join(','));
     const res = await fetch(`${API_BASE}/obligations?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to load obligations');
     return res.json();
@@ -456,6 +458,16 @@ export const api = {
       body: JSON.stringify({ document_ids: documentIds, custom_clause: customClause, use_ai: useAi }),
     });
     if (!res.ok) throw new Error('Critique evaluation failed');
+    return res.json();
+  },
+
+  evaluateSinglePersona: async (personaId: string, documentIds?: string[], customClause?: string): Promise<CritiquePersona> => {
+    const res = await fetch(`${API_BASE}/critique/evaluate-persona`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ persona_id: personaId, document_ids: documentIds, custom_clause: customClause }),
+    });
+    if (!res.ok) throw new Error('Persona AI evaluation failed');
     return res.json();
   },
 

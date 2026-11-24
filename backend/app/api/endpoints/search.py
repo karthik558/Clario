@@ -37,7 +37,8 @@ def compare_search_methods(request: SearchRequest, db: Session = Depends(get_db)
     stats = search_service.compare_methods(
         query=request.query,
         top_k=request.top_k,
-        db=db
+        db=db,
+        document_ids=request.document_ids
     )
     return SearchMethodComparison(**stats)
 

@@ -462,39 +462,6 @@ Legal & Commercial Deal Desk`;
         )}
       </PageHeader>
 
-      {/* 3-Step Guided Walkthrough */}
-      <div className="p-4 rounded-md bg-white border border-slate-200 shadow-xs grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-        <div className="flex items-start gap-2.5">
-          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
-          <div>
-            <strong className="text-slate-900 block font-semibold">Select Opposing Terms</strong>
-            <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
-              Choose a flagged finding above or paste opposing terms from Document A and Document B.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-2.5">
-          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
-          <div>
-            <strong className="text-slate-900 block font-semibold">Set Bargaining Posture</strong>
-            <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
-              Select your desired stance (Balanced, Protective, Vendor) and counterparty profile.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-2.5">
-          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
-          <div>
-            <strong className="text-slate-900 block font-semibold">Review Redline & Playbook</strong>
-            <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
-              Generate harmonized amendments, inspect 3-tier escalation fallbacks, and copy lawyer memos.
-            </p>
-          </div>
-        </div>
-      </div>
-
       {error && (
         <div role="alert" className="p-3.5 rounded-md bg-rose-50 border border-rose-200 text-xs text-rose-800">
           {error}

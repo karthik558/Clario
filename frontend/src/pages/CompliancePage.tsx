@@ -20,6 +20,7 @@ import { ComplianceAuditResponse, DocumentItem, ComplianceGap } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
 
 export const CompliancePage: React.FC = () => {
   const navigate = useNavigate();
@@ -184,43 +185,26 @@ export const CompliancePage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Multi-Document Scope Filter */}
+      {/* Document Scope Filter */}
       {documents.length > 0 && (
         <Card className="p-3 bg-white border border-slate-200 shadow-xs">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0 mr-1">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <label htmlFor="compliance-doc-scope" className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0">
               Document Scope:
-            </span>
-            <button
-              onClick={() => setSelectedDocIds([])}
-              className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
-                selectedDocIds.length === 0
-                  ? 'bg-slate-900 text-white font-medium'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+            </label>
+            <Select
+              id="compliance-doc-scope"
+              value={selectedDocIds[0] || ''}
+              onChange={(e) => setSelectedDocIds(e.target.value ? [e.target.value] : [])}
+              className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-1.5 min-w-[240px] max-w-md"
             >
-              All Workspace ({documents.length})
-            </button>
-            {documents.map((d) => {
-              const isSelected = selectedDocIds.includes(d.id);
-              const cleanTitle = d.title.replace(/_/g, ' ');
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  title={cleanTitle}
-                  onClick={() => toggleDocSelection(d.id)}
-                  className={`px-2.5 py-1 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[240px] min-w-0 overflow-hidden ${
-                    isSelected
-                      ? 'bg-slate-900 text-white font-medium'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  <FileText className="w-3 h-3 shrink-0" />
-                  <span className="truncate min-w-0 block text-left">{cleanTitle}</span>
-                </button>
-              );
-            })}
+              <option value="">All Workspace Documents ({documents.length})</option>
+              {documents.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </Select>
           </div>
         </Card>
       )}

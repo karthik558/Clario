@@ -15,6 +15,7 @@ import {
   Download
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useBackgroundTasks } from '../context/BackgroundTaskContext';
 import { ObligationItem, DocumentItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -23,25 +24,30 @@ import { Select } from '../components/ui/Select';
 
 export const ObligationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { startTask } = useBackgroundTasks();
   const [obligations, setObligations] = useState<ObligationItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [riskFilter, setRiskFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchObligations = async () => {
+  const fetchObligations = async (docIds: string[] = selectedDocIds) => {
     try {
       setLoading(true);
+      setError('');
       const [oblRes, docs] = await Promise.all([
-        api.getObligations().catch(() => ({ total: 0, items: [] })),
+        api.getObligations(undefined, undefined, docIds.length ? docIds : undefined),
         api.getDocuments().catch(() => [])
       ]);
       setObligations(oblRes.items);
       setDocuments(docs);
     } catch (err) {
       console.error('Failed to load obligations', err);
+      setError('Could not load obligations from the workspace. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -51,17 +57,51 @@ export const ObligationsPage: React.FC = () => {
     fetchObligations();
   }, []);
 
-  const handleScan = async () => {
+  const handleSelectDoc = (docId: string | null) => {
+    const next = docId === null
+      ? []
+      : selectedDocIds.includes(docId)
+      ? selectedDocIds.filter((id) => id !== docId)
+      : [...selectedDocIds, docId];
+    setSelectedDocIds(next);
+    fetchObligations(next);
+  };
+
+  const handleScan = async (docIds: string[] = selectedDocIds) => {
     try {
       setScanning(true);
-      const res = await api.scanObligations();
+      setError('');
+      const scopeLabel = docIds.length > 0 ? `${docIds.length} selected doc(s)` : 'All Workspace Docs';
+      const res = await startTask<{ total: number; items: ObligationItem[] }>({
+        title: 'Extract Corpus Obligations',
+        category: 'scan',
+        targetScope: scopeLabel,
+        route: '/obligations',
+        initialStage: 'Scanning contractual covenants & notice deadlines...',
+        executor: async (updateProgress) => {
+          updateProgress(25, 'Parsing notice periods and renewal cutoffs...', `Scanning ${scopeLabel}`);
+          const result = await api.scanObligations(docIds.length ? docIds : undefined);
+          updateProgress(100, 'Obligations extracted', `Found ${result.total} contractual obligations`);
+          return result;
+        },
+      });
       setObligations(res.items);
     } catch (err) {
       console.error('Obligation scan failed', err);
+      setError('Obligation extraction failed. Ensure documents are indexed and retry.');
     } finally {
       setScanning(false);
     }
   };
+
+  const exportCalendarHref = (() => {
+    const params = new URLSearchParams();
+    if (categoryFilter) params.set('category', categoryFilter);
+    if (riskFilter) params.set('risk', riskFilter);
+    if (selectedDocIds.length > 0) params.set('document_ids', selectedDocIds.join(','));
+    const qs = params.toString();
+    return `/api/obligations/export-calendar${qs ? `?${qs}` : ''}`;
+  })();
 
   const filteredObligations = obligations.filter((o) => {
     if (categoryFilter && o.category !== categoryFilter) return false;
@@ -96,7 +136,7 @@ export const ObligationsPage: React.FC = () => {
             <span>Renewal Planner</span>
           </Button>
           <a
-            href="/api/obligations/export-calendar"
+            href={exportCalendarHref}
             download="clario-contract-obligations.ics"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors shadow-xs"
             title="Download iCalendar (.ics) file to sync with Google Calendar, Outlook, or Apple Calendar"
@@ -106,7 +146,7 @@ export const ObligationsPage: React.FC = () => {
           </a>
           <Button
             size="sm"
-            onClick={handleScan}
+            onClick={() => handleScan()}
             loading={scanning}
             className="flex items-center gap-1.5"
           >
@@ -115,6 +155,12 @@ export const ObligationsPage: React.FC = () => {
           </Button>
         </div>
       </PageHeader>
+
+      {error && (
+        <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800">
+          {error}
+        </div>
+      )}
 
       {/* KPI Stat Ribbon matching Overview and Documents */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -194,6 +240,22 @@ export const ObligationsPage: React.FC = () => {
             <Filter className="w-3.5 h-3.5" />
             <span className="font-semibold uppercase tracking-wider text-[10px]">Filter:</span>
           </div>
+
+          {documents.length > 0 && (
+            <Select
+              aria-label="Filter by document"
+              value={selectedDocIds[0] || ''}
+              onChange={(e) => handleSelectDoc(e.target.value || null)}
+              className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-1.5 max-w-[220px]"
+            >
+              <option value="">All Documents ({documents.length})</option>
+              {documents.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </Select>
+          )}
 
           <Select
             aria-label="Filter by obligation category"

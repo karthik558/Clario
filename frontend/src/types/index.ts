@@ -425,6 +425,7 @@ export interface CritiquePersona {
   verdict: string;
   risk_score: number;
   focus: string;
+  mode?: string;
   red_flags: CritiqueRedFlag[];
 }
 
@@ -441,6 +442,8 @@ export interface CritiqueResponse {
 // --- Clause Library Types ---
 export interface ClauseItem {
   id: string;
+  chunk_id?: string;
+  document_id?: string;
   document_title: string;
   page_number: number;
   text: string;
@@ -458,8 +461,9 @@ export interface ClauseBenchmark {
 }
 
 export interface ClauseLibraryResponse {
-  total_documents: number;
+  total_documents?: number;
   total_categories: number;
+  total_clauses_extracted?: number;
   benchmarks: ClauseBenchmark[];
 }
 

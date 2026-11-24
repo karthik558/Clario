@@ -22,6 +22,7 @@ import { GraphDataResponse, GraphNode, DocumentItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 import { ClauseNegotiatorModal } from '../components/negotiate/ClauseNegotiatorModal';
 
@@ -599,53 +600,31 @@ export const KnowledgeGraphPage: React.FC = () => {
         </div>
       )}
 
-      {/* Multi-Document Scope Selector Bar */}
+      {/* Document Scope Selector Bar */}
       {documents.length > 0 && (
         <Card className="p-3 bg-white border border-slate-200 shadow-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-slate-700 font-semibold flex items-center gap-1.5 mr-1 shrink-0 text-xs">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <label htmlFor="graph-doc-scope" className="text-slate-700 font-semibold flex items-center gap-1.5 shrink-0">
               <FileText className="w-3.5 h-3.5 text-slate-500" />
-              Document Scope:
-            </span>
-            <button
-              type="button"
-              aria-pressed={selectedDocIds.length === 0}
-              onClick={selectAllDocuments}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                selectedDocIds.length === 0
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-              }`}
+              <span>Document Scope:</span>
+            </label>
+            <Select
+              id="graph-doc-scope"
+              value={selectedDocIds[0] || ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedDocIds(val ? [val] : []);
+                setSelectedNodeId(null);
+              }}
+              className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-1.5 min-w-[240px] max-w-md"
             >
-              All Workspace Documents ({documents.length})
-            </button>
-            {documents.map((d) => {
-              const isSelected = selectedDocIds.includes(d.id);
-              const cleanTitle = d.title.replace(/_/g, ' ');
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  aria-pressed={isSelected}
-                  onClick={() => toggleDocumentScope(d.id)}
-                  className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[260px] min-w-0 overflow-hidden border ${
-                    isSelected
-                      ? 'bg-slate-900 text-white font-medium border-slate-900 shadow-xs'
-                      : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
-                  }`}
-                  title={`${cleanTitle} (${d.file_type.toUpperCase()})`}
-                >
-                  <span className="truncate min-w-0 block flex-1 text-left">{cleanTitle}</span>
-                  <span
-                    className={`text-[10px] font-mono shrink-0 ${
-                      isSelected ? 'text-slate-300' : 'text-slate-500'
-                    }`}
-                  >
-                    ({d.file_type.toUpperCase()})
-                  </span>
-                </button>
-              );
-            })}
+              <option value="">All Workspace Documents ({documents.length})</option>
+              {documents.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title.replace(/_/g, ' ')} ({d.file_type.toUpperCase()})
+                </option>
+              ))}
+            </Select>
           </div>
         </Card>
       )}

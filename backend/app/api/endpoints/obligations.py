@@ -15,9 +15,11 @@ class ObligationScanRequest(BaseModel):
 def get_obligations(
     category: Optional[str] = Query(None),
     risk: Optional[str] = Query(None),
+    document_ids: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    items = ObligationService.extract_obligations(db)
+    doc_id_list = [d.strip() for d in document_ids.split(",") if d.strip()] if document_ids else None
+    items = ObligationService.extract_obligations(db, document_ids=doc_id_list)
     if category:
         items = [i for i in items if i["category"].lower() == category.lower()]
     if risk:
@@ -31,13 +33,15 @@ def get_obligations(
 def export_calendar(
     category: Optional[str] = Query(None),
     risk: Optional[str] = Query(None),
+    document_ids: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
     Export extracted contractual deadlines and obligations as an RFC 5545 iCalendar (.ics) file.
     Directly importable into Google Calendar, Outlook, and Apple Calendar.
     """
-    items = ObligationService.extract_obligations(db)
+    doc_id_list = [d.strip() for d in document_ids.split(",") if d.strip()] if document_ids else None
+    items = ObligationService.extract_obligations(db, document_ids=doc_id_list)
     if category:
         items = [i for i in items if i["category"].lower() == category.lower()]
     if risk:

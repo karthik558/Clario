@@ -43,8 +43,24 @@ export const RedactionStudioPage: React.FC = () => {
   const [toggleEntity, setToggleEntity] = useState(true);
   const [toggleLegal, setToggleLegal] = useState(false);
 
+  // Custom user-defined redaction terms
+  const [customTermInput, setCustomTermInput] = useState('');
+  const [customTerms, setCustomTerms] = useState<string[]>([]);
+
   // Manual exclusions / overrides
   const [exemptedIds, setExemptedIds] = useState<Set<string>>(new Set());
+
+  const handleAddCustomTerm = (e: React.FormEvent) => {
+    e.preventDefault();
+    const term = customTermInput.trim();
+    if (!term || customTerms.some((t) => t.toLowerCase() === term.toLowerCase())) return;
+    setCustomTerms((prev) => [...prev, term]);
+    setCustomTermInput('');
+  };
+
+  const handleRemoveCustomTerm = (term: string) => {
+    setCustomTerms((prev) => prev.filter((t) => t !== term));
+  };
 
   useEffect(() => {
     api.getDocuments()
@@ -82,8 +98,8 @@ export const RedactionStudioPage: React.FC = () => {
     const items: SensitiveMatch[] = [];
     let counter = 0;
 
-    // 1. PII Patterns (Emails, Phone numbers, Names)
-    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+    // 1. PII Patterns (Emails, Phone numbers, SSNs, IP addresses, API secrets)
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
     let match;
     while ((match = emailRegex.exec(fullText)) !== null) {
       items.push({
@@ -104,6 +120,30 @@ export const RedactionStudioPage: React.FC = () => {
         label: 'Phone Number',
         originalText: match[0],
         replacementText: '[REDACTED_PHONE]',
+        active: togglePii,
+      });
+    }
+
+    const ssnRegex = /\b\d{3}-\d{2}-\d{4}\b/g;
+    while ((match = ssnRegex.exec(fullText)) !== null) {
+      items.push({
+        id: `pii-ssn-${counter++}`,
+        category: 'pii',
+        label: 'Tax / SSN ID',
+        originalText: match[0],
+        replacementText: '[REDACTED_ID]',
+        active: togglePii,
+      });
+    }
+
+    const ipRegex = /\b(?:\d{1,3}\.){3}\d{1,3}\b/g;
+    while ((match = ipRegex.exec(fullText)) !== null) {
+      items.push({
+        id: `pii-ip-${counter++}`,
+        category: 'pii',
+        label: 'IP Address',
+        originalText: match[0],
+        replacementText: '[REDACTED_IP]',
         active: togglePii,
       });
     }
@@ -134,13 +174,13 @@ export const RedactionStudioPage: React.FC = () => {
     }
 
     // 3. Corporate Entity Names & Identifiers
-    const entityRegex = /\b(?:OpenAI,\s?LLC|OpenAI|Anthropic,\s?PBC|Anthropic|Google LLC|Microsoft Corporation|Amazon Web Services,\s?Inc\.|Delaware Corporation)\b/g;
+    const entityRegex = /\b(?:OpenAI,\s?LLC|OpenAI|Anthropic,\s?PBC|Anthropic|Google LLC|Microsoft Corporation|Amazon Web Services,\s?Inc\.|Perplexity AI|DeepSeek|Meta Platforms|Delaware Corporation|[A-Z][A-Za-z0-9&.\- ]{1,30},?\s+(?:Inc\.|LLC|Corp\.|Ltd\.|PBC|GmbH|LLP))\b/g;
     while ((match = entityRegex.exec(fullText)) !== null) {
       items.push({
         id: `ent-party-${counter++}`,
         category: 'entity',
         label: 'Corporate Entity',
-        originalText: match[0],
+        originalText: match[0].trim(),
         replacementText: '[PARTY_ENTITY]',
         active: toggleEntity,
       });
@@ -159,16 +199,29 @@ export const RedactionStudioPage: React.FC = () => {
       });
     }
 
+    // 5. User-added Custom Terms
+    customTerms.forEach((term) => {
+      items.push({
+        id: `custom-${counter++}`,
+        category: 'legal',
+        label: 'Custom Term',
+        originalText: term,
+        replacementText: '[REDACTED_CUSTOM]',
+        active: true,
+      });
+    });
+
     // Deduplicate identical occurrences
     const uniqueMap = new Map<string, SensitiveMatch>();
     items.forEach((item) => {
-      if (!uniqueMap.has(item.originalText)) {
-        uniqueMap.set(item.originalText, item);
+      const key = item.originalText.toLowerCase();
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, item);
       }
     });
 
     return Array.from(uniqueMap.values());
-  }, [fullText, togglePii, toggleFinancial, toggleEntity, toggleLegal]);
+  }, [fullText, togglePii, toggleFinancial, toggleEntity, toggleLegal, customTerms]);
 
   const toggleItemExemption = (id: string) => {
     setExemptedIds((prev) => {
@@ -191,7 +244,7 @@ export const RedactionStudioPage: React.FC = () => {
 
     activeRules.forEach((rule) => {
       const escaped = rule.originalText.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-      const regex = new RegExp(escaped, 'g');
+      const regex = new RegExp(escaped, 'gi');
 
       if (redactionStyle === 'token') {
         text = text.replace(regex, rule.replacementText);
@@ -220,8 +273,9 @@ export const RedactionStudioPage: React.FC = () => {
     const blob = new Blob([processedText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
+    const baseName = (docDetail?.filename || docDetail?.title || 'contract').replace(/\.[^.]+$/, '');
     a.href = url;
-    a.download = `sanitized-${docDetail?.filename || 'contract'}.txt`;
+    a.download = `sanitized-${baseName}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -249,39 +303,6 @@ export const RedactionStudioPage: React.FC = () => {
           )}
         </div>
       </PageHeader>
-
-      {/* Quick Walkthrough / Guidance Banner */}
-      <div className="p-4 rounded-md bg-white border border-slate-200 shadow-xs grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-        <div className="flex items-start gap-2.5">
-          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-bold flex items-center justify-center shrink-0 text-[11px]">1</span>
-          <div>
-            <strong className="text-slate-900 block font-semibold">Select Agreement</strong>
-            <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
-              Choose an indexed document from your corpus. Raw text is aggregated automatically.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-2.5">
-          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-bold flex items-center justify-center shrink-0 text-[11px]">2</span>
-          <div>
-            <strong className="text-slate-900 block font-semibold">Configure Masking</strong>
-            <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
-              Toggle PII, Financial Rates, Entities, or Privilege, and choose Blackout, Token, or Blur.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-2.5">
-          <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 font-bold flex items-center justify-center shrink-0 text-[11px]">3</span>
-          <div>
-            <strong className="text-slate-900 block font-semibold">Review & Export</strong>
-            <p className="text-slate-500 text-[11px] leading-relaxed mt-0.5">
-              Click individual tokens to exempt or re-mask, then copy or download the sanitized file.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Control Ribbon */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -428,6 +449,36 @@ export const RedactionStudioPage: React.FC = () => {
             <span className="text-[11px] text-slate-400">Click to toggle</span>
           </div>
 
+          <form onSubmit={handleAddCustomTerm} className="flex items-center gap-1.5 mb-3">
+            <input
+              type="text"
+              value={customTermInput}
+              onChange={(e) => setCustomTermInput(e.target.value)}
+              placeholder="Add custom word/name to redact..."
+              className="flex-1 min-w-0 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-clario-navy focus:outline-none"
+            />
+            <Button type="submit" size="sm" variant="outline" disabled={!customTermInput.trim()} className="text-xs shrink-0 h-7 px-2.5">
+              Add
+            </Button>
+          </form>
+
+          {customTerms.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2.5">
+              {customTerms.map((term) => (
+                <button
+                  key={term}
+                  type="button"
+                  onClick={() => handleRemoveCustomTerm(term)}
+                  className="inline-flex items-center gap-1 rounded bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-700"
+                  title="Remove custom redaction term"
+                >
+                  <span>{term}</span>
+                  <span>×</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {detectedItems.length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-xs">
@@ -485,9 +536,9 @@ export const RedactionStudioPage: React.FC = () => {
               </span>
             </div>
 
-            <Badge variant="navy" size="md">
-              Live Sanitization Active
-            </Badge>
+            <span className="text-[11px] font-medium text-emerald-700">
+              Live sanitization active
+            </span>
           </div>
 
           <div className="flex-1 overflow-y-auto rounded-md bg-slate-50 border border-slate-200 p-5 font-mono text-xs text-slate-800 leading-relaxed whitespace-pre-wrap selection:bg-slate-200">

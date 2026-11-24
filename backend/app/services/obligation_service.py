@@ -70,14 +70,15 @@ class ObligationService:
         for chunk in chunks:
             text = chunk.content
             text_lower = text.lower()
+            seen_chunk_categories = set()
 
             for pattern in OBLIGATION_PATTERNS:
                 matched_kw = [kw for kw in pattern["keywords"] if kw in text_lower]
                 if not matched_kw:
                     continue
 
-                # Extract sentences in chunk
-                sentences = re.split(r'(?<=[.!?\n]) +', text)
+                # Extract sentences and lines in chunk
+                sentences = re.split(r'(?<=[.!?])\s+|\n+', text)
                 relevant_sentence = ""
                 for s in sentences:
                     s_lower = s.lower()
@@ -96,6 +97,11 @@ class ObligationService:
 
                 if not relevant_sentence:
                     continue
+
+                cat_name = pattern["category"]
+                if (chunk.id, cat_name) in seen_chunk_categories:
+                    continue
+                seen_chunk_categories.add((chunk.id, cat_name))
 
                 # Clean up markdown table markers or line breaks in sentence
                 relevant_sentence = re.sub(r'^[|\s\-:]+', '', relevant_sentence).strip()
@@ -149,7 +155,6 @@ class ObligationService:
                     else:
                         party = p_str
 
-                cat_name = pattern["category"]
                 seed_key = f"{chunk.document_id}-{chunk.chunk_index}-{cat_name}"
                 obl_id = f"obl-{uuid.uuid5(uuid.NAMESPACE_DNS, seed_key).hex[:10]}"
 
@@ -168,7 +173,6 @@ class ObligationService:
                     "status": "Action Required" if pattern["default_risk"] in ["Critical", "High"] else "Active / Monitored",
                     "fulfillment_verified": False
                 })
-                break  # Avoid duplicating multiple categories per same chunk
 
         return obligations
 
@@ -197,20 +201,23 @@ class ObligationService:
             due_text = str(obl.get("due_date_or_window", "")).lower()
             days_offset = 30  # baseline default
 
-            if "48 hour" in due_text:
-                days_offset = 2
-            elif "72 hour" in due_text:
-                days_offset = 3
-            elif "15 day" in due_text or "15 calendar" in due_text:
-                days_offset = 15
-            elif "30 day" in due_text or "net 30" in due_text:
-                days_offset = 30
-            elif "60 day" in due_text or "net 60" in due_text:
-                days_offset = 60
-            elif "90 day" in due_text or "net 90" in due_text:
-                days_offset = 90
-            elif "120 day" in due_text:
-                days_offset = 120
+            num_match = re.search(r'(\d+)\s*(?:business\s+|calendar\s+)?(hours?|days?|weeks?|months?|years?)', due_text)
+            net_m = re.search(r'net\s+(\d+)', due_text)
+            if num_match:
+                val = int(num_match.group(1))
+                unit = num_match.group(2)
+                if unit.startswith("hour"):
+                    days_offset = max(1, round(val / 24))
+                elif unit.startswith("week"):
+                    days_offset = val * 7
+                elif unit.startswith("month"):
+                    days_offset = val * 30
+                elif unit.startswith("year"):
+                    days_offset = val * 365
+                else:
+                    days_offset = max(1, val)
+            elif net_m:
+                days_offset = max(1, int(net_m.group(1)))
             elif "annual" in due_text or "year" in due_text:
                 days_offset = 365
 

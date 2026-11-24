@@ -156,9 +156,9 @@ Respond strictly with a concise JSON object:
         data = AIGenerator.generate_json(
             prompt=prompt,
             system_prompt="You are Clario's Red Team Council Engine. Deliver rigorous, legally grounded adversarial contract analysis in strictly valid JSON.",
-            max_tokens=950,
+            max_tokens=1600,
             temperature=0.15,
-            timeout=18.0
+            timeout=45.0
         )
 
         if not data or not isinstance(data, dict) or "personas" not in data or not isinstance(data["personas"], list):
@@ -573,4 +573,147 @@ Return a valid JSON object:
             "counter_clause": fallback_clause,
             "rationale": f"Standardized institutional safeguard formulated for {role_desc.split('(')[0].strip()}.",
             "mode": "standard_safeguard"
+        }
+
+    @staticmethod
+    def evaluate_single_persona(
+        db: Session,
+        persona_id: str,
+        document_ids: Optional[List[str]] = None,
+        custom_clause: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Runs a focused AI evaluation from a single executive persona's distinct viewpoint & personality.
+        """
+        persona_profiles = {
+            "general_counsel": {
+                "role_title": "General Legal Counsel",
+                "avatar_color": "navy",
+                "focus": "Liability Super-Caps & Indemnification",
+                "personality": "Skeptical chief legal officer who rejects uncapped customer liability, unilateral indemnities, and hostile governing venues.",
+            },
+            "cfo": {
+                "role_title": "Chief Financial Officer (CFO)",
+                "avatar_color": "amber",
+                "focus": "Auto-Renewal & Price Escalators",
+                "personality": "Disciplined finance executive focused on budget predictability, multi-year lock-in traps, CPI fee caps, and prepaid refund rights.",
+            },
+            "ciso": {
+                "role_title": "Chief Information Security Officer (CISO)",
+                "avatar_color": "rose",
+                "focus": "Data Residency & 48h Breach SLA",
+                "personality": "Zero-trust security leader who demands Zero Data Retention, 48-hour breach notification, SOC 2 Type II, and subprocessor vetting.",
+            },
+            "cco": {
+                "role_title": "Chief Compliance Officer (CCO)",
+                "avatar_color": "emerald",
+                "focus": "Regulatory Audits & Statutory DPA",
+                "personality": "Strict regulatory gatekeeper enforcing GDPR Article 28/32, EU AI Act transparency, HIPAA BAAs, and statutory audit rights.",
+            },
+            "coo": {
+                "role_title": "Chief Operating Officer (COO)",
+                "avatar_color": "indigo",
+                "focus": "Uptime SLAs & Exit Transition",
+                "personality": "Pragmatic operations chief guarding service continuity, 99.9% uptime SLA service credits, and 60-day exit transition assistance.",
+            },
+        }
+        profile = persona_profiles.get(persona_id, persona_profiles["general_counsel"])
+
+        query = db.query(Document).filter(Document.status == "READY")
+        if document_ids:
+            query = query.filter(Document.id.in_(document_ids))
+        docs = query.all()
+
+        chunks_query = db.query(DocumentChunk)
+        if document_ids:
+            chunks_query = chunks_query.filter(DocumentChunk.document_id.in_(document_ids))
+        chunks = chunks_query.order_by(DocumentChunk.chunk_index).limit(12).all()
+
+        corpus_text = "\n".join([c.content for c in chunks])
+        if custom_clause:
+            corpus_text = f"{custom_clause}\n\n{corpus_text}"
+
+        if not corpus_text.strip():
+            return {
+                "persona_id": persona_id,
+                "role_title": profile["role_title"],
+                "avatar_color": profile["avatar_color"],
+                "focus": profile["focus"],
+                "verdict": "Upload Documents to Audit",
+                "risk_score": 0,
+                "red_flags": [],
+                "mode": "empty_scope",
+            }
+
+        prompt = f"""Adopt this exact executive persona and personality:
+Role: {profile['role_title']}
+Personality & Mandate: {profile['personality']}
+Primary Focus: {profile['focus']}
+
+Review the following document excerpts strictly through the lens of {profile['role_title']}:
+\"\"\"
+{corpus_text[:2200]}
+\"\"\"
+
+Return valid JSON with 2-3 concrete findings:
+{{
+  "verdict": "<2-4 word verdict reflecting this persona's stance>",
+  "risk_score": <integer 0-100>,
+  "red_flags": [
+    {{
+      "severity": "<Critical | High | Medium>",
+      "point": "<Concise risk title from this persona's viewpoint>",
+      "detail": "<Specific finding in this persona's voice>",
+      "counter_clause": "<Ready-to-insert protective clause>"
+    }}
+  ]
+}}"""
+
+        ai_data = AIGenerator.generate_json(
+            prompt=prompt,
+            system_prompt=f"You are acting strictly as {profile['role_title']}. Stay in character and respond in valid JSON.",
+            max_tokens=700,
+            temperature=0.2,
+            timeout=65.0,
+        )
+
+        if ai_data and isinstance(ai_data, dict) and isinstance(ai_data.get("red_flags"), list) and len(ai_data["red_flags"]) > 0:
+            clean_flags = [
+                {
+                    "severity": str(f.get("severity", "High")),
+                    "point": str(f.get("point", "Identified Exposure")),
+                    "detail": str(f.get("detail", "Review recommended.")),
+                    "counter_clause": str(f.get("counter_clause", "Parties shall adopt mutual safeguards.")),
+                }
+                for f in ai_data["red_flags"]
+                if isinstance(f, dict) and f.get("point")
+            ]
+            if clean_flags:
+                return {
+                    "persona_id": persona_id,
+                    "role_title": profile["role_title"],
+                    "avatar_color": profile["avatar_color"],
+                    "focus": profile["focus"],
+                    "verdict": str(ai_data.get("verdict", "Caution Advised")),
+                    "risk_score": int(ai_data.get("risk_score", 55)),
+                    "red_flags": CritiqueService._deduplicate_flags(clean_flags, max_items=4),
+                    "mode": "ai_persona_synthesis",
+                }
+
+        # Fallback to deterministic evaluation for that specific persona
+        baseline = CritiqueService.evaluate_corpus(db, document_ids=document_ids, custom_clause=custom_clause, use_ai=False)
+        for p in baseline.get("personas", []):
+            if p.get("persona_id") == persona_id:
+                p["mode"] = "heuristic_persona"
+                return p
+
+        return {
+            "persona_id": persona_id,
+            "role_title": profile["role_title"],
+            "avatar_color": profile["avatar_color"],
+            "focus": profile["focus"],
+            "verdict": "Standard Review",
+            "risk_score": 40,
+            "red_flags": [],
+            "mode": "heuristic_persona",
         }

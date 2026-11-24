@@ -19,6 +19,11 @@ class DraftCounterRequest(BaseModel):
     persona_id: Optional[str] = "general_counsel"
     document_title: Optional[str] = None
 
+class PersonaCritiqueRequest(BaseModel):
+    persona_id: str
+    document_ids: Optional[List[str]] = None
+    custom_clause: Optional[str] = None
+
 @router.post("/evaluate")
 def evaluate_critique(req: CritiqueRequest, db: Session = Depends(get_db)):
     return CritiqueService.evaluate_corpus(
@@ -26,6 +31,15 @@ def evaluate_critique(req: CritiqueRequest, db: Session = Depends(get_db)):
         document_ids=req.document_ids,
         custom_clause=req.custom_clause,
         use_ai=bool(req.use_ai)
+    )
+
+@router.post("/evaluate-persona")
+def evaluate_single_persona(req: PersonaCritiqueRequest, db: Session = Depends(get_db)):
+    return CritiqueService.evaluate_single_persona(
+        db,
+        persona_id=req.persona_id,
+        document_ids=req.document_ids,
+        custom_clause=req.custom_clause,
     )
 
 @router.post("/draft-counter")

@@ -1,3 +1,4 @@
+import re
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from app.models.entities import Document, DocumentChunk
@@ -74,15 +75,19 @@ class ClauseService:
         for chunk in chunks:
             text = chunk.content
             text_lower = text.lower()
+            doc_title = doc_map.get(chunk.document_id, "Document")
+            clean_snip = text[:300].strip() + ("..." if len(text) > 300 else "")
 
             # Liability
             if any(k in text_lower for k in ["limitation of liability", "aggregate liability", "cumulative liability", "consequential damages", "capped at $", "capped at nominal"]):
-                favorability = "Vendor Favorable" if "aggregate cumulative liability" in text_lower or "$100" in text_lower else "Balanced"
+                favorability = "Vendor Favorable" if "aggregate cumulative liability" in text_lower or "$100" in text_lower or "shall not be liable" in text_lower else "Balanced"
                 categorized_clauses["Limitation of Liability"].append({
                     "id": f"cls-{chunk.id}",
-                    "document_title": doc_map.get(chunk.document_id, "Document"),
+                    "chunk_id": chunk.id,
+                    "document_id": chunk.document_id,
+                    "document_title": doc_title,
                     "page_number": chunk.page_number or 1,
-                    "text": text[:280].strip() + "...",
+                    "text": clean_snip,
                     "favorability": favorability,
                     "deviation_from_market": "High" if favorability == "Vendor Favorable" else "Standard"
                 })
@@ -92,35 +97,41 @@ class ClauseService:
                 favorability = "Customer Favorable" if "mutual indemn" in text_lower or "copyright shield" in text_lower else "Vendor Favorable"
                 categorized_clauses["Indemnification"].append({
                     "id": f"cls-{chunk.id}",
-                    "document_title": doc_map.get(chunk.document_id, "Document"),
+                    "chunk_id": chunk.id,
+                    "document_id": chunk.document_id,
+                    "document_title": doc_title,
                     "page_number": chunk.page_number or 1,
-                    "text": text[:280].strip() + "...",
+                    "text": clean_snip,
                     "favorability": favorability,
                     "deviation_from_market": "Standard" if favorability == "Customer Favorable" else "High"
                 })
 
             # Data Retention
             if any(k in text_lower for k in ["data retention", "retention of customer data", "zero data retention", "zdr", "purge customer data", "telemetry retention", "model training on customer data"]):
-                favorability = "Customer Favorable" if "zero data retention" in text_lower or "opt in" in text_lower else "Vendor Favorable"
+                favorability = "Customer Favorable" if "zero data retention" in text_lower or "opt in" in text_lower or "excluded from training" in text_lower else "Vendor Favorable"
                 categorized_clauses["Data Retention & Telemetry"].append({
                     "id": f"cls-{chunk.id}",
-                    "document_title": doc_map.get(chunk.document_id, "Document"),
+                    "chunk_id": chunk.id,
+                    "document_id": chunk.document_id,
+                    "document_title": doc_title,
                     "page_number": chunk.page_number or 1,
-                    "text": text[:280].strip() + "...",
+                    "text": clean_snip,
                     "favorability": favorability,
                     "deviation_from_market": "Moderate" if favorability == "Vendor Favorable" else "Compliant"
                 })
 
             # Termination
-            if any(k in text_lower for k in ["termination for convenience", "terminate without cause", "prior written notice of termination", "cure period of \d+"]):
-                favorability = "Balanced"
+            if any(k in text_lower for k in ["termination for convenience", "terminate without cause", "prior written notice of termination"]) or re.search(r"cure period of \d+", text_lower):
+                favorability = "Balanced" if "convenience" in text_lower or "pro-rata" in text_lower else "Vendor Favorable"
                 categorized_clauses["Termination for Convenience"].append({
                     "id": f"cls-{chunk.id}",
-                    "document_title": doc_map.get(chunk.document_id, "Document"),
+                    "chunk_id": chunk.id,
+                    "document_id": chunk.document_id,
+                    "document_title": doc_title,
                     "page_number": chunk.page_number or 1,
-                    "text": text[:280].strip() + "...",
+                    "text": clean_snip,
                     "favorability": favorability,
-                    "deviation_from_market": "Standard"
+                    "deviation_from_market": "Standard" if favorability == "Balanced" else "Moderate"
                 })
 
             # Governing Law
@@ -128,52 +139,86 @@ class ClauseService:
                 favorability = "Balanced"
                 categorized_clauses["Governing Law & Venue"].append({
                     "id": f"cls-{chunk.id}",
-                    "document_title": doc_map.get(chunk.document_id, "Document"),
+                    "chunk_id": chunk.id,
+                    "document_id": chunk.document_id,
+                    "document_title": doc_title,
                     "page_number": chunk.page_number or 1,
-                    "text": text[:280].strip() + "...",
+                    "text": clean_snip,
                     "favorability": favorability,
                     "deviation_from_market": "Standard"
                 })
 
         # Assemble library
         library = []
+        total_extracted = 0
         for b in BENCHMARKS:
             detected = categorized_clauses.get(b["category"], [])
+            total_extracted += len(detected)
             library.append({
                 "category": b["category"],
                 "market_standard": b["market_standard"],
                 "common_pitfall": b["common_pitfall"],
                 "risk_weight": b["risk_weight"],
                 "detected_count": len(detected),
-                "clauses": detected[:5]
+                "clauses": detected[:8]
             })
 
         return {
             "total_documents": len(docs),
             "total_categories": len(BENCHMARKS),
+            "total_clauses_extracted": total_extracted,
             "benchmarks": library
         }
 
     @staticmethod
     def analyze_clause(clause_text: str) -> Dict[str, Any]:
         text_lower = clause_text.lower()
-        if "vendor shall not be liable" in text_lower or "capped at 100" in text_lower or "as is" in text_lower:
+        risk_signals = [
+            ("uncapped customer" in text_lower or "unlimited liability" in text_lower, "Unlimited liability exposure detected.", -25),
+            ("vendor shall not be liable" in text_lower or "in no event shall provider" in text_lower or "capped at $100" in text_lower or "capped at 100" in text_lower, "Severely asymmetric or nominal vendor liability cap.", -30),
+            ("as is" in text_lower or "disclaims all warranties" in text_lower, "Broad warranty disclaimer removes baseline fitness guarantees.", -15),
+            ("train" in text_lower and ("model" in text_lower or "ai" in text_lower) and "not" not in text_lower and "never" not in text_lower and "excluded" not in text_lower, "Potential right for vendor to use customer data for AI model training.", -25),
+            ("auto-renew" in text_lower or "automatically renew" in text_lower, "Auto-renewal lock-in detected; verify notice cutoff window.", -10),
+            ("unilateral" in text_lower or "modify at any time" in text_lower, "Unilateral modification right creates commercial unpredictability.", -20),
+        ]
+        protective_signals = [
+            ("zero data retention" in text_lower or "zdr" in text_lower or "excluded from training" in text_lower or "never be used to train" in text_lower, "Strong AI data privacy & zero-retention protection.", +18),
+            ("mutual" in text_lower and ("indemn" in text_lower or "liability" in text_lower), "Bilateral risk allocation aligned with market norms.", +15),
+            ("12 months" in text_lower or "twelve (12) months" in text_lower or "twelve months" in text_lower, "Standard 12-month trailing fee cap.", +12),
+            ("48 hours" in text_lower or "24 hours" in text_lower or "72 hours" in text_lower, "Explicit incident notification SLA timeline.", +10),
+            ("pro-rata refund" in text_lower or "termination for convenience" in text_lower, "Customer exit flexibility with prepaid fee recovery.", +10),
+            ("soc 2" in text_lower or "gdpr" in text_lower or "iso 27001" in text_lower, "Recognized security/regulatory compliance commitment.", +8),
+        ]
+
+        score = 68
+        notes = []
+        for hit, msg, delta in risk_signals:
+            if hit:
+                score += delta
+                notes.append(msg)
+        for hit, msg, delta in protective_signals:
+            if hit:
+                score += delta
+                notes.append(msg)
+
+        score = max(15, min(98, score))
+
+        if score < 50:
             stance = "Vendor Favorable (High Risk for Customer)"
-            score = 35
-            recommendation = "Reject unilateral limit; propose mutual 12-month trailing fee ceiling with standard carve-outs."
-        elif "zero data retention" in text_lower or "sole discretion" in text_lower or "mutual indemnity" in text_lower:
-            stance = "Customer Protective (Standard Enterprise)"
-            score = 88
-            recommendation = "Balanced clause aligned with leading Fortune 500 procurement benchmarks."
+            default_rec = "Reject unilateral terms; propose mutual 12-month trailing fee ceiling, explicit breach SLA, and bilateral indemnification."
+        elif score >= 80:
+            stance = "Customer Protective (Enterprise Standard)"
+            default_rec = "Strong clause aligned with Fortune 500 procurement benchmarks. Safe to accept with standard audit verification."
         else:
             stance = "Balanced Commercial Standard"
-            score = 72
-            recommendation = "Verify carve-out definitions for gross negligence, willful misconduct, and breach of confidentiality."
+            default_rec = "Acceptable baseline, but verify carve-outs for gross negligence, confidentiality breaches, and termination notice."
+
+        recommendation = f"{' '.join(notes[:2])} {default_rec}".strip()
 
         return {
             "favorability": stance,
             "alignment_score": score,
             "recommendation": recommendation,
             "word_count": len(clause_text.split()),
-            "key_phrases": [w for w in ["indemnification", "liability", "warranty", "retention", "termination", "super-cap"] if w in text_lower]
+            "key_phrases": [w for w in ["indemnification", "liability", "warranty", "retention", "termination", "super-cap", "sla", "gdpr", "renewal"] if w in text_lower]
         }

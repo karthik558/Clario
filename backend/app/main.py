@@ -17,8 +17,10 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     # Restore persisted public configuration before accepting requests.
     from app.services.settings_service import load_saved_settings
+    from app.services.search_service import search_service
     with SessionLocal() as db:
         load_saved_settings(db)
+        search_service.ensure_index(db)
 
     logger.info(f"{settings.PROJECT_NAME} backend started successfully on port 8000.")
     yield

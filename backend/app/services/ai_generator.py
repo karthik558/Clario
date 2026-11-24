@@ -33,13 +33,14 @@ class AIGenerator:
         system_prompt: Optional[str] = None,
         max_tokens: int = 800,
         temperature: float = 0.2,
-        timeout: float = 40.0
+        timeout: float = 40.0,
+        json_mode: bool = False
     ) -> Optional[str]:
         provider = (settings.LLM_PROVIDER or "ollama").lower()
 
         # 1. Try Ollama if configured or default
         if provider == "ollama":
-            res = AIGenerator._generate_ollama(prompt, system_prompt, max_tokens, temperature, timeout)
+            res = AIGenerator._generate_ollama(prompt, system_prompt, max_tokens, temperature, timeout, json_mode=json_mode)
             if res:
                 return res
 
@@ -73,7 +74,7 @@ class AIGenerator:
 
         # Fallback probe to Ollama even if provider was different, if Ollama is running
         if provider != "ollama":
-            res = AIGenerator._generate_ollama(prompt, system_prompt, max_tokens, temperature, timeout=20.0)
+            res = AIGenerator._generate_ollama(prompt, system_prompt, max_tokens, temperature, timeout=timeout, json_mode=json_mode)
             if res:
                 return res
 
@@ -85,7 +86,7 @@ class AIGenerator:
         system_prompt: Optional[str] = None,
         max_tokens: int = 1500,
         temperature: float = 0.1,
-        timeout: float = 50.0
+        timeout: float = 65.0
     ) -> Optional[Dict[str, Any]]:
         full_system = (system_prompt or "") + "\n\nCRITICAL: Respond ONLY with a valid JSON object. Do not include markdown code blocks, conversational text, or explanations outside the JSON."
         raw_text = AIGenerator.generate_text(
@@ -93,7 +94,8 @@ class AIGenerator:
             system_prompt=full_system,
             max_tokens=max_tokens,
             temperature=temperature,
-            timeout=timeout
+            timeout=timeout,
+            json_mode=True
         )
         if not raw_text:
             return None
@@ -123,7 +125,8 @@ class AIGenerator:
         system_prompt: Optional[str],
         max_tokens: int,
         temperature: float,
-        timeout: float
+        timeout: float,
+        json_mode: bool = False
     ) -> Optional[str]:
         url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/generate"
         try:
@@ -155,6 +158,8 @@ class AIGenerator:
                         "top_p": 0.9
                     }
                 }
+                if json_mode:
+                    payload["format"] = "json"
                 resp = client.post(url, json=payload)
                 if resp.status_code == 200:
                     data = resp.json()

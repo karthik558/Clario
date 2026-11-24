@@ -98,9 +98,13 @@ class VectorSearchEngine:
             return []
 
         scored_results: List[Tuple[float, Dict[str, Any]]] = []
-        for i, doc_vec in enumerate(self.chunk_vectors):
+        limit = min(len(self.chunk_vectors), len(self.chunks))
+        for i in range(limit):
+            doc_vec = self.chunk_vectors[i]
             chunk = self.chunks[i]
             if document_ids and chunk.get("document_id") not in document_ids:
+                continue
+            if doc_vec.shape != q_vec.shape:
                 continue
 
             sim = cosine_similarity(q_vec, doc_vec)
@@ -115,8 +119,8 @@ class VectorSearchEngine:
             results.append({
                 "chunk_id": chunk["id"],
                 "document_id": chunk["document_id"],
-                "document_title": chunk.get("document_title", "Document"),
-                "page_number": chunk.get("page_number", 1),
+                "document_title": chunk.get("document_title") or "Document",
+                "page_number": int(chunk.get("page_number") or 1),
                 "snippet": chunk["content"],
                 "raw_score": round(score, 4),
                 "score": round(score, 4),

@@ -17,30 +17,35 @@ import {
   BookOpen
 } from 'lucide-react';
 import { api } from '../services/api';
-import { SearchMethodComparison, BenchmarkSummary } from '../types';
+import { SearchMethodComparison, BenchmarkSummary, DocumentItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 
 export const SearchLabPage: React.FC = () => {
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [query, setQuery] = useState('data retention zero data retention ZDR 30 days vs 60 days audit');
   const [topK, setTopK] = useState(5);
   const [comparison, setComparison] = useState<SearchMethodComparison | null>(null);
   const [benchmark, setBenchmark] = useState<BenchmarkSummary | null>(null);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingBenchmark, setLoadingBenchmark] = useState(false);
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'methods' | 'benchmark'>('methods');
   const [viewerChunk, setViewerChunk] = useState<{ docId: string; chunkId: string; page: number } | null>(null);
 
-  const executeComparison = async (q: string, k: number) => {
+  const executeComparison = async (q: string, k: number, docIds: string[] = selectedDocIds) => {
     if (!q.trim()) return;
     setLoadingSearch(true);
+    setError('');
     try {
-      const data = await api.compareSearchMethods(q, k);
+      const data = await api.compareSearchMethods(q, k, docIds.length > 0 ? docIds : undefined);
       setComparison(data);
     } catch (err) {
       console.error(err);
+      setError('Could not evaluate search retrieval. Check that documents are indexed and the backend is running.');
     } finally {
       setLoadingSearch(false);
     }
@@ -48,20 +53,23 @@ export const SearchLabPage: React.FC = () => {
 
   const handleRunSearchComparison = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    executeComparison(query, topK);
+    executeComparison(query, topK, selectedDocIds);
   };
 
   useEffect(() => {
-    executeComparison(query, topK);
+    api.getDocuments().then((docs) => setDocuments(docs.filter((d) => d.status === 'READY'))).catch(() => {});
+    executeComparison(query, topK, []);
   }, []);
 
   const handleRunAcademicBenchmark = async () => {
     setLoadingBenchmark(true);
+    setError('');
     try {
       const data = await api.runIRBenchmark();
       setBenchmark(data);
     } catch (err) {
       console.error(err);
+      setError('Could not execute the retrieval benchmark suite.');
     } finally {
       setLoadingBenchmark(false);
     }
@@ -70,7 +78,7 @@ export const SearchLabPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <PageHeader title="Search lab" description="Compare keyword, vector, and hybrid search results for the same query.">
+      <PageHeader title="Search lab" description="Diagnostic workbench showing how Clario retrieves exact evidence before generating AI answers.">
         {/* View Switcher Tabs */}
         <div className="flex bg-white rounded-md p-1 border border-clario-border text-xs">
           <button
@@ -84,6 +92,7 @@ export const SearchLabPage: React.FC = () => {
             Live Method Comparison
           </button>
           <button
+            aria-pressed={activeTab === 'benchmark'}
             onClick={() => {
               setActiveTab('benchmark');
               if (!benchmark) handleRunAcademicBenchmark();
@@ -99,8 +108,43 @@ export const SearchLabPage: React.FC = () => {
         </div>
       </PageHeader>
 
+      {error && (
+        <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800">
+          {error}
+        </div>
+      )}
+
       {activeTab === 'methods' ? (
         <div className="space-y-6">
+          {/* Document Scope Selector Bar */}
+          {documents.length > 0 && (
+            <Card className="p-3 bg-white border border-slate-200 shadow-xs">
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                <label htmlFor="search-lab-doc-scope" className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0">
+                  Document Scope:
+                </label>
+                <Select
+                  id="search-lab-doc-scope"
+                  value={selectedDocIds[0] || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const next = val ? [val] : [];
+                    setSelectedDocIds(next);
+                    executeComparison(query, topK, next);
+                  }}
+                  className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-1.5 min-w-[240px] max-w-md"
+                >
+                  <option value="">All Workspace Documents ({documents.length})</option>
+                  {documents.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title.replace(/_/g, ' ')}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </Card>
+          )}
+
           {/* Query Input Card */}
           <Card className="p-5">
             <form onSubmit={handleRunSearchComparison} className="space-y-4">
@@ -119,7 +163,11 @@ export const SearchLabPage: React.FC = () => {
                   <span className="text-xs text-slate-500 whitespace-nowrap">Top-K:</span>
                   <Select
                     aria-label="Number of search results" value={topK}
-                    onChange={(e) => setTopK(Number(e.target.value))}
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      setTopK(next);
+                      executeComparison(query, next);
+                    }}
                     className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-2 text-slate-800"
                   >
                     <option value={3}>3</option>
@@ -132,29 +180,35 @@ export const SearchLabPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Sample Queries */}
-              <div className="flex flex-wrap items-center gap-2 pt-2 text-[11px] text-slate-500">
-                <span className="font-medium">Test queries:</span>
-                {[
-                  'data retention zero data retention ZDR 30 days vs 60 days audit',
-                  'limitation of liability aggregate monetary damages $100 vs $250,000 USD',
-                  'cybersecurity breach notification preliminary alert 72 hours forensic report 60 days',
-                  'intellectual property Copyright Shield defense indemnification',
-                  'HIPAA compliance Business Associate Agreement BAA protected health information',
-                  'sovereign EU data boundary regional processing mesh GDPR'
-                ].map((sq, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setQuery(sq);
-                      executeComparison(sq, topK);
-                    }}
-                    className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-200 text-slate-700 text-[11px] truncate max-w-[260px] cursor-pointer outline-none focus:outline-none focus:ring-1 focus:ring-slate-300 transition-colors"
-                  >
-                    "{sq}"
-                  </button>
-                ))}
+              {/* Preset Query Selector */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
+                <label htmlFor="search-lab-preset" className="text-slate-500 font-medium shrink-0">
+                  Preset queries:
+                </label>
+                <Select
+                  id="search-lab-preset"
+                  value=""
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    setQuery(e.target.value);
+                    executeComparison(e.target.value, topK);
+                  }}
+                  className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-1.5 max-w-md text-slate-700"
+                >
+                  <option value="">Choose a sample benchmark query...</option>
+                  {[
+                    'data retention zero data retention ZDR 30 days vs 60 days audit',
+                    'limitation of liability aggregate monetary damages $100 vs $250,000 USD',
+                    'cybersecurity breach notification preliminary alert 72 hours forensic report 60 days',
+                    'intellectual property Copyright Shield defense indemnification',
+                    'HIPAA compliance Business Associate Agreement BAA protected health information',
+                    'sovereign EU data boundary regional processing mesh GDPR'
+                  ].map((sq, idx) => (
+                    <option key={idx} value={sq}>
+                      {sq}
+                    </option>
+                  ))}
+                </Select>
               </div>
             </form>
           </Card>

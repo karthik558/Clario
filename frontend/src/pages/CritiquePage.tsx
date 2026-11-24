@@ -23,13 +23,19 @@ import { CritiqueResponse, DocumentItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
 
 const getCritiqueCacheKey = (docIds: string[]) => {
   const sorted = [...docIds].sort().join(',');
   return `clario_critique_cache_${sorted || 'all'}`;
 };
-const CRITIQUE_AI_FLAGS_KEY = 'clario_critique_ai_drafted';
 const CRITIQUE_USE_AI_KEY = 'clario_critique_use_ai';
+
+const getFlagScopedKey = (docIds: string[], personaId: string, point: string) => {
+  const scope = [...docIds].sort().join(',') || 'all';
+  const normPoint = point.trim().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 48);
+  return `${scope}::${personaId}::${normPoint}`;
+};
 
 const saveCritiqueToStorage = (critiqueData: CritiqueResponse | null, docIds: string[]) => {
   if (!critiqueData) return;
@@ -72,19 +78,12 @@ export const CritiquePage: React.FC = () => {
   const [activePersonaTab, setActivePersonaTab] = useState<string>('general_counsel');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [draftingOptionKey, setDraftingOptionKey] = useState<string | null>(null);
+  const [evaluatingPersonaId, setEvaluatingPersonaId] = useState<string | null>(null);
   const [streamingDraftKey, setStreamingDraftKey] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState<string>('');
   const [globalThinking, setGlobalThinking] = useState(true);
   const [globalAnswerLength, setGlobalAnswerLength] = useState('standard');
-  const [aiDraftedFlags, setAiDraftedFlags] = useState<Record<string, boolean>>(() => {
-    try {
-      const stored = localStorage.getItem(CRITIQUE_AI_FLAGS_KEY);
-      if (stored) return JSON.parse(stored);
-    } catch {
-      // ignore
-    }
-    return {};
-  });
+  const [aiDraftedFlags, setAiDraftedFlags] = useState<Record<string, boolean>>({});
 
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -189,15 +188,8 @@ export const CritiquePage: React.FC = () => {
               return nextData;
             });
 
-            setAiDraftedFlags(prev => {
-              const updated = { ...prev, [key]: true };
-              try {
-                localStorage.setItem(CRITIQUE_AI_FLAGS_KEY, JSON.stringify(updated));
-              } catch {
-                // ignore
-              }
-              return updated;
-            });
+            const flagScopeKey = getFlagScopedKey(selectedDocIds, personaId, point);
+            setAiDraftedFlags(prev => ({ ...prev, [flagScopeKey]: true }));
 
             updateProgress(100, 'Defense clause drafted successfully', 'Completed');
           }
@@ -262,7 +254,8 @@ export const CritiquePage: React.FC = () => {
             if (!oldP) return newP;
             const mergedFlags = newP.red_flags.map((newF, fIdx) => {
               const oldF = oldP.red_flags.find(of => of.point === newF.point) || oldP.red_flags[fIdx];
-              if (oldF && oldF.counter_clause && aiDraftedFlags[`${newP.persona_id}-${fIdx}`]) {
+              const flagScopeKey = getFlagScopedKey(docIds, newP.persona_id, newF.point);
+              if (oldF && oldF.counter_clause && aiDraftedFlags[flagScopeKey]) {
                 return { ...newF, counter_clause: oldF.counter_clause };
               }
               return newF;
@@ -353,6 +346,47 @@ export const CritiquePage: React.FC = () => {
       // ignore
     }
     handleEvaluate(selectedDocIds, nextAi, customClause);
+  };
+
+  const handleEvaluateSinglePersona = async (personaId: string, roleTitle: string) => {
+    try {
+      setEvaluatingPersonaId(personaId);
+      const updatedPersona = await startTask({
+        title: `AI Persona Review: ${roleTitle}`,
+        category: 'critique',
+        targetScope: selectedDocTitle,
+        route: `/critique?council=${personaId}`,
+        initialStage: `Adopting ${roleTitle} personality & auditing scope...`,
+        executor: async (updateProgress) => {
+          updateProgress(25, `${roleTitle} is scrutinizing relevant clauses...`, `Auditing from ${roleTitle} perspective`);
+          const result = await api.evaluateSinglePersona(
+            personaId,
+            selectedDocIds.length > 0 ? selectedDocIds : undefined,
+            customClause.trim() || undefined
+          );
+          updateProgress(100, `${roleTitle} audit complete`, `Score: ${result.risk_score}% (${result.verdict})`);
+          return result;
+        },
+      });
+      if (updatedPersona) {
+        setData((prev) => {
+          if (!prev) return prev;
+          const nextPersonas = prev.personas.map((p) =>
+            p.persona_id === personaId ? { ...updatedPersona, persona_id: personaId } : p
+          );
+          const avgScore = Math.round(
+            nextPersonas.reduce((sum, p) => sum + p.risk_score, 0) / Math.max(nextPersonas.length, 1)
+          );
+          const nextData = { ...prev, composite_risk_score: avgScore, personas: nextPersonas };
+          saveCritiqueToStorage(nextData, selectedDocIds);
+          return nextData;
+        });
+      }
+    } catch (err) {
+      console.error('Persona AI review failed', err);
+    } finally {
+      setEvaluatingPersonaId(null);
+    }
   };
 
   const handleCopyClause = (text: string, id: string) => {
@@ -461,43 +495,26 @@ export const CritiquePage: React.FC = () => {
         </Card>
       )}
 
-      {/* Standard Multi-Document Scope Selector */}
+      {/* Standard Document Scope Selector */}
       {documents.length > 0 && (
         <Card className="p-3 bg-white border border-slate-200 shadow-xs">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0 mr-1">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <label htmlFor="critique-doc-scope" className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0">
               Audited Scope:
-            </span>
-            <button
-              onClick={() => handleSelectDoc(null)}
-              className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
-                selectedDocIds.length === 0
-                  ? 'bg-slate-900 text-white font-medium'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+            </label>
+            <Select
+              id="critique-doc-scope"
+              value={selectedDocIds[0] || ''}
+              onChange={(e) => handleSelectDoc(e.target.value || null)}
+              className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-1.5 min-w-[240px] max-w-md"
             >
-              All Workspace ({documents.length})
-            </button>
-            {documents.map((d) => {
-              const isSelected = selectedDocIds.includes(d.id);
-              const cleanTitle = d.title.replace(/_/g, ' ');
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  title={cleanTitle}
-                  onClick={() => handleSelectDoc(d.id)}
-                  className={`px-2.5 py-1 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[240px] min-w-0 overflow-hidden ${
-                    isSelected
-                      ? 'bg-slate-900 text-white font-medium'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  <FileText className="w-3 h-3 shrink-0" />
-                  <span className="truncate min-w-0 block text-left">{cleanTitle}</span>
-                </button>
-              );
-            })}
+              <option value="">All Workspace Documents ({documents.length})</option>
+              {documents.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </Select>
           </div>
         </Card>
       )}
@@ -523,7 +540,12 @@ export const CritiquePage: React.FC = () => {
         </Card>
 
         {/* General Legal Counsel */}
-        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+        <Card
+          onClick={() => setActivePersonaTab('general_counsel')}
+          className={`p-4 flex flex-col justify-between transition-all shadow-subtle rounded-md cursor-pointer ${
+            activePersonaTab === 'general_counsel' ? 'border-clario-navy ring-1 ring-clario-navy' : 'hover:border-clario-navy/30'
+          }`}
+        >
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10px] font-bold uppercase tracking-wider">
               General Counsel
@@ -536,12 +558,17 @@ export const CritiquePage: React.FC = () => {
             {personaGeneral ? `${personaGeneral.risk_score}%` : '—'}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            Liability & Indemnity
+            Liability &amp; Indemnity
           </span>
         </Card>
 
         {/* CFO */}
-        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+        <Card
+          onClick={() => setActivePersonaTab('cfo')}
+          className={`p-4 flex flex-col justify-between transition-all shadow-subtle rounded-md cursor-pointer ${
+            activePersonaTab === 'cfo' ? 'border-clario-navy ring-1 ring-clario-navy' : 'hover:border-clario-navy/30'
+          }`}
+        >
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10px] font-bold uppercase tracking-wider">
               CFO / Finance
@@ -554,12 +581,17 @@ export const CritiquePage: React.FC = () => {
             {personaCfo ? `${personaCfo.risk_score}%` : '—'}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            Renewal & Escalation
+            Renewal &amp; Escalation
           </span>
         </Card>
 
         {/* CISO */}
-        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+        <Card
+          onClick={() => setActivePersonaTab('ciso')}
+          className={`p-4 flex flex-col justify-between transition-all shadow-subtle rounded-md cursor-pointer ${
+            activePersonaTab === 'ciso' ? 'border-clario-navy ring-1 ring-clario-navy' : 'hover:border-clario-navy/30'
+          }`}
+        >
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10px] font-bold uppercase tracking-wider">
               CISO / Infosec
@@ -572,12 +604,17 @@ export const CritiquePage: React.FC = () => {
             {personaCiso ? `${personaCiso.risk_score}%` : '—'}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            Breach SLA & Telemetry
+            Breach SLA &amp; Telemetry
           </span>
         </Card>
 
         {/* CCO */}
-        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+        <Card
+          onClick={() => setActivePersonaTab('cco')}
+          className={`p-4 flex flex-col justify-between transition-all shadow-subtle rounded-md cursor-pointer ${
+            activePersonaTab === 'cco' ? 'border-clario-navy ring-1 ring-clario-navy' : 'hover:border-clario-navy/30'
+          }`}
+        >
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10px] font-bold uppercase tracking-wider">
               CCO / Compliance
@@ -590,12 +627,17 @@ export const CritiquePage: React.FC = () => {
             {personaCco ? `${personaCco.risk_score}%` : '—'}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            Regulatory & DPA Audit
+            Regulatory &amp; DPA Audit
           </span>
         </Card>
 
         {/* COO */}
-        <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
+        <Card
+          onClick={() => setActivePersonaTab('coo')}
+          className={`p-4 flex flex-col justify-between transition-all shadow-subtle rounded-md cursor-pointer ${
+            activePersonaTab === 'coo' ? 'border-clario-navy ring-1 ring-clario-navy' : 'hover:border-clario-navy/30'
+          }`}
+        >
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10px] font-bold uppercase tracking-wider">
               COO / Operations
@@ -608,7 +650,7 @@ export const CritiquePage: React.FC = () => {
             {personaCoo ? `${personaCoo.risk_score}%` : '—'}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            Uptime SLA & Lock-in
+            Uptime SLA &amp; Lock-in
           </span>
         </Card>
       </div>
@@ -679,20 +721,37 @@ export const CritiquePage: React.FC = () => {
       {/* Active Council Scrutiny Panel */}
       {activePersona && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 bg-white rounded-md border border-slate-200 shadow-xs">
-            <div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-white rounded-md border border-slate-200 shadow-xs">
+            <div className="min-w-0 flex-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
                 Primary Scrutiny Focus
               </span>
-              <span className="text-xs font-bold text-slate-900">{activePersona.focus}</span>
+              <span className="text-xs font-bold text-slate-900 mt-0.5 block">{activePersona.focus}</span>
             </div>
-            <div className="text-left sm:text-right">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                Recommended Stance
-              </span>
-              <Badge variant={activePersona.risk_score >= 50 ? 'red' : 'gold'} size="sm">
-                {activePersona.verdict}
-              </Badge>
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 shrink-0">
+              <div className="text-left md:text-right">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Recommended Stance
+                </span>
+                <span className={`text-xs font-semibold mt-0.5 block ${activePersona.risk_score >= 50 ? 'text-rose-700' : 'text-amber-700'}`}>
+                  {activePersona.verdict}
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                loading={evaluatingPersonaId === activePersona.persona_id}
+                onClick={() => handleEvaluateSinglePersona(activePersona.persona_id, activePersona.role_title)}
+                className="flex items-center gap-1.5 text-xs shrink-0 h-8"
+                title={`Run dedicated AI audit strictly as ${activePersona.role_title}`}
+              >
+                <Cpu className="w-3.5 h-3.5 text-clario-navy" />
+                <span>
+                  {evaluatingPersonaId === activePersona.persona_id
+                    ? 'Auditing…'
+                    : `Run AI as ${activePersona.role_title.split('(')[0].trim()}`}
+                </span>
+              </Button>
             </div>
           </div>
 
@@ -702,7 +761,8 @@ export const CritiquePage: React.FC = () => {
               const isDrafting = draftingOptionKey === flagKey;
               const isStreaming = streamingDraftKey === flagKey;
               const displayClause = isStreaming ? streamingText : flag.counter_clause;
-              const isAiGenerated = !!aiDraftedFlags[flagKey];
+              const flagScopeKey = getFlagScopedKey(selectedDocIds, activePersona.persona_id, flag.point);
+              const isAiGenerated = !!aiDraftedFlags[flagScopeKey] || activePersona.mode === 'ai_persona_synthesis';
 
               return (
                 <Card
@@ -728,9 +788,10 @@ export const CritiquePage: React.FC = () => {
                           Recommended Strategic Counter-Clause
                         </span>
                         {isAiGenerated && (
-                          <Badge variant="navy" size="md">
-                            AI Generated
-                          </Badge>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
+                            <Cpu className="w-3 h-3 text-slate-500" />
+                            <span>AI drafted</span>
+                          </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5">

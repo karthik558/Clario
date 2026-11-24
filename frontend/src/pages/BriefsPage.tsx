@@ -21,6 +21,7 @@ import { BriefResponse, DocumentItem, AudioSummaryResponse } from '../types';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { Select } from '../components/ui/Select';
 import { AudioBriefingPlayer } from '../components/audio/AudioBriefingPlayer';
 
 export const BriefsPage: React.FC = () => {
@@ -73,9 +74,10 @@ export const BriefsPage: React.FC = () => {
     }
   }, [searchParams, location.hash, brief]);
 
-  const fetchAudioSummary = async () => {
+  const fetchAudioSummary = async (docIdsOverride?: string[]) => {
+    const scope = docIdsOverride !== undefined ? docIdsOverride : selectedDocIds;
     try {
-      const audio = await api.getAudioSummary(selectedDocIds.length ? selectedDocIds : undefined);
+      const audio = await api.getAudioSummary(scope.length ? scope : undefined);
       setAudioSummary(audio);
     } catch {
       // Non-fatal if audio summary generation is skipped
@@ -86,7 +88,8 @@ export const BriefsPage: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      const cached = getLatestTask('brief');
+      const hasUrlScope = initialDocs.length > 0 || !!searchParams.get('template');
+      const cached = hasUrlScope ? undefined : getLatestTask('brief');
       if (cached && cached.status === 'completed' && cached.result) {
         setBrief(cached.result);
       }
@@ -197,6 +200,7 @@ export const BriefsPage: React.FC = () => {
       setSelectedTemplate(targetTemplate);
     }
     handleGenerate(targetTemplate, useAi, next);
+    fetchAudioSummary(next);
   };
 
   const handleCopy = () => {
@@ -282,59 +286,35 @@ export const BriefsPage: React.FC = () => {
       {/* Document Scope Selector Bar */}
       {documents.length > 0 && (
         <Card className="p-3 bg-white border border-slate-200 shadow-xs">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0 mr-1">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <label htmlFor="briefs-doc-scope" className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0">
               Document Scope:
-            </span>
-            <button
-              type="button"
-              onClick={() => handleToggleDoc(null)}
-              className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
-                selectedDocIds.length === 0
-                  ? 'bg-slate-900 text-white font-medium'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+            </label>
+            <Select
+              id="briefs-doc-scope"
+              value={selectedDocIds[0] || ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                const next = val ? [val] : [];
+                setSelectedDocIds(next);
+                handleGenerate(selectedTemplate, useAi, next);
+                fetchAudioSummary(next);
+              }}
+              className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-1.5 min-w-[240px] max-w-md"
             >
-              All Workspace ({documents.length})
-            </button>
-            {documents.map((d) => {
-              const isDocSelected = selectedDocIds.includes(d.id);
-              const cleanTitle = d.title.replace(/_/g, ' ');
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  title={cleanTitle}
-                  onClick={() => handleToggleDoc(d.id)}
-                  className={`px-2.5 py-1 rounded-md text-xs transition-colors flex items-center gap-1.5 max-w-[240px] min-w-0 overflow-hidden ${
-                    isDocSelected
-                      ? 'bg-slate-900 text-white font-medium'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  <FileText className="w-3 h-3 shrink-0" />
-                  <span className="truncate min-w-0 block text-left">{cleanTitle}</span>
-                </button>
-              );
-            })}
-
-            {selectedDocIds.length > 0 && (
-              <button
-                type="button"
-                onClick={() => handleToggleDoc(null)}
-                className="px-2 py-1 rounded-md text-xs text-slate-500 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1"
-                title="Reset selection to All Workspace"
-              >
-                <X className="w-3 h-3" />
-                <span>Reset</span>
-              </button>
-            )}
+              <option value="">All Workspace Documents ({documents.length})</option>
+              {documents.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </Select>
           </div>
         </Card>
       )}
 
       {/* Template Chooser Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {templates.map((tmpl) => {
           const isSelected = selectedTemplate === tmpl.id;
           const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -513,7 +493,16 @@ export const BriefsPage: React.FC = () => {
                   <div key={i} className="p-3 rounded-md bg-slate-50 border border-slate-200 space-y-1">
                     <div className="flex flex-wrap gap-2 items-center justify-between">
                       <span className="text-xs font-bold text-slate-900">{r.item}</span>
-                      <Badge variant={r.status === 'Action Required' ? 'red' : 'navy'} size="sm">
+                      <Badge
+                        variant={
+                          ['CRITICAL', 'HIGH', 'ACTION REQUIRED'].includes(r.status.toUpperCase())
+                            ? 'red'
+                            : r.status.toUpperCase() === 'MODERATE' || r.status.toUpperCase() === 'MEDIUM'
+                            ? 'gold'
+                            : 'navy'
+                        }
+                        size="sm"
+                      >
                         {r.status}
                       </Badge>
                     </div>
