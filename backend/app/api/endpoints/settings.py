@@ -121,12 +121,13 @@ def check_local_ai_status(provider: Optional[str] = None, base_url: Optional[str
                 if resp.status_code == 200:
                     data = resp.json()
                     models = [m.get("name") for m in data.get("models", []) if m.get("name")]
+                    resolved_active = active if (active and active in models) else (models[0] if models else "")
                     return {
                         "running": True,
                         "provider": "ollama",
                         "url": url,
                         "models": models,
-                        "active_model": active or (models[0] if models else ""),
+                        "active_model": resolved_active,
                         "message": f"Connected to Ollama. {len(models)} model(s) available."
                     }
             else:
@@ -143,12 +144,13 @@ def check_local_ai_status(provider: Optional[str] = None, base_url: Optional[str
                             data = resp.json()
                             raw_models = data.get("data", []) if isinstance(data, dict) else []
                             models = [m.get("id") for m in raw_models if isinstance(m, dict) and m.get("id")]
+                            resolved_active = active if (active and active in models) else (models[0] if models else "")
                             return {
                                 "running": True,
                                 "provider": prov,
                                 "url": url,
                                 "models": models,
-                                "active_model": active or (models[0] if models else ""),
+                                "active_model": resolved_active,
                                 "message": f"Connected to {prov.replace('_', ' ').title()}. {len(models)} model(s) discovered."
                             }
                     except httpx.HTTPError:

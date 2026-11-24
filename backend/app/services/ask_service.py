@@ -471,13 +471,13 @@ class AskService:
                 available = [m.get("name") for m in tags_data.get("models", []) if m.get("name")]
                 if available:
                     if settings.OLLAMA_MODEL in available:
-                        return settings.OLLAMA_MODEL
+                        return settings.OLLAMA_MODEL or "llama3.2"
                     # Fallback to the first available model
                     settings.OLLAMA_MODEL = available[0]
                     return available[0]
         except Exception:
             pass
-        return settings.OLLAMA_MODEL
+        return settings.OLLAMA_MODEL or "llama3.2"
 
     @staticmethod
     def _generate_ollama_answer(query: str, citations: List[CitationItem], model_override: Optional[str] = None) -> str:

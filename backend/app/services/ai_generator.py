@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class AIGenerator:
     """
     Centralized AI generator connecting to local or cloud LLM providers:
-    - Ollama (localhost:11434 with gemma3, mimo, llama, etc.)
+    - Ollama (localhost:11434 with llama, mistral, etc.)
     - LM Studio / vLLM / OpenAI-compatible local AI
     - Google Gemini (if GEMINI_API_KEY is configured)
     - OpenAI (if OPENAI_API_KEY is configured)

@@ -39,9 +39,9 @@ class Settings(BaseSettings):
     # Options: "extractive", "ollama", "lm_studio", "vllm", "openai_compatible", "gemini", "openai"
     LLM_PROVIDER: str = "ollama"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "gemma3:latest"
+    OLLAMA_MODEL: str = ""
     LOCAL_AI_BASE_URL: str = "http://localhost:11434"
-    LOCAL_AI_MODEL: str = "gemma3:latest"
+    LOCAL_AI_MODEL: str = ""
     LOCAL_AI_API_KEY: str = ""
     LOCAL_AI_PROVIDER: str = "ollama"
     THINKING_MODE: bool = True

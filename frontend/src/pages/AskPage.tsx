@@ -74,7 +74,7 @@ export const AskPage: React.FC = () => {
 
   // Local AI Gateway & Engine States
   const [llmProvider, setLlmProvider] = useState<string>('ollama');
-  const [localModel, setLocalModel] = useState<string>('gemma3:latest');
+  const [localModel, setLocalModel] = useState<string>('');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [savingThinking, setSavingThinking] = useState(false);
@@ -141,8 +141,10 @@ export const AskPage: React.FC = () => {
       setAvailableModels(status.models || []);
       if (status.models && status.models.length > 0) {
         if (!status.models.includes(localModel)) {
-          setLocalModel(status.active_model || status.models[0]);
+          setLocalModel(status.active_model && status.models.includes(status.active_model) ? status.active_model : status.models[0]);
         }
+      } else if (status.active_model) {
+        setLocalModel(status.active_model);
       }
       setStatusMessage(status.message);
     } catch {
@@ -583,7 +585,7 @@ export const AskPage: React.FC = () => {
                     type="text"
                     value={localModel}
                     onChange={(e) => setLocalModel(e.target.value)}
-                    placeholder="e.g. gemma3:latest, deepseek-r1:8b"
+                    placeholder="e.g. llama3.2, deepseek-r1:8b"
                     className="text-xs px-3 py-2 border border-clario-border rounded-md bg-white text-slate-800 w-full sm:w-60 shadow-xs"
                   />
                 )}

@@ -80,7 +80,7 @@ export const SettingsPage: React.FC = () => {
       setDefaultTopK(data.default_top_k);
 
       // Check Ollama status
-      checkOllama();
+      checkOllama(data.ollama_model);
 
       // Fetch DB tables
       fetchDatabaseTables();
@@ -91,12 +91,19 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const checkOllama = async () => {
+  const checkOllama = async (savedModel?: unknown) => {
     setCheckingOllama(true);
     try {
       const status = await api.getOllamaStatus();
       setOllamaStatus(status);
-      if (status.active_model) {
+      const currentModel = typeof savedModel === 'string' ? savedModel : ollamaModel;
+      if (status.models && status.models.length > 0) {
+        if (!currentModel) {
+          setOllamaModel(status.active_model && status.models.includes(status.active_model) ? status.active_model : status.models[0]);
+        } else {
+          setOllamaModel(currentModel);
+        }
+      } else if (status.active_model && !currentModel) {
         setOllamaModel(status.active_model);
       }
     } catch (err) {
@@ -104,7 +111,7 @@ export const SettingsPage: React.FC = () => {
         running: false,
         url: ollamaUrl,
         models: [],
-        active_model: ollamaModel,
+        active_model: typeof ollamaModel === 'string' ? ollamaModel : '',
         message: 'Could not connect to Ollama daemon on http://localhost:11434'
       });
     } finally {
@@ -272,7 +279,7 @@ export const SettingsPage: React.FC = () => {
               type="button"
               variant="outline"
               size="sm"
-              onClick={checkOllama}
+              onClick={() => checkOllama()}
               loading={checkingOllama}
             >
               <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
@@ -397,7 +404,7 @@ export const SettingsPage: React.FC = () => {
                 variant="primary"
                 size="sm"
                 onClick={() => handleSaveModel()}
-                disabled={saving || !ollamaModel.trim()}
+                disabled={saving || !(typeof ollamaModel === 'string' && ollamaModel.trim())}
                 className="h-8 px-3 text-xs font-semibold shrink-0"
               >
                 Save
@@ -405,7 +412,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             {/* Custom model text input if custom is chosen or model is external/custom */}
-            {(showCustomInput || !availableModels.includes(ollamaModel)) && (
+            {(showCustomInput || (Boolean(ollamaModel) && !availableModels.includes(ollamaModel) && Boolean(ollamaStatus?.running))) && (
               <div className="pt-2">
                 <input
                   id="ollamaModel"
