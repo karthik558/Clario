@@ -158,7 +158,7 @@ class AIGenerator:
                 resp = client.post(url, json=payload)
                 if resp.status_code == 200:
                     data = resp.json()
-                    return (data.get("response") or data.get("thinking") or "").strip()
+                    return (data.get("response") or "").strip()
         except Exception as exc:
             logger.debug("Ollama generation call failed: %s", exc)
         return None

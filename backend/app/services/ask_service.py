@@ -464,12 +464,53 @@ class AskService:
 
     @staticmethod
     def _extract_thinking(raw_text: str) -> Tuple[str, Optional[str]]:
+        if not raw_text:
+            return "", None
         match = re.search(r'<think>(.*?)</think>', raw_text, re.DOTALL)
         if match:
             thinking = match.group(1).strip()
             answer = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL).strip()
-            return answer, thinking
-        return raw_text.strip(), None
+        else:
+            thinking = None
+            answer = raw_text.strip()
+
+        # Clean unbracketed thinking or prompt preambles (e.g. "Thinking Process: 1. Analyze the Request:")
+        if "Thinking Process:" in answer or "Role: Clario" in answer or "Task: Answer" in answer or "Analyze the Request" in answer:
+            for marker in ["Direct Cited Answer:", "Direct Answer:", "\n\nAnswer:", "\nAnswer:"]:
+                if marker in answer:
+                    parts = answer.split(marker, 1)
+                    if not thinking:
+                        thinking = parts[0].strip()
+                    answer = parts[1].strip()
+                    break
+            else:
+                lines = answer.split("\n")
+                ans_lines, th_lines = [], []
+                is_preamble = True
+                for line in lines:
+                    s = line.strip()
+                    if is_preamble and (
+                        s.startswith("Thinking Process:") or
+                        s.startswith("Role:") or
+                        s.startswith("Task:") or
+                        s.startswith("Constraints:") or
+                        s.startswith("Input:") or
+                        s.startswith("Analyze the Documents:") or
+                        s.startswith("Analyze the Request") or
+                        s.startswith("1. Analyze") or
+                        s.startswith("2. Evaluate") or
+                        (s.startswith("[") and "Page" in s and s.endswith(":"))
+                    ):
+                        th_lines.append(line)
+                    else:
+                        is_preamble = False
+                        ans_lines.append(line)
+                if ans_lines:
+                    answer = "\n".join(ans_lines).strip()
+                    if not thinking and th_lines:
+                        thinking = "\n".join(th_lines).strip()
+
+        return answer, thinking
 
     @staticmethod
     def _get_active_ollama_model(client: httpx.Client, model_override: Optional[str] = None) -> str:
@@ -503,33 +544,24 @@ class AskService:
 
         ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
         if ans_len == "concise":
-            len_instruction = "- Provide an ultra-concise, fast answer. Limit to 1-2 punchy sentences or maximum 2 short bullet points without conversational preamble."
-            num_tokens = 220
+            len_instruction = "Limit to 1-2 punchy sentences or short bullet points without conversational preamble."
+            num_tokens = 250
         elif ans_len == "comprehensive":
-            len_instruction = "- Provide an exhaustive, in-depth legal analysis with thorough clause breakdowns and complete contractual cross-references."
+            len_instruction = "Provide a thorough legal analysis with clear contractual cross-references."
             num_tokens = 850
         else:
-            len_instruction = "- Synthesize the answer clearly with concise, structured bullet points."
+            len_instruction = "Synthesize the answer clearly with concise, structured bullet points."
             num_tokens = 450
 
-        system_prompt = (
-            "You are Clario, an elite document intelligence research assistant. "
-            "Answer the user's question directly, accurately, and concisely using ONLY the retrieved document context below.\n"
-            f"{len_instruction}\n"
-            "- Provide the direct cited answer instantly without <think> tags, internal reasoning, or deliberation steps.\n"
-            "- When comparing documents or identifying differences, contrast the clauses across the retrieved documents directly, noting document titles and exact figures, terms, and timelines.\n"
-            "- Cite factual claims with bracketed numbers corresponding to the context like [1], [2].\n"
-            "- Keep the response direct, clear, and factual without conversational filler or unverified assumptions."
+        prompt = (
+            f"Answer the user's question directly, accurately, and concisely using ONLY the retrieved document context below.\n"
+            f"- {len_instruction}\n"
+            f"- Cite factual claims with bracketed numbers corresponding to the context like [1], [2].\n"
+            f"- Provide the direct answer immediately without role definitions, meta commentary, or thinking steps.\n\n"
+            f"Retrieved Context:\n{context_str}\n\n"
+            f"Question: {query}\n\n"
+            f"Answer:"
         )
-
-        prompt = f"""{system_prompt}
-
-Retrieved Document Context:
-{context_str}
-
-User Question: {query}
-
-Direct Cited Answer:"""
 
         with httpx.Client(timeout=120.0) as client:
             model = AskService._get_active_ollama_model(client, model_override)
@@ -543,13 +575,16 @@ Direct Cited Answer:"""
                     "temperature": 0.1,
                     "num_predict": num_tokens,
                     "top_p": 0.9,
-                    "stop": ["User Question:", "Retrieved Document Context:"]
+                    "stop": ["Question:", "Retrieved Context:"]
                 }
             }
             resp = client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()
-            return (data.get("response") or data.get("thinking") or "").strip()
+            raw_resp = (data.get("response") or "").strip()
+            if not raw_resp and show_thinking and data.get("thinking"):
+                return data.get("thinking", "").strip()
+            return raw_resp
 
     @staticmethod
     def _generate_local_openai_answer(
@@ -684,13 +719,15 @@ Direct Cited Answer:"""
         top_citations = citations[:5]
         context_str = "\n\n".join([f"[{c.citation_id}] Document '{c.document_title}' (Page {c.page_number}):\n{c.snippet[:1500]}" for c in top_citations])
         ans_len = getattr(settings, "ANSWER_LENGTH", "standard")
-        stream_tokens = 220 if ans_len == "concise" else (850 if ans_len == "comprehensive" else 450)
+        stream_tokens = 250 if ans_len == "concise" else (850 if ans_len == "comprehensive" else 450)
         len_hint = " Keep it ultra-concise in 1-2 short bullet points." if ans_len == "concise" else ""
-        system_prompt = (
-            "You are Clario, an elite document intelligence research assistant. "
-            f"Answer directly and accurately using ONLY the retrieved context below.{len_hint} Cite claims like [1], [2]."
+        prompt = (
+            f"Answer directly and accurately using ONLY the retrieved context below.{len_hint} "
+            f"Cite claims with bracketed numbers like [1], [2]. Answer directly without preamble, role definitions, or thinking steps.\n\n"
+            f"Context:\n{context_str}\n\n"
+            f"Question: {request.query}\n\n"
+            f"Answer:"
         )
-        prompt = f"{system_prompt}\n\nRetrieved Context:\n{context_str}\n\nUser Question: {request.query}\n\nDirect Cited Answer:"
         try:
             show_thinking = request.thinking_mode if request.thinking_mode is not None else settings.THINKING_MODE
             with httpx.Client(timeout=120.0) as client:
@@ -718,9 +755,6 @@ Direct Cited Answer:"""
                                 if token:
                                     full_text += token
                                     yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
-                                elif thinking_chunk and not show_thinking:
-                                    full_text += thinking_chunk
-                                    yield f"event: token\ndata: {json.dumps({'text': thinking_chunk})}\n\n"
                             except Exception:
                                 continue
             if not full_text.strip():

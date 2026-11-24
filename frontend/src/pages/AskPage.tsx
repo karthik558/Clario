@@ -83,15 +83,55 @@ export const AskPage: React.FC = () => {
 
   // Local AI Gateway & Engine States
   const [llmProvider, setLlmProvider] = useState<string>('ollama');
-  const [localModel, setLocalModel] = useState<string>('');
+  const [localModel, setLocalModel] = useState<string>(() => {
+    try {
+      const cached = localStorage.getItem('clario_ai_status');
+      if (cached) return JSON.parse(cached).active_model || '';
+    } catch {}
+    return '';
+  });
   const [availableModels, setAvailableModels] = useState<string[]>([]);
-  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [statusMessage, setStatusMessage] = useState<string>(() => {
+    try {
+      const cached = localStorage.getItem('clario_ai_status');
+      if (cached) return JSON.parse(cached).message || 'Connected';
+    } catch {}
+    return 'Connected';
+  });
   const [savingThinking, setSavingThinking] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [thinkingMode, setThinkingMode] = useState<boolean>(false);
   const [answerLength, setAnswerLength] = useState<'concise' | 'standard' | 'comprehensive'>('standard');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showScopePicker, setShowScopePicker] = useState(false);
+  const [showScopeModal, setShowScopeModal] = useState(false);
+  const [scopeSearch, setScopeSearch] = useState('');
+  const [researchMode, setResearchMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('clario_ask_research_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleResearchMode = () => {
+    setResearchMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('clario_ask_research_mode', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const filteredScopeDocuments = useMemo(() => {
+    if (!scopeSearch.trim()) return documents;
+    const lower = scopeSearch.toLowerCase();
+    return documents.filter((doc) =>
+      doc.title.toLowerCase().includes(lower) ||
+      (doc.filename && doc.filename.toLowerCase().includes(lower))
+    );
+  }, [documents, scopeSearch]);
 
   const [error, setError] = useState('');
   const [pendingQuery, setPendingQuery] = useState('');
@@ -154,14 +194,25 @@ export const AskPage: React.FC = () => {
     try {
       const status = await api.getLocalAIStatus(provider);
       setAvailableModels(status.models || []);
+      let activeModel = localModel;
       if (status.models && status.models.length > 0) {
         if (!status.models.includes(localModel)) {
-          setLocalModel(status.active_model && status.models.includes(status.active_model) ? status.active_model : status.models[0]);
+          activeModel = status.active_model && status.models.includes(status.active_model) ? status.active_model : status.models[0];
+          setLocalModel(activeModel);
         }
       } else if (status.active_model) {
-        setLocalModel(status.active_model);
+        activeModel = status.active_model;
+        setLocalModel(activeModel);
       }
       setStatusMessage(status.message);
+      try {
+        localStorage.setItem('clario_ai_status', JSON.stringify({
+          provider,
+          message: status.message,
+          active_model: activeModel,
+          models: status.models
+        }));
+      } catch {}
     } catch {
       setStatusMessage('Local server unreachable');
     }
@@ -189,7 +240,16 @@ export const AskPage: React.FC = () => {
     });
 
     api.getAnswerHistory().then((rows) => {
-      setHistory(rows.map((row) => ({ query: row.query, response: row.response })));
+      setHistory(rows.map((row) => {
+        let ans = row.response.answer;
+        if (ans && (ans.includes('Thinking Process:') || ans.includes('Role: Clario'))) {
+          const parts = ans.split(/Direct Cited Answer:|Direct Answer:|\n\nAnswer:|\nAnswer:/);
+          if (parts.length > 1) {
+            ans = parts[parts.length - 1].trim();
+          }
+        }
+        return { query: row.query, response: { ...row.response, answer: ans } };
+      }));
     }).catch(() => {
       // Non-fatal
     }).finally(() => {
@@ -268,6 +328,34 @@ export const AskPage: React.FC = () => {
 
     const docIds = selectedDocIds.length > 0 ? selectedDocIds : undefined;
     const targetScope = docIds && docIds.length > 0 ? `${docIds.length} Document${docIds.length > 1 ? 's' : ''}` : 'All Workspace Documents';
+    const topK = researchMode ? 10 : undefined;
+
+    // Check localStorage QA cache first
+    const cacheKey = `${q.toLowerCase()}__${(docIds || []).sort().join(',')}`;
+    try {
+      const stored = localStorage.getItem('clario_ask_cache');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed[cacheKey]) {
+          const cachedRes = parsed[cacheKey];
+          if (cachedRes?.answer && !cachedRes.answer.includes('Thinking Process:') && !cachedRes.answer.includes('Role: Clario')) {
+            setResponse(cachedRes);
+            setHistory((prev) => {
+              if (prev.some((h) => h.query === q && h.response.answer === cachedRes.answer)) return prev;
+              return [...prev, { query: q, response: cachedRes }];
+            });
+            setLoading(false);
+            setPendingQuery('');
+            setTimeout(() => {
+              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+            return;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
 
     // Streaming SSE Path
     if (streamingMode) {
@@ -282,14 +370,15 @@ export const AskPage: React.FC = () => {
           category: 'ask',
           targetScope,
           route: '/ask',
-          initialStage: 'Searching indexed passages...',
+          initialStage: researchMode ? 'Deep multi-document research analysis...' : 'Searching indexed passages...',
           executor: async (updateProgress) => {
-            updateProgress(15, 'Searching indexed passages...', `Searching for: "${q.slice(0, 45)}..."`);
+            updateProgress(15, researchMode ? 'Deep multi-document research analysis...' : 'Searching indexed passages...', `Searching for: "${q.slice(0, 45)}..."`);
 
             const result = await api.streamAsk(
               {
                 query: q,
                 document_ids: docIds,
+                top_k: topK,
                 thinking_mode: thinkingMode,
                 local_model: localModel || undefined,
                 llm_provider: llmProvider
@@ -314,6 +403,16 @@ export const AskPage: React.FC = () => {
             return result;
           }
         });
+
+        // Cache in localStorage
+        try {
+          const stored = localStorage.getItem('clario_ask_cache');
+          const parsed = stored ? JSON.parse(stored) : {};
+          parsed[cacheKey] = doneResponse;
+          const keys = Object.keys(parsed);
+          if (keys.length > 30) delete parsed[keys[0]];
+          localStorage.setItem('clario_ask_cache', JSON.stringify(parsed));
+        } catch {}
 
         setResponse(doneResponse);
         setHistory((prev) => {
@@ -341,9 +440,9 @@ export const AskPage: React.FC = () => {
         category: 'ask',
         targetScope,
         route: '/ask',
-        initialStage: 'Searching indexed passages...',
+        initialStage: researchMode ? 'Deep multi-document research analysis...' : 'Searching indexed passages...',
         executor: async (updateProgress) => {
-          updateProgress(15, 'Searching indexed passages...', `Searching for: "${q.slice(0, 45)}..."`);
+          updateProgress(15, researchMode ? 'Deep multi-document research analysis...' : 'Searching indexed passages...', `Searching for: "${q.slice(0, 45)}..."`);
 
           let currentPct = 15;
           const progressInterval = setInterval(() => {
@@ -352,7 +451,7 @@ export const AskPage: React.FC = () => {
               updateProgress(
                 currentPct,
                 currentPct < 50
-                  ? 'Searching indexed passages and citations...'
+                  ? (researchMode ? 'Conducting multi-source cross-examination...' : 'Searching indexed passages and citations...')
                   : 'Synthesizing verified cited answer...',
                 'Auditing context and citations'
               );
@@ -361,7 +460,7 @@ export const AskPage: React.FC = () => {
 
           let answerRes: AskResponse;
           try {
-            answerRes = await api.ask(q, docIds, undefined, thinkingMode, localModel || undefined, llmProvider);
+            answerRes = await api.ask(q, docIds, topK, thinkingMode, localModel || undefined, llmProvider);
           } finally {
             clearInterval(progressInterval);
           }
@@ -370,6 +469,16 @@ export const AskPage: React.FC = () => {
           return answerRes;
         }
       });
+
+      // Cache in localStorage
+      try {
+        const stored = localStorage.getItem('clario_ask_cache');
+        const parsed = stored ? JSON.parse(stored) : {};
+        parsed[cacheKey] = res;
+        const keys = Object.keys(parsed);
+        if (keys.length > 30) delete parsed[keys[0]];
+        localStorage.setItem('clario_ask_cache', JSON.stringify(parsed));
+      } catch {}
 
       setResponse(res);
       setHistory((prev) => {
@@ -446,36 +555,28 @@ export const AskPage: React.FC = () => {
         description="Ask questions across your documents and follow each answer back to its sources."
       >
         <div className="flex flex-wrap items-center gap-2">
-          {/* Document Scope Toggle Button */}
+          {/* Document Scope Modal Button (Top) */}
           <button
             type="button"
-            onClick={() => setShowScopePicker((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border transition-colors shadow-2xs ${
-              showScopePicker || selectedDocIds.length > 0
-                ? 'bg-slate-900 text-white border-slate-900'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-            }`}
+            onClick={() => setShowScopeModal(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-2xs cursor-pointer"
             title="Filter specific documents or search entire workspace"
           >
-            <Layers className="w-3.5 h-3.5" />
+            <Layers className="w-3.5 h-3.5 text-clario-navy" />
             <span>
               {selectedDocIds.length > 0 ? `${selectedDocIds.length} doc${selectedDocIds.length > 1 ? 's' : ''} selected` : 'Entire workspace'}
             </span>
-            <ChevronDown className={`w-3 h-3 transition-transform ${showScopePicker ? 'rotate-180' : ''}`} />
           </button>
 
           {/* Answer Settings Trigger Button */}
           <button
             type="button"
             onClick={() => setShowSettingsModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-2xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-2xs transition-colors cursor-pointer"
             title="Configure AI model, thinking mode, and streaming"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-clario-navy" />
             <span>Answer settings</span>
-            <span className="hidden sm:inline-flex text-[10px] text-slate-500 font-normal ml-0.5">
-              ({localModel || (llmProvider === 'ollama' ? 'Ollama' : 'LM Studio')})
-            </span>
           </button>
 
           {/* Reset Chat Button */}
@@ -485,7 +586,7 @@ export const AskPage: React.FC = () => {
               size="sm"
               onClick={handleClearHistory}
               disabled={clearing || loading}
-              className="text-xs text-slate-700 hover:text-rose-600 hover:border-rose-300 flex items-center gap-1.5"
+              className="text-xs text-slate-700 hover:text-rose-600 hover:border-rose-300 flex items-center gap-1.5 cursor-pointer"
             >
               <RotateCcw className={`w-3.5 h-3.5 ${clearing ? 'animate-spin' : ''}`} />
               <span>{clearing ? 'Clearing…' : 'Reset Chat'}</span>
@@ -598,9 +699,6 @@ export const AskPage: React.FC = () => {
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-slate-900 text-xs">Clario</span>
-                    <Badge variant={item.response.mode === 'safety_restricted' ? 'red' : 'sage'} size="sm">
-                      {item.response.mode}
-                    </Badge>
                     {item.response.retrieval_latency_ms > 0 && (
                       <span className="text-[11px] font-mono text-slate-400">
                         {item.response.retrieval_latency_ms}ms
@@ -750,7 +848,6 @@ export const AskPage: React.FC = () => {
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-center gap-2 text-xs">
                   <span className="font-semibold text-slate-900">Clario</span>
-                  <Badge variant="teal" size="sm">Live Streaming</Badge>
                 </div>
 
                 {thinkingMode && streamThinking && (
@@ -877,26 +974,43 @@ export const AskPage: React.FC = () => {
               className="min-w-0 w-full text-sm px-3 py-2 rounded-xl border-none focus:outline-none text-slate-900 placeholder:text-slate-400 resize-none bg-transparent"
             />
 
-            <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs px-1">
-              <div className="flex items-center gap-2 text-slate-500">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs px-1">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Document Scope Modal Button (Bottom) */}
                 <button
                   type="button"
-                  onClick={() => setShowScopePicker((prev) => !prev)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80 transition-colors"
-                  title="Choose documents in scope"
+                  onClick={() => setShowScopeModal(true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-colors cursor-pointer"
+                  title="Choose documents in scope or search entire workspace"
                 >
-                  <Layers className="w-3 h-3 text-slate-500" />
-                  <span>{selectedDocIds.length ? `${selectedDocIds.length} in scope` : 'Entire workspace'}</span>
+                  <Layers className="w-3.5 h-3.5 text-clario-navy" />
+                  <span>{selectedDocIds.length > 0 ? `${selectedDocIds.length} doc${selectedDocIds.length > 1 ? 's' : ''} in scope` : 'Entire workspace'}</span>
                 </button>
+
+                {/* Answer & AI Settings Trigger Button */}
                 <button
                   type="button"
                   onClick={() => setShowSettingsModal(true)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
                   title="Tune inference and models"
                 >
-                  <SlidersHorizontal className="w-3 h-3 text-slate-500" />
-                  <span>{localModel || (llmProvider === 'ollama' ? 'Ollama' : 'LM Studio')}</span>
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600" />
+                  <span>{localModel || 'Settings'}</span>
                 </button>
+
+                {/* Reset Chat Button at Bottom */}
+                {history.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearHistory}
+                    disabled={clearing || loading}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition-colors cursor-pointer"
+                    title="Clear conversation history"
+                  >
+                    <RotateCcw className={`w-3 h-3 ${clearing ? 'animate-spin' : ''}`} />
+                    <span>Reset Chat</span>
+                  </button>
+                )}
               </div>
 
               <Button
@@ -904,7 +1018,7 @@ export const AskPage: React.FC = () => {
                 variant="primary"
                 size="sm"
                 disabled={!query.trim() || loading || loadingHistory}
-                className="h-8 px-4 rounded-xl transition-all"
+                className="h-8 px-4 rounded-xl transition-all ml-auto"
               >
                 {loading ? (
                   <span className="flex items-center space-x-1.5">
@@ -992,7 +1106,17 @@ export const AskPage: React.FC = () => {
                   <Select
                     aria-label="Active Model"
                     value={localModel}
-                    onChange={(e) => setLocalModel(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setLocalModel(val);
+                      try {
+                        const cached = localStorage.getItem('clario_ai_status');
+                        const parsed = cached ? JSON.parse(cached) : {};
+                        parsed.active_model = val;
+                        localStorage.setItem('clario_ai_status', JSON.stringify(parsed));
+                        api.updateSettings({ local_ai_model: val });
+                      } catch {}
+                    }}
                     className="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 font-medium shadow-2xs"
                   >
                     {availableModels.map((m) => (
@@ -1005,7 +1129,17 @@ export const AskPage: React.FC = () => {
                   <input
                     type="text"
                     value={localModel}
-                    onChange={(e) => setLocalModel(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setLocalModel(val);
+                      try {
+                        const cached = localStorage.getItem('clario_ai_status');
+                        const parsed = cached ? JSON.parse(cached) : {};
+                        parsed.active_model = val;
+                        localStorage.setItem('clario_ai_status', JSON.stringify(parsed));
+                        api.updateSettings({ local_ai_model: val });
+                      } catch {}
+                    }}
                     placeholder="e.g. qwen3.5:4b, llama3.2"
                     className="text-xs px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 w-full shadow-2xs"
                   />
@@ -1100,6 +1234,154 @@ export const AskPage: React.FC = () => {
           highlightPage={selectedCitation.page_number}
           onClose={() => setSelectedCitation(null)}
         />
+      )}
+
+      {/* Document Scope Modal (Center Screen) */}
+      {showScopeModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="scope-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150"
+        >
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-clario-navy" />
+                <h3 id="scope-modal-title" className="text-sm font-semibold text-slate-900">
+                  Select Document Scope
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScopeModal(false)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Search and Scope Filter */}
+            <div className="p-3.5 border-b border-slate-100 bg-slate-50/50 space-y-2.5">
+              <input
+                type="text"
+                value={scopeSearch}
+                onChange={(e) => setScopeSearch(e.target.value)}
+                placeholder="Filter documents by title..."
+                className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 text-slate-800 focus:outline-none focus:ring-1 focus:ring-clario-navy"
+              />
+              <div className="flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() => selection.select([])}
+                  className={`px-2.5 py-1 rounded-md font-medium text-xs transition-colors cursor-pointer ${
+                    selectedDocIds.length === 0
+                      ? 'bg-clario-navy text-white shadow-2xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  Entire Workspace ({documents.length} files)
+                </button>
+                <span className="text-slate-500 font-medium">
+                  {selectedDocIds.length > 0
+                    ? `${selectedDocIds.length} of ${documents.length} selected`
+                    : 'Searching all documents'}
+                </span>
+              </div>
+            </div>
+
+            {/* Document List with Checkboxes */}
+            <div className="p-3.5 overflow-y-auto space-y-1 flex-1 divide-y divide-slate-100">
+              {filteredScopeDocuments.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-6">No documents found matching "{scopeSearch}".</p>
+              ) : (
+                filteredScopeDocuments.map((doc) => {
+                  const isChecked = selectedDocIds.includes(doc.id);
+                  return (
+                    <label
+                      key={doc.id}
+                      className={`flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
+                        isChecked ? 'bg-slate-50 font-medium' : 'hover:bg-slate-50/60'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          if (isChecked) {
+                            selection.select(selectedDocIds.filter((id) => id !== doc.id));
+                          } else {
+                            selection.select([...selectedDocIds, doc.id]);
+                          }
+                        }}
+                        className="mt-0.5 rounded border-slate-300 text-clario-navy focus:ring-clario-navy w-4 h-4 cursor-pointer"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-slate-900 truncate font-medium">
+                            {doc.title || doc.filename}
+                          </span>
+                          <span className="text-[10.5px] text-slate-400 shrink-0 ml-2">
+                            {doc.page_count ? `${doc.page_count} pages` : 'Document'}
+                          </span>
+                        </div>
+                        {doc.status && doc.status !== 'READY' && (
+                          <span className="text-[10px] text-amber-600 block">
+                            Status: {doc.status}
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+              <div>
+                {selectedDocIds.length >= 2 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowScopeModal(false);
+                      const targetUrl =
+                        selectedDocIds.length === 2
+                          ? `/compare?docA=${selectedDocIds[0]}&docB=${selectedDocIds[1]}`
+                          : `/compare?mode=matrix&docs=${selectedDocIds.join(',')}`;
+                      window.location.assign(targetUrl);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
+                    <GitCompare className="w-3.5 h-3.5 text-clario-navy" />
+                    <span>Compare ({selectedDocIds.length})</span>
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedDocIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => selection.select([])}
+                    className="px-3 py-1 text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
+                  >
+                    Clear Filter
+                  </button>
+                )}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setShowScopeModal(false)}
+                  className="px-4"
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Guided Audit & Compliance Wizard */}
