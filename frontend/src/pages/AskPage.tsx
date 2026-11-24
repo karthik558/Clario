@@ -63,9 +63,9 @@ export const AskPage: React.FC = () => {
   const [streamCitations, setStreamCitations] = useState<CitationItem[]>([]);
   const [response, setResponse] = useState<AskResponse | null>(null);
   const [history, setHistory] = useState<Array<{ query: string; response: AskResponse }>>([]);
-  const { documents, error: sourceError } = useAskDocuments(true);
   const standaloneSelection = useAskSelection();
   const selection = handoff?.selection ?? standaloneSelection;
+  const { documents, error: sourceError } = useAskDocuments(true, selection);
   const selectedDocIds = selection.ids;
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -79,7 +79,7 @@ export const AskPage: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [savingThinking, setSavingThinking] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [thinkingMode, setThinkingMode] = useState<boolean>(true);
+  const [thinkingMode, setThinkingMode] = useState<boolean>(false);
   const [answerLength, setAnswerLength] = useState<'concise' | 'standard' | 'comprehensive'>('standard');
 
   const [error, setError] = useState('');

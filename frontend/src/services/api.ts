@@ -147,12 +147,13 @@ export const api = {
     top_k?: number,
     thinking_mode?: boolean,
     local_model?: string,
-    llm_provider?: string
+    llm_provider?: string,
+    require_ai?: boolean
   ): Promise<AskResponse> => {
     const res = await fetch(`${API_BASE}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, document_ids, top_k, thinking_mode, local_model, llm_provider, require_ai: true }),
+      body: JSON.stringify({ query, document_ids, top_k, thinking_mode, local_model, llm_provider, require_ai: Boolean(require_ai) }),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Ask Clario request failed');
     return res.json();
@@ -176,7 +177,7 @@ export const api = {
     const res = await fetch(`${API_BASE}/ask/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...request, require_ai: true }),
+      body: JSON.stringify({ ...request, require_ai: Boolean(request && (request as any).require_ai) }),
     });
 
     if (!res.ok) throw new Error('Streaming failed');

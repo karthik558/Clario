@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from '../../services/api';
 import type { DocumentItem } from '../../types';
 
@@ -18,15 +18,28 @@ export function useAskSelection() {
   return { ids, select };
 }
 
-export function useAskDocuments(active: boolean) {
+export function useAskDocuments(active: boolean, selection?: ReturnType<typeof useAskSelection>) {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [error, setError] = useState('');
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+
   useEffect(() => {
     if (!active) return;
     let current = true;
     setError('');
     api.getDocuments().then(items => {
-      if (current) setDocuments(items.filter(item => item.status === 'READY'));
+      if (current) {
+        const ready = items.filter(item => item.status === 'READY');
+        setDocuments(ready);
+        const sel = selectionRef.current;
+        if (sel && sel.ids.length > 0) {
+          const valid = sel.ids.filter(id => ready.some(doc => doc.id === id));
+          if (valid.length !== sel.ids.length) {
+            sel.select(valid);
+          }
+        }
+      }
     }).catch(() => { if (current) setError('Could not load document choices.'); });
     return () => { current = false; };
   }, [active]);

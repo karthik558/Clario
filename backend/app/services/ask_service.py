@@ -81,9 +81,13 @@ class AskService:
 
         if is_inventory:
             ready_query = db.query(Document).filter(Document.status == "READY")
-            if request.document_ids:
-                ready_query = ready_query.filter(Document.id.in_(request.document_ids))
-            docs = ready_query.order_by(Document.created_at.desc()).all()
+            all_docs = ready_query.order_by(Document.created_at.desc()).all()
+            valid_ids = [did for did in (request.document_ids or []) if did]
+            if valid_ids:
+                matching = [d for d in all_docs if d.id in valid_ids]
+                docs = matching if matching else all_docs
+            else:
+                docs = all_docs
 
             if not docs:
                 ans = (
@@ -276,11 +280,16 @@ class AskService:
             return [], 0.0, refusal
 
         ready = db.query(Document.id, Document.title).filter(Document.status == "READY")
-        if request.document_ids:
-            ready = ready.filter(Document.id.in_(request.document_ids))
-        documents = ready.order_by(Document.title, Document.id).all()
-        if not documents:
+        all_ready = ready.order_by(Document.title, Document.id).all()
+        if not all_ready:
             return [], 0.0, "There are no indexed documents in this selection."
+
+        valid_ids = [did for did in (request.document_ids or []) if did]
+        if valid_ids:
+            matching_docs = [d for d in all_ready if d.id in valid_ids]
+            documents = matching_docs if matching_docs else all_ready
+        else:
+            documents = all_ready
         named = [doc for doc in documents if doc.title and doc.title.lower() in query]
         scope = named or documents
         subject = query
@@ -426,8 +435,9 @@ class AskService:
                 mode = "extractive_synthesis" if provider == "extractive" else f"extractive_synthesis ({provider} unavailable)"
 
         show_thinking = request.thinking_mode if request.thinking_mode is not None else settings.THINKING_MODE
-        # If thinking mode was requested but model did not output <think> tags, construct chain-of-evidence synthesis
-        if show_thinking and not thinking_process and citations:
+        if not show_thinking:
+            thinking_process = None
+        elif not thinking_process and citations:
             doc_names = list(dict.fromkeys(c.document_title for c in citations))
             thinking_process = (
                 f"1. Query Dissection: Evaluated search parameters for '{request.query}'.\n"
@@ -462,22 +472,23 @@ class AskService:
     @staticmethod
     def _get_active_ollama_model(client: httpx.Client, model_override: Optional[str] = None) -> str:
         """Determines the active Ollama model, falling back to any installed model if needed."""
-        if model_override:
-            return model_override
+        target_model = (model_override or settings.OLLAMA_MODEL or "").strip()
         try:
             tags_resp = client.get(f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/tags", timeout=5.0)
             if tags_resp.status_code == 200:
                 tags_data = tags_resp.json()
                 available = [m.get("name") for m in tags_data.get("models", []) if m.get("name")]
                 if available:
-                    if settings.OLLAMA_MODEL in available:
-                        return settings.OLLAMA_MODEL or "llama3.2"
-                    # Fallback to the first available model
+                    if target_model and target_model in available:
+                        return target_model
+                    for m in available:
+                        if target_model and (m == target_model or m.split(":")[0] == target_model.split(":")[0]):
+                            return m
                     settings.OLLAMA_MODEL = available[0]
                     return available[0]
         except Exception:
             pass
-        return settings.OLLAMA_MODEL or "llama3.2"
+        return target_model or None
 
     @staticmethod
     def _generate_ollama_answer(query: str, citations: List[CitationItem], model_override: Optional[str] = None) -> str:
@@ -503,6 +514,7 @@ class AskService:
             "You are Clario, an elite document intelligence research assistant. "
             "Answer the user's question directly, accurately, and concisely using ONLY the retrieved document context below.\n"
             f"{len_instruction}\n"
+            "- Provide the direct cited answer instantly without <think> tags, internal reasoning, or deliberation steps.\n"
             "- When comparing documents or identifying differences, contrast the clauses across the retrieved documents directly, noting document titles and exact figures, terms, and timelines.\n"
             "- Cite factual claims with bracketed numbers corresponding to the context like [1], [2].\n"
             "- Keep the response direct, clear, and factual without conversational filler or unverified assumptions."

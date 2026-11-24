@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class AIGenerator:
     """
     Centralized AI generator connecting to local or cloud LLM providers:
-    - Ollama (localhost:11434 with llama, mistral, etc.)
+    - Ollama (localhost:11434 with your active local models)
     - LM Studio / vLLM / OpenAI-compatible local AI
     - Google Gemini (if GEMINI_API_KEY is configured)
     - OpenAI (if OPENAI_API_KEY is configured)
@@ -129,15 +129,19 @@ class AIGenerator:
         try:
             with httpx.Client(timeout=timeout) as client:
                 # Find available model
-                model = settings.OLLAMA_MODEL
+                model = settings.OLLAMA_MODEL or ""
                 try:
                     tags_resp = client.get(f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/tags", timeout=3.0)
                     if tags_resp.status_code == 200:
                         models = [m.get("name") for m in tags_resp.json().get("models", []) if m.get("name")]
-                        if models and model not in models:
-                            model = models[0]
+                        if models:
+                            if not model or model not in models:
+                                model = models[0]
                 except Exception:
                     pass
+
+                if not model:
+                    return None
 
                 payload = {
                     "model": model,

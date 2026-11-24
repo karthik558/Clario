@@ -52,7 +52,7 @@ describe('Document workspace polish', () => {
     const input = screen.getByRole('textbox', { name: 'Question about your documents' });
     fireEvent.change(input, { target: { value: 'Compare versions\nInclude retention.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
-    expect(ask).toHaveBeenCalledWith('Compare versions\nInclude retention.', undefined, undefined, true, undefined, 'ollama');
+    expect(ask).toHaveBeenCalledWith('Compare versions\nInclude retention.', undefined, undefined, false, undefined, 'ollama');
     expect(input).toBeDisabled();
     expect(screen.getByText(/Compare versions.*Include retention\./, { selector: 'p' })).toBeInTheDocument();
     finish(answer);

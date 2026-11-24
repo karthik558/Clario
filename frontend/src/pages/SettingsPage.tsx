@@ -49,7 +49,7 @@ export const SettingsPage: React.FC = () => {
   }, [ollamaStatus]);
 
   // AI Tuning State
-  const [thinkingMode, setThinkingMode] = useState(true);
+  const [thinkingMode, setThinkingMode] = useState(false);
   const [answerLength, setAnswerLength] = useState<'concise' | 'standard' | 'comprehensive'>('standard');
 
   // Database Explorer State
