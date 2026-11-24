@@ -498,7 +498,7 @@ export const DocumentsPage: React.FC = () => {
         </div>
 
         {/* Smart Presets Filter Row */}
-        <div className="flex items-center gap-1.5 pt-3 border-t border-slate-100 flex-wrap text-xs">
+        <div className="flex items-center gap-1.5 pt-2.5 flex-wrap text-xs">
           <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
             <SlidersHorizontal className="w-3 h-3 text-slate-600" />
             <span>Smart Filters:</span>

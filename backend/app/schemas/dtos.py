@@ -139,6 +139,7 @@ class AskResponse(BaseModel):
     has_conflicting_evidence: bool = False
     conflict_notes: Optional[str] = None
     thinking_process: Optional[str] = None
+    follow_up_questions: Optional[List[str]] = None
 
 # ---------------- Document Comparison ----------------
 

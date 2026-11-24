@@ -29,7 +29,7 @@ import {
   CheckCheck,
   FileSearch,
   GitCompare,
-  Sparkles
+  ArrowRight
 } from 'lucide-react';
 import { api } from '../services/api';
 import { AskResponse, CitationItem } from '../types';
@@ -48,6 +48,157 @@ const PROMPT_CAROUSEL = [
   { label: 'Mutual Indemnity', query: 'Is indemnification reciprocal, or are there unilateral customer indemnity obligations?' },
   { label: 'Data Sovereignty', query: 'Where is customer confidential data stored and processed geographically?' },
 ];
+
+export function getFollowUpQuestions(
+  query: string,
+  answer: string,
+  citations: CitationItem[] = [],
+  documents: { id: string; title: string }[] = [],
+  precomputed?: string[]
+): string[] {
+  if (precomputed && precomputed.length >= 3) {
+    return precomputed.slice(0, 5);
+  }
+
+  const q = (query || '').toLowerCase();
+  const ans = (answer || '').toLowerCase();
+
+  // 1. Document Scope / Overview / Which documents are checked
+  if (
+    q.includes('which all document') ||
+    q.includes('what document') ||
+    q.includes('which document') ||
+    q.includes('checking') ||
+    q.includes('referencing') ||
+    q.includes('inventory') ||
+    q.includes('list all') ||
+    q.includes('files in scope') ||
+    q.includes('workspace') ||
+    ans.includes('checking all') ||
+    ans.includes('in your active workspace')
+  ) {
+    return [
+      'Do any of these agreements permit customer confidential data to train foundation models?',
+      'Compare the security incident and breach notification timelines across these policies.',
+      'Which agreement contains the most protective limitation of liability clause?',
+      'What are the termination for convenience terms and data deletion commitments?',
+      'Summarize the governing law, dispute resolution, and jurisdiction for each document.'
+    ];
+  }
+
+  // 2. AI Model Training / Customer Confidential Data / Input Rights
+  if (
+    q.includes('train') ||
+    q.includes('model') ||
+    q.includes('confidential') ||
+    q.includes('input') ||
+    q.includes('telemetry') ||
+    q.includes('opt-out') ||
+    q.includes('retention') ||
+    ans.includes('foundation model') ||
+    ans.includes('train') ||
+    ans.includes('confidential data')
+  ) {
+    return [
+      'Which policy provides the most explicit opt-out mechanism for data telemetry?',
+      'How do Microsoft Azure and Anthropic Claude compare on training data governance?',
+      'What indemnification is provided if vendor AI outputs infringe third-party IP?',
+      'Are customer prompts or embeddings retained in persistent server logs?',
+      'What are the audit rights to verify that customer data is not used for AI training?'
+    ];
+  }
+
+  // 3. Liability / Super-Caps / Indemnification
+  if (
+    q.includes('liab') ||
+    q.includes('cap') ||
+    q.includes('indemn') ||
+    q.includes('super-cap') ||
+    q.includes('damages') ||
+    q.includes('infring') ||
+    ans.includes('liability cap') ||
+    ans.includes('indemnif')
+  ) {
+    return [
+      'What are the exact aggregate liability caps in each agreement?',
+      'Are data breaches or confidentiality breaches carved out from the liability cap?',
+      'Which vendor offers uncapped defense against third-party IP infringement?',
+      'What are the reciprocal warranty and disclaimer provisions?',
+      'Summarize the indemnification procedures and defense notice requirements.'
+    ];
+  }
+
+  // 4. Security / Incident Response / Breach Notification
+  if (
+    q.includes('breach') ||
+    q.includes('security') ||
+    q.includes('incident') ||
+    q.includes('notif') ||
+    q.includes('soc 2') ||
+    q.includes('gdpr') ||
+    q.includes('hipaa') ||
+    q.includes('audit') ||
+    ans.includes('security incident') ||
+    ans.includes('breach notification')
+  ) {
+    return [
+      'What are the exact hourly timelines (e.g. 24h vs 72h) for breach notification?',
+      'Does the vendor reimburse forensic investigation and customer notice expenses?',
+      'What technical and organizational security measures (TOMs) are warranted?',
+      'How do data subject rights and GDPR deletion requests get handled?',
+      'Are annual SOC 2 Type II and third-party penetration testing reports provided?'
+    ];
+  }
+
+  // 5. Termination / Renewal / Deadlines
+  if (
+    q.includes('terminat') ||
+    q.includes('renew') ||
+    q.includes('notice') ||
+    q.includes('cancel') ||
+    q.includes('convenience') ||
+    q.includes('expir') ||
+    ans.includes('termination for convenience') ||
+    ans.includes('auto-renewal')
+  ) {
+    return [
+      'What is the advance notice requirement for termination for convenience?',
+      'Are there auto-renewal clauses, and what is the cancellation deadline window?',
+      'What are the post-termination data return or irreversible destruction obligations?',
+      'Is transition assistance provided during vendor migration?',
+      'Are early termination fees or liquidated damages specified?'
+    ];
+  }
+
+  // 6. Citations / Document-Specific Comparisons
+  const docNames = Array.from(new Set(citations.map((c) => c.document_title).filter(Boolean)));
+  if (docNames.length >= 2) {
+    return [
+      `Compare the limitation of liability between ${docNames[0]} and ${docNames[1]}.`,
+      `What are the key differences in confidentiality and data privacy between these two?`,
+      `What breach notification timelines apply under ${docNames[0]}?`,
+      `How do termination notice periods compare between ${docNames[0]} and ${docNames[1]}?`,
+      'Summarize the governing law and dispute resolution mechanisms.'
+    ];
+  } else if (docNames.length === 1) {
+    return [
+      `What are the limitation of liability caps in ${docNames[0]}?`,
+      `What are the customer termination rights and notice periods in ${docNames[0]}?`,
+      `What security warranties or certifications are specified in ${docNames[0]}?`,
+      `Does ${docNames[0]} permit unilateral amendments by the vendor?`,
+      `What governing law and jurisdiction apply to ${docNames[0]}?`
+    ];
+  }
+
+  // 7. General High-Value Contract Intelligence Fallback
+  return [
+    'What are the key liability and indemnification terms across these agreements?',
+    'Do any of the contracts contain unilateral modification or auto-renewal clauses?',
+    'Compare the data breach notification deadlines across all selected documents.',
+    'What audit and compliance verification rights are granted to the customer?',
+    'Summarize the termination for convenience notice periods.'
+  ];
+}
 
 export const AskPage: React.FC = () => {
   const { startTask, activeTasks, getLatestTask } = useBackgroundTasks();
@@ -700,6 +851,40 @@ export const AskPage: React.FC = () => {
                     )}
                   </button>
                 </div>
+
+                {/* Follow-up Questions in Straight Horizontal Strip */}
+                {(() => {
+                  const followUps = getFollowUpQuestions(
+                    item.query,
+                    item.response.answer,
+                    item.response.citations,
+                    documents,
+                    item.response.follow_up_questions
+                  );
+                  if (!followUps || followUps.length === 0) return null;
+                  return (
+                    <div className="pt-2 pl-0.5 space-y-1.5 animate-in fade-in duration-200">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                        <span>Suggested follow-ups:</span>
+                      </div>
+                      <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-2 overflow-x-auto pb-1.5 max-w-full">
+                        {followUps.map((fq, fIdx) => (
+                          <button
+                            key={fIdx}
+                            type="button"
+                            onClick={() => handleAsk(fq)}
+                            disabled={loading || streaming}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs transition-all whitespace-nowrap shrink-0 group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
+                            title={`Ask follow-up: "${fq}"`}
+                          >
+                            <span>{fq}</span>
+                            <ArrowRight className="w-3 h-3 text-slate-400 group-hover:text-slate-700 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

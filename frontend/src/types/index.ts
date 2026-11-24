@@ -97,6 +97,7 @@ export interface AskResponse {
   has_conflicting_evidence: boolean;
   conflict_notes?: string;
   thinking_process?: string;
+  follow_up_questions?: string[];
 }
 
 export interface DiffBlock {

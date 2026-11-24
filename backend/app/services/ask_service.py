@@ -139,7 +139,8 @@ class AskService:
                 citations=citations,
                 retrieval_latency_ms=0,
                 synthesis_latency_ms=0,
-                has_conflicting_evidence=False
+                has_conflicting_evidence=False,
+                follow_up_questions=AskService._generate_follow_up_questions(request.query, ans, citations)
             )
 
         # 2. General Summary & Document Scope Queries (e.g. "which all documents you are checking", "what documents are you checking")
@@ -180,14 +181,16 @@ class AskService:
                             )
                         )
                 lines.append("\nYou can ask questions across all of these documents or filter specific ones using the workspace scope at the bottom.")
+                scope_ans = "\n".join(lines)
                 return AskResponse(
                     query=request.query,
-                    answer="\n".join(lines),
+                    answer=scope_ans,
                     mode="document_scope",
                     citations=citations,
                     retrieval_latency_ms=0,
                     synthesis_latency_ms=0,
-                    has_conflicting_evidence=False
+                    has_conflicting_evidence=False,
+                    follow_up_questions=AskService._generate_follow_up_questions(request.query, scope_ans, citations)
                 )
 
         # 3. Model & LLM Engine Queries (e.g. "which LLM model you are using", "what model are you using")
@@ -498,6 +501,7 @@ class AskService:
             )
 
         synth_latency_ms = round((time.perf_counter() - t_retrieved) * 1000, 2)
+        follow_ups = AskService._generate_follow_up_questions(request.query, answer, citations)
 
         return AskResponse(
             query=request.query,
@@ -508,8 +512,92 @@ class AskService:
             synthesis_latency_ms=synth_latency_ms,
             has_conflicting_evidence=has_conflict,
             conflict_notes=conflict_notes,
-            thinking_process=thinking_process if show_thinking else None
+            thinking_process=thinking_process if show_thinking else None,
+            follow_up_questions=follow_ups
         )
+
+    @staticmethod
+    def _generate_follow_up_questions(query: str, answer: str, citations: List[CitationItem]) -> List[str]:
+        q = query.lower()
+        ans = answer.lower()
+
+        # 1. Document Scope / Overview / Which documents are checked
+        if any(w in q or w in ans for w in ['which all document', 'what document', 'which document', 'checking', 'referencing', 'inventory', 'list all', 'files in scope', 'available files']):
+            return [
+                "Do any of these agreements permit customer confidential data to train foundation models?",
+                "Compare the security incident and breach notification timelines across these policies.",
+                "Which agreement contains the most protective limitation of liability clause?",
+                "What are the termination for convenience terms and data deletion commitments?",
+                "Summarize the governing law, dispute resolution, and jurisdiction for each document."
+            ]
+
+        # 2. AI Model Training / Customer Confidential Data / Input Rights
+        if any(w in q or w in ans for w in ['train', 'model', 'confidential', 'inputs', 'telemetry', 'opt-out', 'dataset', 'retention']):
+            return [
+                "Which policy provides the most explicit opt-out mechanism for data telemetry?",
+                "How do Microsoft Azure and Anthropic Claude compare on training data governance?",
+                "What indemnification is provided if vendor AI outputs infringe third-party IP?",
+                "Are customer prompts or embeddings retained in persistent server logs?",
+                "What are the audit rights to verify that customer data is not used for AI training?"
+            ]
+
+        # 3. Liability / Super-Caps / Indemnification
+        if any(w in q or w in ans for w in ['liab', 'cap', 'indemn', 'super-cap', 'damages', 'infring']):
+            return [
+                "What are the exact aggregate liability caps in each agreement?",
+                "Are data breaches or confidentiality breaches carved out from the liability cap?",
+                "Which vendor offers uncapped defense against third-party IP infringement?",
+                "What are the reciprocal warranty and disclaimer provisions?",
+                "Summarize the indemnification procedures and defense notice requirements."
+            ]
+
+        # 4. Security / Incident Response / Breach Notification
+        if any(w in q or w in ans for w in ['breach', 'security', 'incident', 'notif', 'soc 2', 'gdpr', 'hipaa', 'audit']):
+            return [
+                "What are the exact hourly timelines (e.g. 24h vs 72h) for breach notification?",
+                "Does the vendor reimburse forensic investigation and customer notice expenses?",
+                "What technical and organizational security measures (TOMs) are warranted?",
+                "How do data subject rights and GDPR deletion requests get handled?",
+                "Are annual SOC 2 Type II and third-party penetration testing reports provided?"
+            ]
+
+        # 5. Termination / Renewal / Deadlines
+        if any(w in q or w in ans for w in ['terminat', 'renew', 'notice', 'cancel', 'convenience', 'expir']):
+            return [
+                "What is the advance notice requirement for termination for convenience?",
+                "Are there auto-renewal clauses, and what is the cancellation deadline window?",
+                "What are the post-termination data return or irreversible destruction obligations?",
+                "Is transition assistance provided during vendor migration?",
+                "Are early termination fees or liquidated damages specified?"
+            ]
+
+        # 6. Specific document citations
+        doc_names = list(dict.fromkeys(c.document_title for c in citations if c.document_title))
+        if len(doc_names) >= 2:
+            return [
+                f"Compare the limitation of liability between {doc_names[0]} and {doc_names[1]}.",
+                f"What are the key differences in confidentiality and data privacy between these two?",
+                f"What breach notification timelines apply under {doc_names[0]}?",
+                f"How do termination notice periods compare between {doc_names[0]} and {doc_names[1]}?",
+                "Summarize the governing law and dispute resolution mechanisms."
+            ]
+        elif len(doc_names) == 1:
+            return [
+                f"What are the limitation of liability caps in {doc_names[0]}?",
+                f"What are the customer termination rights and notice periods in {doc_names[0]}?",
+                f"What security warranties or certifications are specified in {doc_names[0]}?",
+                f"Does {doc_names[0]} permit unilateral amendments by the vendor?",
+                f"What governing law and jurisdiction apply to {doc_names[0]}?"
+            ]
+
+        # 7. General fallback
+        return [
+            "What are the key liability and indemnification terms across these agreements?",
+            "Do any of the contracts contain unilateral modification or auto-renewal clauses?",
+            "Compare the data breach notification deadlines across all selected documents.",
+            "What audit and compliance verification rights are granted to the customer?",
+            "Summarize the termination for convenience notice periods."
+        ]
 
     @staticmethod
     def _extract_thinking(raw_text: str) -> Tuple[str, Optional[str]]:

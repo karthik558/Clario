@@ -59,6 +59,47 @@ describe('Document workspace polish', () => {
     await waitFor(() => expect(input).toBeEnabled());
     expect(input).toHaveValue('');
   });
+  it('generates contextual follow-up question bubbles and submits when clicked', async () => {
+    vi.spyOn(api, 'getDocuments').mockResolvedValue([]);
+    vi.spyOn(api, 'getAnswerHistory').mockResolvedValue([
+      {
+        id: 'saved-scope',
+        query: 'Which all documents you are checking?',
+        response: {
+          query: 'Which all documents you are checking?',
+          answer: 'I am checking all 7 documents in your active workspace scope.',
+          mode: 'document_scope',
+          citations: [],
+          retrieval_latency_ms: 5,
+          synthesis_latency_ms: 10,
+          has_conflicting_evidence: false,
+          follow_up_questions: [
+            'Do any of these agreements permit customer confidential data to train foundation models?',
+            'Compare the security incident and breach notification timelines across these policies.',
+            'Which agreement contains the most protective limitation of liability clause?'
+          ]
+        },
+        document_ids: [],
+        created_at: '2026-01-01'
+      }
+    ]);
+    const ask = vi.spyOn(api, 'ask').mockResolvedValue(answer);
+    render(<AskPage />);
+    await screen.findByText('Suggested follow-ups:');
+    const followUpBtn = screen.getByRole('button', {
+      name: /Do any of these agreements permit customer confidential data to train foundation models\?/
+    });
+    expect(followUpBtn).toBeInTheDocument();
+    fireEvent.click(followUpBtn);
+    expect(ask).toHaveBeenCalledWith(
+      'Do any of these agreements permit customer confidential data to train foundation models?',
+      undefined,
+      undefined,
+      false,
+      undefined,
+      'ollama'
+    );
+  });
   it('keeps the question for retry if saving or generation fails', async () => {
     vi.spyOn(api, 'getDocuments').mockResolvedValue([]);
     vi.spyOn(api, 'getAnswerHistory').mockResolvedValue([]);
