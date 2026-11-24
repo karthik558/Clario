@@ -497,9 +497,9 @@ export const AskPage: React.FC = () => {
           category: 'ask',
           targetScope,
           route: '/ask',
-          initialStage: researchMode ? 'Deep multi-document research analysis...' : 'Searching indexed passages...',
+          initialStage: 'Answering question based on documents...',
           executor: async (updateProgress) => {
-            updateProgress(15, researchMode ? 'Deep multi-document research analysis...' : 'Searching indexed passages...', `Searching for: "${q.slice(0, 45)}..."`);
+            updateProgress(15, 'Searching documents...', `Searching for: "${q.slice(0, 45)}..."`);
 
             const result = await api.streamAsk(
               {
@@ -513,20 +513,20 @@ export const AskPage: React.FC = () => {
               {
                 onToken: (token: string) => {
                   setStreamAnswer((prev) => prev + token);
-                  updateProgress(65, 'Streaming cited answer...', 'Generating answer text');
+                  updateProgress(65, 'Generating answer based on documents...', 'Generating answer text');
                 },
                 onThinking: (thinking: string) => {
                   setStreamThinking(thinking);
-                  updateProgress(35, 'Local AI reasoning chain...', 'Analyzing retrieved passages');
+                  updateProgress(35, 'Analyzing retrieved passages...', 'Analyzing retrieved passages');
                 },
                 onCitations: (cits: CitationItem[]) => {
                   setStreamCitations(cits);
-                  updateProgress(50, `Found ${cits.length} verified citation${cits.length > 1 ? 's' : ''}...`);
+                  updateProgress(50, `Found ${cits.length} citation${cits.length > 1 ? 's' : ''}...`);
                 }
               }
             );
 
-            updateProgress(100, 'Answer generated with verified citations', 'Completed');
+            updateProgress(100, 'Answer generated based on documents', 'Completed');
             return result;
           }
         });
@@ -557,9 +557,9 @@ export const AskPage: React.FC = () => {
         category: 'ask',
         targetScope,
         route: '/ask',
-        initialStage: researchMode ? 'Deep multi-document research analysis...' : 'Searching indexed passages...',
+        initialStage: 'Answering question based on documents...',
         executor: async (updateProgress) => {
-          updateProgress(15, researchMode ? 'Deep multi-document research analysis...' : 'Searching indexed passages...', `Searching for: "${q.slice(0, 45)}..."`);
+          updateProgress(15, 'Searching documents...', `Searching for: "${q.slice(0, 45)}..."`);
 
           let currentPct = 15;
           const progressInterval = setInterval(() => {
@@ -568,9 +568,9 @@ export const AskPage: React.FC = () => {
               updateProgress(
                 currentPct,
                 currentPct < 50
-                  ? (researchMode ? 'Conducting multi-source cross-examination...' : 'Searching indexed passages and citations...')
-                  : 'Synthesizing verified cited answer...',
-                'Auditing context and citations'
+                  ? 'Searching documents...'
+                  : 'Generating answer based on documents...',
+                'Analyzing documents'
               );
             }
           }, 350);
@@ -582,7 +582,7 @@ export const AskPage: React.FC = () => {
             clearInterval(progressInterval);
           }
 
-          updateProgress(100, 'Answer generated with verified citations', 'Completed');
+          updateProgress(100, 'Answer generated based on documents', 'Completed');
           return answerRes;
         }
       });
@@ -929,7 +929,7 @@ export const AskPage: React.FC = () => {
                     ) : (
                       <div className="flex items-center space-x-2 text-xs text-slate-400 italic py-1">
                         <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-white rounded-full animate-spin" />
-                        <span>Retrieving relevant passages and synthesizing evidence...</span>
+                        <span>Generating answer based on documents...</span>
                       </div>
                     )}
                   </div>
@@ -963,7 +963,7 @@ export const AskPage: React.FC = () => {
                   </div>
                   <div className="rounded-2xl bg-[#182235] text-slate-200 p-4 sm:p-5 shadow-sm border border-slate-700/60 flex items-center gap-2.5 text-xs">
                     <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-white rounded-full animate-spin shrink-0" />
-                    <p role="status">{activeAskTask?.stage || 'Looking for supporting passages…'}</p>
+                    <p role="status">{activeAskTask?.stage || 'Generating answer based on documents…'}</p>
                   </div>
                 </div>
               </div>
@@ -982,7 +982,7 @@ export const AskPage: React.FC = () => {
               </div>
               <div className="rounded-2xl bg-[#182235] text-slate-200 p-4 sm:p-5 shadow-sm border border-slate-700/60 flex items-center gap-2.5 text-xs">
                 <span className="w-3.5 h-3.5 border-2 border-slate-600 border-t-white rounded-full animate-spin shrink-0" />
-                <p role="status">{activeAskTask?.stage || 'Looking for supporting passages…'}</p>
+                <p role="status">{activeAskTask?.stage || 'Generating answer based on documents…'}</p>
               </div>
             </div>
           </div>
