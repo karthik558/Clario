@@ -8,6 +8,7 @@ import App from '../App';
 import { DocumentsPage } from '../pages/DocumentsPage';
 import { AskPage } from '../pages/AskPage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { KnowledgeGraphPage } from '../pages/KnowledgeGraphPage';
 import { api } from '../services/api';
 import { DocumentItem, SystemSettings } from '../types';
 
@@ -168,6 +169,35 @@ describe('Workspace interactions', () => {
     fireEvent.keyDown(window, { key: 'd', metaKey: true, shiftKey: true });
     expect(document.documentElement.classList.contains('clario-dark')).toBe(false);
     expect(localStorage.getItem('clario_theme')).toBe('light');
+    localStorage.clear();
+  });
+  it('defaults Knowledge Graph to single document with citations enabled and persists multi/all scope', async () => {
+    localStorage.clear();
+    vi.spyOn(api, 'getDocuments').mockResolvedValue(documents);
+    const graphSpy = vi.spyOn(api, 'getKnowledgeGraph').mockImplementation(async (ids) => ({
+      nodes: [
+        { id: 'doc_a', label: 'Policy A', type: 'document', size: 26, color: '#0F172A', metadata: { document_id: 'a' } },
+        { id: 'chunk_1', label: 'Policy A (p.1)', type: 'chunk', size: 9, color: '#94A3B8', metadata: { document_id: 'a' } },
+      ],
+      edges: [],
+      stats: { total_documents: ids?.length || 2, total_findings: 0, total_topics: 0, total_nodes: 2, total_edges: 0 },
+    }));
+
+    const first = render(<MemoryRouter><KnowledgeGraphPage /></MemoryRouter>);
+    await waitFor(() => expect(graphSpy).toHaveBeenCalledWith(['a']));
+    expect(await screen.findByText('Policy A (p.1)')).toBeInTheDocument();
+
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('option', { name: 'Contract B (TXT)' }));
+    await waitFor(() => expect(graphSpy).toHaveBeenLastCalledWith(['b']));
+
+    fireEvent.click(screen.getByRole('button', { name: /All Workspace/i }));
+    await waitFor(() => expect(graphSpy).toHaveBeenLastCalledWith(undefined));
+    expect(JSON.parse(localStorage.getItem('clario_graph_scope') || '{}').mode).toBe('all');
+    first.unmount();
+
+    render(<MemoryRouter><KnowledgeGraphPage /></MemoryRouter>);
+    await waitFor(() => expect(graphSpy).toHaveBeenLastCalledWith(undefined));
     localStorage.clear();
   });
 });

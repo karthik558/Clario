@@ -15,7 +15,9 @@ import {
   Search,
   Scale,
   CheckCircle2,
-  Move
+  Move,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { api } from '../services/api';
 import { GraphDataResponse, GraphNode, DocumentItem } from '../types';
@@ -33,12 +35,46 @@ interface LayoutNode extends GraphNode {
   parentDocId?: string;
 }
 
+const GRAPH_SCOPE_STORAGE_KEY = 'clario_graph_scope';
+
+interface SavedGraphScope {
+  mode: 'single' | 'multi' | 'all';
+  docIds: string[];
+}
+
+function readSavedGraphScope(): SavedGraphScope | null {
+  try {
+    const raw = localStorage.getItem(GRAPH_SCOPE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      (parsed.mode === 'single' || parsed.mode === 'multi' || parsed.mode === 'all') &&
+      Array.isArray(parsed.docIds)
+    ) {
+      return parsed;
+    }
+  } catch {
+    // Non-fatal if storage is unavailable
+  }
+  return null;
+}
+
+function writeSavedGraphScope(scope: SavedGraphScope) {
+  try {
+    localStorage.setItem(GRAPH_SCOPE_STORAGE_KEY, JSON.stringify(scope));
+  } catch {
+    // Non-fatal if storage is unavailable
+  }
+}
+
 export const KnowledgeGraphPage: React.FC = () => {
   const isDark = useIsDarkTheme();
   const navigate = useNavigate();
   const [data, setData] = useState<GraphDataResponse | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
+  const [scopeMode, setScopeMode] = useState<'single' | 'multi' | 'all'>(() => readSavedGraphScope()?.mode || 'single');
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>(() => readSavedGraphScope()?.docIds || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,10 +118,6 @@ export const KnowledgeGraphPage: React.FC = () => {
     try {
       const res = await api.getKnowledgeGraph(docIds && docIds.length > 0 ? docIds : undefined);
       setData(res);
-      // If there are 6+ documents, collapse citations by default to keep constellations readable
-      if (res && res.stats.total_documents >= 6) {
-        setVisibleTypes((prev) => ({ ...prev, chunk: false }));
-      }
     } catch (err: any) {
       setError(err.message || 'Failed to load knowledge graph');
     } finally {
@@ -94,27 +126,78 @@ export const KnowledgeGraphPage: React.FC = () => {
   };
 
   useEffect(() => {
-    api.getDocuments().then((docs) => setDocuments(docs)).catch(() => {});
-    fetchGraph();
+    let cancelled = false;
+    api.getDocuments()
+      .then((docs) => {
+        if (cancelled) return;
+        const readyDocs = docs.filter((d) => d.status === 'READY');
+        const pool = readyDocs.length > 0 ? readyDocs : docs;
+        setDocuments(pool);
+
+        const saved = readSavedGraphScope();
+        if (saved?.mode === 'all') {
+          setScopeMode('all');
+          setSelectedDocIds([]);
+          fetchGraph([]);
+          return;
+        }
+
+        const validIds = (saved?.docIds || []).filter((id) => pool.some((d) => d.id === id));
+        if (validIds.length > 0) {
+          const resolvedMode = saved?.mode === 'multi' ? 'multi' : 'single';
+          const resolvedIds = resolvedMode === 'single' ? [validIds[0]] : validIds;
+          setScopeMode(resolvedMode);
+          setSelectedDocIds(resolvedIds);
+          fetchGraph(resolvedIds);
+          return;
+        }
+
+        // Default when no prior saved preference: select ONLY the first document with all citations ON
+        if (pool.length > 0) {
+          const defaultIds = [pool[0].id];
+          setScopeMode('single');
+          setSelectedDocIds(defaultIds);
+          writeSavedGraphScope({ mode: 'single', docIds: defaultIds });
+          fetchGraph(defaultIds);
+        } else {
+          setScopeMode('all');
+          setSelectedDocIds([]);
+          fetchGraph([]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) fetchGraph([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const toggleDocumentScope = (docId: string) => {
-    const next = selectedDocIds.includes(docId)
-      ? selectedDocIds.filter((id) => id !== docId)
-      : [...selectedDocIds, docId];
-    setSelectedDocIds(next);
+  const applyGraphScope = (nextMode: 'single' | 'multi' | 'all', nextDocIds: string[]) => {
+    setScopeMode(nextMode);
+    setSelectedDocIds(nextDocIds);
     setSelectedNodeId(null);
     setDocOffsets({});
     setChildOffsets({});
-    fetchGraph(next);
+    setPan({ x: 0, y: 0 });
+    writeSavedGraphScope({ mode: nextMode, docIds: nextDocIds });
+    fetchGraph(nextMode === 'all' ? [] : nextDocIds);
+  };
+
+  const toggleDocumentScope = (docId: string) => {
+    const exists = selectedDocIds.includes(docId);
+    const next = exists
+      ? selectedDocIds.filter((id) => id !== docId)
+      : [...selectedDocIds, docId];
+    if (next.length === 0) {
+      applyGraphScope('all', []);
+    } else {
+      applyGraphScope('multi', next);
+    }
   };
 
   const selectAllDocuments = () => {
-    setSelectedDocIds([]);
-    setSelectedNodeId(null);
-    setDocOffsets({});
-    setChildOffsets({});
-    fetchGraph([]);
+    applyGraphScope('all', []);
   };
 
   // Filter active nodes based on layer toggles & search
@@ -602,32 +685,145 @@ export const KnowledgeGraphPage: React.FC = () => {
         </div>
       )}
 
-      {/* Document Scope Selector Bar */}
+      {/* Document Scope Selector Bar (Single, Multi-Select, or All Workspace) */}
       {documents.length > 0 && (
-        <Card className="p-3 bg-white border border-slate-200 shadow-xs">
-          <div className="flex flex-wrap items-center gap-3 text-xs">
-            <label htmlFor="graph-doc-scope" className="text-slate-700 font-semibold flex items-center gap-1.5 shrink-0">
-              <FileText className="w-3.5 h-3.5 text-slate-500" />
-              <span>Document Scope:</span>
-            </label>
-            <Select
-              id="graph-doc-scope"
-              value={selectedDocIds[0] || ''}
-              onChange={(e) => {
-                const val = e.target.value;
-                setSelectedDocIds(val ? [val] : []);
-                setSelectedNodeId(null);
-              }}
-              className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-1.5 min-w-[240px] max-w-md"
-            >
-              <option value="">All Workspace Documents ({documents.length})</option>
-              {documents.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.title.replace(/_/g, ' ')} ({d.file_type.toUpperCase()})
-                </option>
-              ))}
-            </Select>
+        <Card className="p-4 bg-white border border-slate-200 shadow-xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  const singleId = selectedDocIds[0] || documents[0]?.id;
+                  if (singleId) {
+                    applyGraphScope('single', [singleId]);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
+                  scopeMode === 'single'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Single Document</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const multiIds =
+                    selectedDocIds.length >= 2
+                      ? selectedDocIds
+                      : documents.slice(0, Math.min(2, documents.length)).map((d) => d.id);
+                  applyGraphScope('multi', multiIds);
+                }}
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
+                  scopeMode === 'multi'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Multi-Document ({scopeMode === 'multi' ? selectedDocIds.length : documents.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={selectAllDocuments}
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1.5 ${
+                  scopeMode === 'all'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                }`}
+              >
+                <Network className="w-3.5 h-3.5" />
+                <span>All Workspace ({documents.length})</span>
+              </button>
+            </div>
+
+            {scopeMode === 'single' && (
+              <div className="flex items-center gap-2 text-xs">
+                <label htmlFor="graph-doc-scope" className="text-slate-600 font-semibold shrink-0">
+                  Focus Document:
+                </label>
+                <Select
+                  id="graph-doc-scope"
+                  value={selectedDocIds[0] || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) {
+                      selectAllDocuments();
+                    } else {
+                      applyGraphScope('single', [val]);
+                    }
+                  }}
+                  className="text-xs bg-white border border-slate-200 rounded-md px-2.5 py-1.5 min-w-[240px] max-w-md"
+                >
+                  <option value="">All Workspace Documents ({documents.length})</option>
+                  {documents.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title.replace(/_/g, ' ')} ({d.file_type.toUpperCase()})
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+
+            {scopeMode === 'multi' && (
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => applyGraphScope('multi', documents.map((d) => d.id))}
+                  className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  onClick={selectAllDocuments}
+                  className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors"
+                >
+                  Reset to All Workspace
+                </button>
+              </div>
+            )}
           </div>
+
+          {scopeMode === 'multi' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pt-2 border-t border-slate-100">
+              {documents.map((doc) => {
+                const isChecked = selectedDocIds.includes(doc.id);
+                return (
+                  <button
+                    key={doc.id}
+                    type="button"
+                    onClick={() => toggleDocumentScope(doc.id)}
+                    className={`p-2.5 rounded-md border text-left text-xs transition-all flex items-start gap-2 ${
+                      isChecked
+                        ? 'border-slate-900 bg-slate-50/80 ring-1 ring-slate-900'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <span className="mt-0.5 shrink-0 text-slate-700">
+                      {isChecked ? (
+                        <CheckSquare className="w-4 h-4 text-slate-900" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-300" />
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <span className="font-semibold text-slate-900 truncate block">
+                        {doc.title.replace(/_/g, ' ')}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {doc.file_type.toUpperCase()} &bull; {doc.chunk_count} chunks
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </Card>
       )}
 
