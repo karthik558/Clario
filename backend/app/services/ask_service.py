@@ -63,7 +63,7 @@ class AskService:
 
         # 1. Document Inventory / Referencing queries (e.g. "which files are you referring to", "what documents are uploaded", "list files")
         inventory_patterns = [
-            r"\b(?:which|what)\s+(?:files?|documents?|policies|contracts?)\s+(?:are\s+you\s+(?:referring|refering|referencing|using|looking\s+at)|do\s+you\s+(?:have|reference|use)|can\s+you\s+see)\b",
+            r"\b(?:which|what)\s+(?:all\s+)?(?:files?|documents?|policies|contracts?)\s+(?:(?:are\s+you|you\s+are|are|you)\s+(?:referring|refering|referencing|using|looking\s+at)|do\s+you\s+(?:have|reference|use)|can\s+you\s+see)\b",
             r"\b(?:what\s+files?\s+(?:are\s+there|are\s+uploaded|do\s+we\s+have|are\s+in\s+the\s+workspace))\b",
             r"\b(?:which\s+(?:files?|documents?|policies)\s+(?:are\s+there|are\s+uploaded|are\s+in\s+my\s+workspace))\b",
             r"\b(?:what\s+(?:documents?|files?)\s+are\s+available)\b",
@@ -71,8 +71,8 @@ class AskService:
             r"\b(?:tell\s+me\s+the\s+(?:names?\s+of\s+the\s+)?(?:uploaded\s+)?(?:files?|documents?))\b",
             r"\b(?:what\s+is\s+currently\s+uploaded|what\s+is\s+in\s+my\s+workspace)\b",
             r"\b(?:files?|documents?)\s+inventory\b",
-            r"\b(?:which|what)\s+(?:files?|documents?)\s+(?:are\s+you\s+)?(?:refer(?:r?ing|ence)|using)\b",
-            r"^which\s+(?:files?|documents?)(?:\s+(?:are\s+you\s+)?(?:refer(?:r?ing|ence)|using))?\s*\??$",
+            r"\b(?:which|what)\s+(?:all\s+)?(?:files?|documents?)\s+(?:(?:are\s+you|you\s+are|are|you)\s+)?(?:refer(?:r?ing|ence)|using)\b",
+            r"^which\s+(?:files?|documents?)(?:\s+(?:(?:are\s+you|you\s+are|are|you)\s+)?(?:refer(?:r?ing|ence)|using))?\s*\??$",
             r"^(?:which|what)\s+files?\??$"
         ]
         is_inventory = any(re.search(pat, query_raw) for pat in inventory_patterns) or query_raw in [
@@ -142,8 +142,12 @@ class AskService:
                 has_conflicting_evidence=False
             )
 
-        # 2. General Summary / "What are these documents about?"
+        # 2. General Summary & Document Scope Queries (e.g. "which all documents you are checking", "what documents are you checking")
         doc_overview_patterns = [
+            r"\b(?:which|what)\s+(?:all\s+)?(?:documents?|files?|agreements?|policies|contracts?)\s+(?:(?:are\s+you|you\s+are|are|you)\s+)?(?:checking|analyzing|evaluating|using|looking\s+at|in\s+scope|selected|referencing)\b",
+            r"\b(?:which|what)\s+(?:all\s+)?(?:documents?|files?)\s+(?:are\s+)?(?:being\s+)?(?:checked|analyzed|used)\b",
+            r"\b(?:what|which)\s+(?:documents?|files?)\s+do\s+you\s+have\b",
+            r"\b(?:list|show|name)\s+(?:all\s+)?(?:the\s+)?(?:documents?|files?|agreements?|policies)\b",
             r"\b(?:what\s+are\s+these\s+(?:documents?|files?)\s+about)\b",
             r"\b(?:tell\s+me\s+about\s+these\s+(?:documents?|files?))\b",
             r"\b(?:what\s+do\s+these\s+(?:documents?|files?|contracts?)\s+(?:cover|contain))\b",
@@ -154,16 +158,15 @@ class AskService:
             ready_query = db.query(Document).filter(Document.status == "READY")
             if request.document_ids:
                 ready_query = ready_query.filter(Document.id.in_(request.document_ids))
-            docs = ready_query.order_by(Document.created_at.desc()).all()
+            docs = ready_query.order_by(Document.title).all()
 
             if docs:
-                lines = [f"### Corpus Overview ({len(docs)} Documents)\n"]
+                lines = [f"I am currently checking all **{len(docs)} documents** in your active workspace scope:\n"]
                 citations = []
                 for idx, doc in enumerate(docs, start=1):
-                    first_chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).order_by(DocumentChunk.chunk_index).limit(2).all()
-                    summary_snip = " ".join([c.content for c in first_chunks])[:300].strip()
-                    lines.append(f"**[{idx}] {doc.title}** ({doc.page_count} pages)")
-                    lines.append(f"> {summary_snip}...\n")
+                    first_chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).order_by(DocumentChunk.chunk_index).limit(1).all()
+                    summary_snip = first_chunks[0].content[:200].strip() if first_chunks else f"{doc.title} ({doc.page_count or 1} pages)"
+                    lines.append(f"{idx}. **{doc.title}** ({doc.page_count or 1} pages)")
                     if first_chunks:
                         citations.append(
                             CitationItem(
@@ -172,22 +175,46 @@ class AskService:
                                 document_id=doc.id,
                                 document_title=doc.title,
                                 page_number=first_chunks[0].page_number or 1,
-                                snippet=summary_snip[:200],
+                                snippet=summary_snip,
                                 relevance_score=1.0
                             )
                         )
-                lines.append("To explore specifics, ask about data retention policies, notice windows, liability super-caps, or regulatory compliance.")
+                lines.append("\nYou can ask questions across all of these documents or filter specific ones using the workspace scope at the bottom.")
                 return AskResponse(
                     query=request.query,
                     answer="\n".join(lines),
-                    mode="corpus_overview",
+                    mode="document_scope",
                     citations=citations,
                     retrieval_latency_ms=0,
                     synthesis_latency_ms=0,
                     has_conflicting_evidence=False
                 )
 
-        # 3. Identity & Name Queries
+        # 3. Model & LLM Engine Queries (e.g. "which LLM model you are using", "what model are you using")
+        model_patterns = [
+            r"\b(?:which|what)\s+(?:(?:llm|ai)\s+)?(?:model|llm|ai|engine)\s+(?:(?:are\s+you|you\s+are|are|you|do\s+you)\s+)?(?:using|running|based\s+on|use)\b",
+            r"\b(?:what|which)\s+(?:(?:llm|ai)\s+)?(?:model|llm)\s+(?:is\s+this|powers\s+you|do\s+you\s+use|is\s+your\s+model)\b",
+            r"\b(?:what\s+is\s+your\s+(?:llm|model|ai))\b",
+            r"\b(?:tell\s+me\s+about\s+(?:the\s+|your\s+)?(?:model|llm))\b"
+        ]
+        if any(re.search(pat, query_raw) for pat in model_patterns):
+            ans = (
+                "I am using an **LLM model specifically built for Clario documents and highly trained on them**.\n\n"
+                "Because every answer requires deep dense vector retrieval, multi-document semantic cross-referencing, "
+                "and precise citation extraction across all your agreements, there may be a brief processing delay while "
+                "the response is thoroughly audited and verified."
+            )
+            return AskResponse(
+                query=request.query,
+                answer=ans,
+                mode="model_identity",
+                citations=[],
+                retrieval_latency_ms=0,
+                synthesis_latency_ms=0,
+                has_conflicting_evidence=False
+            )
+
+        # 4. Identity & Name Queries
         identity_patterns = [
             r"\b(?:what\s+is\s+your\s+name|what's\s+your\s+name|whats\s+your\s+name|your\s+name)\b",
             r"\b(?:who\s+(?:are|r)\s+you|who\s+you\s+are|what\s+are\s+you)\b",

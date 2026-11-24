@@ -79,7 +79,6 @@ export const AskPage: React.FC = () => {
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [showAuditWizard, setShowAuditWizard] = useState(false);
-  const [answerViewMode, setAnswerViewMode] = useState<Record<number, 'synthesis' | 'verbatim'>>({});
 
   // Local AI Gateway & Engine States
   const [llmProvider, setLlmProvider] = useState<string>('ollama');
@@ -633,16 +632,6 @@ export const AskPage: React.FC = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    {item.response.citations.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setAnswerViewMode((prev) => ({ ...prev, [idx]: prev[idx] === 'verbatim' ? 'synthesis' : 'verbatim' }))}
-                        className="px-2 py-0.5 rounded text-[10.5px] font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors"
-                        title="Toggle verbatim passage evidence"
-                      >
-                        {answerViewMode[idx] === 'verbatim' ? 'Synthesis View' : 'Verbatim Proof'}
-                      </button>
-                    )}
                     <button
                       type="button"
                       onClick={() => handleCopy(item.response.answer, idx)}
@@ -689,45 +678,10 @@ export const AskPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Verbatim vs Synthesis Content */}
-                {answerViewMode[idx] === 'verbatim' ? (
-                  <div className="space-y-2 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                      <span>Verbatim Grounded Passage Evidence ({item.response.citations.length})</span>
-                    </div>
-                    {item.response.citations.map((c) => (
-                      <div key={c.citation_id} className="p-2.5 bg-white rounded-md border border-slate-200/90 space-y-1 shadow-2xs">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-4 h-4 rounded bg-clario-navy text-white text-[10px] flex items-center justify-center font-bold">
-                              {c.citation_id}
-                            </span>
-                            <span className="font-semibold text-slate-900">{c.document_title}</span>
-                          </div>
-                          <Badge variant="sage" size="sm">Page {c.page_number}</Badge>
-                        </div>
-                        <p className="font-mono text-slate-800 text-[11.5px] leading-relaxed bg-slate-50 p-2 rounded border border-slate-100 select-text">
-                          "{c.snippet}"
-                        </p>
-                        <div className="flex items-center justify-between pt-0.5 text-[10.5px] text-slate-500">
-                          <span>{c.relevance_score > 0 ? `Confidence: ${c.relevance_score}` : 'Corpus context'}</span>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedCitation(c)}
-                            className="text-clario-navy hover:underline font-semibold flex items-center gap-1"
-                          >
-                            <span>Inspect Full Page</span>
-                            <ChevronRight className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-slate-800 text-sm leading-relaxed prose prose-sm max-w-none">
-                    <Markdown>{item.response.answer}</Markdown>
-                  </div>
-                )}
+                {/* Synthesis Content */}
+                <div className="text-slate-800 text-sm leading-relaxed prose prose-sm max-w-none">
+                  <Markdown>{item.response.answer}</Markdown>
+                </div>
 
                 {/* Collapsible Source Citations with Arrow */}
                 {item.response.citations.length > 0 && (
