@@ -2,24 +2,16 @@ import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
 import React, { useState, useEffect } from 'react';
 import {
-  FlaskConical,
   Search,
   Clock,
   Layers,
   SearchCheck,
-  BarChart3,
-  Award,
   CheckCircle2,
-  HelpCircle,
-  Play,
-  ArrowRight,
-  ExternalLink,
   BookOpen
 } from 'lucide-react';
 import { api } from '../services/api';
-import { SearchMethodComparison, BenchmarkSummary, DocumentItem } from '../types';
+import { SearchMethodComparison, DocumentItem } from '../types';
 import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { DocumentViewerModal } from '../components/documents/DocumentViewerModal';
 
@@ -29,11 +21,8 @@ export const SearchLabPage: React.FC = () => {
   const [query, setQuery] = useState('data retention zero data retention ZDR 30 days vs 60 days audit');
   const [topK, setTopK] = useState(5);
   const [comparison, setComparison] = useState<SearchMethodComparison | null>(null);
-  const [benchmark, setBenchmark] = useState<BenchmarkSummary | null>(null);
   const [loadingSearch, setLoadingSearch] = useState(false);
-  const [loadingBenchmark, setLoadingBenchmark] = useState(false);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'methods' | 'benchmark'>('methods');
   const [viewerChunk, setViewerChunk] = useState<{ docId: string; chunkId: string; page: number } | null>(null);
 
   const executeComparison = async (q: string, k: number, docIds: string[] = selectedDocIds) => {
@@ -61,52 +50,13 @@ export const SearchLabPage: React.FC = () => {
     executeComparison(query, topK, []);
   }, []);
 
-  const handleRunAcademicBenchmark = async () => {
-    setLoadingBenchmark(true);
-    setError('');
-    try {
-      const data = await api.runIRBenchmark();
-      setBenchmark(data);
-    } catch (err) {
-      console.error(err);
-      setError('Could not execute the retrieval benchmark suite.');
-    } finally {
-      setLoadingBenchmark(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <PageHeader title="Search lab" description="Diagnostic workbench showing how Clario retrieves exact evidence before generating AI answers.">
-        {/* View Switcher Tabs */}
-        <div className="flex bg-white rounded-md p-1 border border-clario-border text-xs">
-          <button
-            aria-pressed={activeTab === 'methods'} onClick={() => setActiveTab('methods')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
-              activeTab === 'methods'
-                ? 'bg-clario-navy text-white shadow-xs'
-                : 'text-clario-text-secondary hover:text-clario-text'
-            }`}
-          >
-            Live Method Comparison
-          </button>
-          <button
-            aria-pressed={activeTab === 'benchmark'}
-            onClick={() => {
-              setActiveTab('benchmark');
-              if (!benchmark) handleRunAcademicBenchmark();
-            }}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
-              activeTab === 'benchmark'
-                ? 'bg-clario-navy text-white shadow-xs'
-                : 'text-clario-text-secondary hover:text-clario-text'
-            }`}
-          >
-            Academic IR Evaluation Suite
-          </button>
-        </div>
-      </PageHeader>
+      <PageHeader
+        title="Search lab"
+        description="Compare keyword (BM25), semantic vector, and hybrid search results across your selected documents."
+      />
 
       {error && (
         <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800">
@@ -114,8 +64,7 @@ export const SearchLabPage: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'methods' ? (
-        <div className="space-y-6">
+      <div className="space-y-6">
           {/* Document Scope Selector Bar */}
           {documents.length > 0 && (
             <Card className="p-3 bg-white border border-slate-200 shadow-xs">
@@ -391,172 +340,7 @@ export const SearchLabPage: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
-      ) : (
-        /* Academic IR Benchmark View */
-        <div className="space-y-6">
-          <Card className="p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-clario-border">
-              <div>
-                <h3 className="font-semibold text-sm text-clario-navy">
-                  Academic Information Retrieval Evaluation Suite
-                </h3>
-                <p className="text-xs text-clario-text-secondary mt-0.5">
-                  Calculated against verified relevance judgments (qrels) across test queries.
-                  Standard IR mathematical definitions (Precision@K, Recall@K, MRR, nDCG@K).
-                </p>
-              </div>
-
-              <Button
-                variant="primary"
-                size="md"
-                onClick={handleRunAcademicBenchmark}
-                loading={loadingBenchmark}
-              >
-                <Play className="w-4 h-4 mr-1.5" />
-                Run Benchmark Suite
-              </Button>
-            </div>
-
-            {benchmark && (
-              <div className="space-y-6">
-                {/* Aggregate Mean Scores Comparison */}
-                <div>
-                  <h4 className="font-semibold text-xs text-clario-navy uppercase tracking-wider mb-3">
-                    Aggregate Mean Performance Across Test Suite ({benchmark.total_queries} Test Queries)
-                  </h4>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border border-slate-200 rounded-md overflow-hidden">
-                      <thead className="bg-slate-50 text-slate-900 font-semibold border-b border-slate-200">
-                        <tr>
-                          <th className="p-3">Retrieval Engine</th>
-                          <th className="p-3">Precision@3</th>
-                          <th className="p-3">Precision@5</th>
-                          <th className="p-3">Recall@5</th>
-                          <th className="p-3">MRR (Mean Reciprocal Rank)</th>
-                          <th className="p-3">nDCG@5</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        <tr className="hover:bg-slate-50">
-                          <td className="p-3 font-medium text-slate-900 flex items-center space-x-1.5">
-                            <span className="w-2 h-2 rounded-full bg-blue-500" />
-                            <span>BM25 Lexical</span>
-                          </td>
-                          <td className="p-3 font-mono font-bold text-blue-700">
-                            {(benchmark.bm25_mean.precision_at_3 * 100).toFixed(1)}%
-                          </td>
-                          <td className="p-3 font-mono font-bold text-blue-700">
-                            {(benchmark.bm25_mean.precision_at_5 * 100).toFixed(1)}%
-                          </td>
-                          <td className="p-3 font-mono font-bold text-blue-700">
-                            {(benchmark.bm25_mean.recall_at_5 * 100).toFixed(1)}%
-                          </td>
-                          <td className="p-3 font-mono font-bold text-blue-700">
-                            {benchmark.bm25_mean.mrr.toFixed(3)}
-                          </td>
-                          <td className="p-3 font-mono font-bold text-blue-700">
-                            {benchmark.bm25_mean.ndcg_at_5.toFixed(3)}
-                          </td>
-                        </tr>
-
-                        <tr className="hover:bg-slate-50">
-                          <td className="p-3 font-medium text-clario-navy flex items-center space-x-1.5">
-                            <span className="w-2 h-2 rounded-full bg-purple-500" />
-                            <span>Dense Semantic Vector</span>
-                          </td>
-                          <td className="p-3 font-mono font-bold text-purple-700">
-                            {(benchmark.vector_mean.precision_at_3 * 100).toFixed(1)}%
-                          </td>
-                          <td className="p-3 font-mono font-bold text-purple-700">
-                            {(benchmark.vector_mean.precision_at_5 * 100).toFixed(1)}%
-                          </td>
-                          <td className="p-3 font-mono font-bold text-purple-700">
-                            {(benchmark.vector_mean.recall_at_5 * 100).toFixed(1)}%
-                          </td>
-                          <td className="p-3 font-mono font-bold text-purple-700">
-                            {benchmark.vector_mean.mrr.toFixed(3)}
-                          </td>
-                          <td className="p-3 font-mono font-bold text-purple-700">
-                            {benchmark.vector_mean.ndcg_at_5.toFixed(3)}
-                          </td>
-                        </tr>
-
-                        <tr className="bg-slate-100 font-semibold border-t-2 border-slate-900">
-                          <td className="p-3 text-slate-900 flex items-center space-x-1.5">
-                            <SearchCheck className="w-3.5 h-3.5 text-slate-900" />
-                            <span>Hybrid RRF (Combined)</span>
-                          </td>
-                          <td className="p-3 font-mono font-bold text-slate-900">
-                            {(benchmark.hybrid_mean.precision_at_3 * 100).toFixed(1)}%
-                          </td>
-                          <td className="p-3 font-mono font-bold text-slate-900">
-                            {(benchmark.hybrid_mean.precision_at_5 * 100).toFixed(1)}%
-                          </td>
-                          <td className="p-3 font-mono font-bold text-slate-900">
-                            {(benchmark.hybrid_mean.recall_at_5 * 100).toFixed(1)}%
-                          </td>
-                          <td className="p-3 font-mono font-bold text-slate-900">
-                            {benchmark.hybrid_mean.mrr.toFixed(3)}
-                          </td>
-                          <td className="p-3 font-mono font-bold text-slate-900">
-                            {benchmark.hybrid_mean.ndcg_at_5.toFixed(3)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Per-Query Breakdown */}
-                <div>
-                  <h4 className="font-semibold text-xs text-clario-navy uppercase tracking-wider mb-3">
-                    Per-Query Rigorous Breakdown
-                  </h4>
-                  <div className="space-y-3">
-                    {benchmark.queries.map((q) => (
-                      <div key={q.query_id} className="p-3.5 rounded-md border border-clario-border bg-white text-xs space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-clario-navy">
-                            Query [{q.query_id}]: "{q.query_text}"
-                          </span>
-                          <span className="text-[10px] text-clario-text-secondary">
-                            {q.relevant_doc_ids.length} ground-truth document(s)
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 text-[11px] pt-1">
-                          <div className="p-2 rounded-md bg-blue-50/50 border border-blue-200">
-                            <span className="font-semibold text-blue-900 block mb-0.5">BM25</span>
-                            <span className="font-mono text-blue-800">
-                              P@3: {(q.bm25_metrics.precision_at_3 * 100).toFixed(0)}% &bull; MRR: {q.bm25_metrics.mrr.toFixed(2)} &bull; nDCG: {q.bm25_metrics.ndcg_at_5.toFixed(2)}
-                            </span>
-                          </div>
-
-                          <div className="p-2 rounded-md bg-purple-50/50 border border-purple-200">
-                            <span className="font-semibold text-purple-900 block mb-0.5">Vector</span>
-                            <span className="font-mono text-purple-800">
-                              P@3: {(q.vector_metrics.precision_at_3 * 100).toFixed(0)}% &bull; MRR: {q.vector_metrics.mrr.toFixed(2)} &bull; nDCG: {q.vector_metrics.ndcg_at_5.toFixed(2)}
-                            </span>
-                          </div>
-
-                          <div className="p-2 rounded-md bg-emerald-50/50 border border-emerald-200">
-                            <span className="font-semibold text-emerald-900 block mb-0.5">Hybrid RRF</span>
-                            <span className="font-mono text-emerald-800">
-                              P@3: {(q.hybrid_metrics.precision_at_3 * 100).toFixed(0)}% &bull; MRR: {q.hybrid_metrics.mrr.toFixed(2)} &bull; nDCG: {q.hybrid_metrics.ndcg_at_5.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </Card>
-        </div>
-      )}
+      </div>
 
       {viewerChunk && (
         <DocumentViewerModal
