@@ -22,14 +22,27 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 
-# 0. Sync Repository (Pull latest updates)
-echo -e "\n${TEAL}[Sync] Checking for repository updates (git pull)...${NC}"
-if command -v git &>/dev/null; then
-    if git pull; then
+# 0. Sync Repository (Pull latest updates if online)
+echo -e "\n${TEAL}[Sync] Checking for repository updates...${NC}"
+IS_ONLINE=0
+if command -v curl &>/dev/null; then
+    if curl -s --connect-timeout 2 --max-time 3 -I https://github.com &>/dev/null; then
+        IS_ONLINE=1
+    fi
+elif ping -c 1 -W 1 8.8.8.8 &>/dev/null; then
+    IS_ONLINE=1
+fi
+
+if [ "$IS_ONLINE" -eq 1 ] && command -v git &>/dev/null; then
+    echo -e "${TEAL}[Sync] Online: Checking for latest changes from repository...${NC}"
+    if GIT_TERMINAL_PROMPT=0 git -c http.timeout=3 -c credential.helper= pull --quiet &>/dev/null; then
         echo -e "${GREEN}[OK] Repository updated successfully.${NC}"
     else
-        echo -e "${GOLD}[Notice] Could not pull latest changes. Continuing with local version...${NC}"
+        echo -e "${GOLD}[Notice] Repository up to date or using local branch.${NC}"
     fi
+else
+    echo -e "${GOLD}[Notice] Offline mode: No internet connection detected.${NC}"
+    echo -e "${GOLD}[Notice] Skipping git pull and running local Clario offline.${NC}"
 fi
 
 # 1. Check Python & Virtual Environment

@@ -20,19 +20,37 @@ set "PROJECT_ROOT=%CD%"
 if "%PROJECT_ROOT:~-1%"=="\" set "PROJECT_ROOT=%PROJECT_ROOT:~0,-1%"
 
 REM ==============================================================================
-REM Sync Repository (pull latest updates from main repository)
+REM Sync Repository (pull latest updates if online)
 REM ==============================================================================
-echo [Sync] Checking for repository updates (git pull)...
-git --version >nul 2>&1
+echo [Sync] Checking for repository updates...
+set "IS_ONLINE=0"
+
+REM Fast non-blocking connectivity check (2 second timeout)
+where curl >nul 2>&1
 if !errorlevel! equ 0 (
-    git pull
+    curl.exe -s --connect-timeout 2 -m 2 -I https://github.com >nul 2>&1
+    if !errorlevel! equ 0 set "IS_ONLINE=1"
+) else (
+    REM Fallback ping check with 1000ms timeout
+    ping -n 1 -w 1000 8.8.8.8 >nul 2>&1
+    if !errorlevel! equ 0 set "IS_ONLINE=1"
+)
+
+if "!IS_ONLINE!"=="1" (
+    where git >nul 2>&1
     if !errorlevel! equ 0 (
-        echo [OK] Repository updated successfully.
-    ) else (
-        echo [Notice] Could not pull latest changes. Continuing with local version...
+        echo [Sync] Online: Checking for latest changes from repository...
+        set "GIT_TERMINAL_PROMPT=0"
+        git -c http.timeout=3 -c credential.helper= pull --quiet >nul 2>&1
+        if !errorlevel! equ 0 (
+            echo [OK] Repository updated successfully.
+        ) else (
+            echo [Notice] Repository up to date or using local branch.
+        )
     )
 ) else (
-    echo [Notice] Git not detected in PATH. Skipping git pull...
+    echo [Notice] Offline mode: No internet connection detected.
+    echo [Notice] Skipping git pull and running local Clario offline.
 )
 echo.
 
