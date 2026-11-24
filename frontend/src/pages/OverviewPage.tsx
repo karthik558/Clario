@@ -187,6 +187,12 @@ export const OverviewPage: React.FC = () => {
       setFindings(findingsData);
       setDocuments(docsData);
       setRiskScorecard(riskData);
+      setSelectedRiskDocIndex((prev) =>
+        riskData?.documents?.length && prev < riskData.documents.length ? prev : 0
+      );
+      setComparisonRiskDocIndex((prev) =>
+        riskData?.documents?.length && prev >= 0 && prev < riskData.documents.length ? prev : -1
+      );
 
       if (docsData.length >= 2) {
         setQuickDocA((prev) => (prev && docsData.some(d => d.id === prev) ? prev : docsData[0].id));
@@ -260,6 +266,9 @@ export const OverviewPage: React.FC = () => {
     setError('');
     try {
       await api.deleteDocument(deleteTarget.docId, deleteFromDisk);
+      if (selectedCell?.docId === deleteTarget.docId) {
+        setSelectedCell(null);
+      }
       setDeleteTarget(null);
       await fetchDashboardData();
     } catch {
@@ -1234,14 +1243,14 @@ export const OverviewPage: React.FC = () => {
 
         {documents.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[680px] md:min-w-0 md:table-fixed text-left text-xs">
               <thead>
                 <tr className="border-b border-clario-border text-clario-text-secondary font-semibold text-[11px] uppercase tracking-wider">
-                  <th className="pb-3 px-3 min-w-[200px]">Document Title</th>
+                  <th className="pb-3 px-2.5 w-[22%]">Document Title</th>
                   {EXPOSURE_VECTORS.map((v) => (
-                    <th key={v.id} className="pb-3 px-3 min-w-[150px] text-center">
-                      <span>{v.name}</span>
-                      <span className="block text-[10px] font-normal text-slate-400 normal-case">{v.category}</span>
+                    <th key={v.id} className="pb-3 px-1.5 w-[13%] text-center" title={`${v.name} (${v.category})`}>
+                      <span className="block truncate">{v.name}</span>
+                      <span className="block text-[10px] font-normal text-slate-400 normal-case truncate">{v.category}</span>
                     </th>
                   ))}
                 </tr>
@@ -1249,32 +1258,39 @@ export const OverviewPage: React.FC = () => {
               <tbody className="divide-y divide-clario-border/60">
                 {documents.map((doc, docIdx) => (
                   <tr key={doc.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-3 font-semibold text-clario-navy flex items-center space-x-2.5">
-                      <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy">
-                        <FileText className="w-3.5 h-3.5" />
+                    <td className="py-2.5 px-2.5 font-semibold text-clario-navy">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <div className="p-1.5 rounded-md bg-clario-navy/5 text-clario-navy shrink-0">
+                          <FileText className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="truncate" title={doc.title}>{doc.title}</span>
                       </div>
-                      <span className="truncate max-w-[220px]" title={doc.title}>{doc.title}</span>
                     </td>
                     {EXPOSURE_VECTORS.map((vector) => {
                       const detail = getExposureDetail(doc, docIdx, vector);
                       const isSelected = selectedCell?.docId === doc.id && selectedCell?.vector.id === vector.id;
+                      const dotColor =
+                        detail.rating === 'critical'
+                          ? 'bg-rose-500'
+                          : detail.rating === 'moderate'
+                          ? 'bg-amber-500'
+                          : 'bg-slate-400';
 
                       return (
-                        <td key={vector.id} className="py-2.5 px-2 text-center">
+                        <td key={vector.id} className="py-2 px-1">
                           <button
                             type="button"
                             onClick={() => setSelectedCell(detail)}
-                            className={`w-full py-1.5 px-2.5 rounded-md border text-[11px] font-medium transition-all text-left truncate flex items-center justify-between gap-1 shadow-2xs ${
+                            className={`w-full py-1.5 px-2 rounded-md border text-[11px] transition-all text-left flex items-center gap-1.5 shadow-2xs ${
                               isSelected
-                                ? 'border-clario-navy bg-clario-navy/10 text-clario-navy font-bold ring-2 ring-clario-navy'
+                                ? 'border-clario-navy bg-clario-navy/5 text-clario-navy font-semibold ring-1 ring-clario-navy'
                                 : detail.rating === 'critical'
-                                ? 'bg-rose-50/80 border-rose-200 text-rose-900 hover:bg-rose-100/80'
-                                : detail.rating === 'moderate'
-                                ? 'bg-amber-50/80 border-amber-200 text-amber-900 hover:bg-amber-100/80'
-                                : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:bg-slate-100'
+                                ? 'bg-white border-slate-300 text-slate-900 font-medium hover:bg-slate-50 hover:border-slate-400'
+                                : 'bg-slate-50/60 border-slate-200 text-slate-700 font-medium hover:bg-white hover:border-slate-300'
                             }`}
                             title={`${doc.title} - ${vector.name}: ${detail.summary}`}
                           >
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
                             <span className="truncate">{detail.summary}</span>
                           </button>
                         </td>
