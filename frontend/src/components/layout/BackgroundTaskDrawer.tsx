@@ -53,6 +53,8 @@ export const BackgroundTaskDrawer: React.FC = () => {
         return <Badge variant="sage" size="sm">PDF Dossier</Badge>;
       case 'counter':
         return <Badge variant="navy" size="sm">AI Counter</Badge>;
+      case 'ask':
+        return <Badge variant="navy" size="sm">Ask Clario</Badge>;
       default:
         return <Badge variant="gray" size="sm">Background AI</Badge>;
     }

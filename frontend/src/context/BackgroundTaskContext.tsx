@@ -9,7 +9,7 @@ export interface TaskLogEntry {
 export interface BackgroundTask {
   id: string;
   title: string;
-  category: 'critique' | 'brief' | 'redline' | 'report' | 'scan' | 'counter';
+  category: 'critique' | 'brief' | 'redline' | 'report' | 'scan' | 'counter' | 'ask';
   targetScope?: string;
   status: 'running' | 'completed' | 'failed' | 'cancelled';
   progress: number;
@@ -295,7 +295,7 @@ const defaultFallbackContext: BackgroundTaskContextType = {
   isDrawerOpen: false,
   setIsDrawerOpen: () => {},
   startTask: async <T,>(config: any): Promise<T> => {
-    return config.executor(() => {});
+    return config.executor(() => {}, new AbortController().signal);
   },
   cancelTask: () => {},
   dismissTask: () => {},

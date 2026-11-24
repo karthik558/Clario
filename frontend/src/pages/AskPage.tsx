@@ -2,6 +2,7 @@ import { useOutletContext } from 'react-router-dom';
 import { AskSources, useAskDocuments, useAskSelection } from '../components/documents/AskSources';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Select } from '../components/ui/Select';
+import { useBackgroundTasks } from '../context/BackgroundTaskContext';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Send,
@@ -45,6 +46,10 @@ const PROMPT_CAROUSEL = [
 ];
 
 export const AskPage: React.FC = () => {
+  const { startTask, activeTasks, getLatestTask } = useBackgroundTasks();
+  const activeAskTask = activeTasks.find((t) => t.category === 'ask');
+  const lastProcessedTaskIdRef = useRef<string | null>(null);
+
   const handoff = useOutletContext<{ selection: ReturnType<typeof useAskSelection>; askDraft: string | null; setAskDraft: (value: string | null) => void } | null>();
   const [query, setQuery] = useState(handoff?.askDraft ?? '');
   const fromQuickAsk = useRef(handoff?.askDraft != null);
@@ -182,6 +187,32 @@ export const AskPage: React.FC = () => {
     });
   }, []);
 
+  // Synchronize with background task execution for Ask Clario across page navigations
+  useEffect(() => {
+    if (activeAskTask) {
+      setLoading(true);
+      setPendingQuery(activeAskTask.title);
+    } else {
+      const latest = getLatestTask('ask');
+      if (latest && latest.status === 'completed' && latest.result && latest.id !== lastProcessedTaskIdRef.current) {
+        lastProcessedTaskIdRef.current = latest.id;
+        const answerRes = latest.result as AskResponse;
+        setResponse(answerRes);
+        setHistory((prev) => {
+          if (prev.some((h) => h.query === latest.title && h.response.answer === answerRes.answer)) {
+            return prev;
+          }
+          return [...prev, { query: latest.title, response: answerRes }];
+        });
+        setLoading(false);
+        setPendingQuery('');
+        setTimeout(() => {
+          bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, [activeAskTask, getLatestTask]);
+
   const handleSwitchProvider = async (provider: string) => {
     setLlmProvider(provider);
     await refreshModelList(provider);
@@ -226,6 +257,7 @@ export const AskPage: React.FC = () => {
     setPendingQuery(q);
 
     const docIds = selectedDocIds.length > 0 ? selectedDocIds : undefined;
+    const targetScope = docIds && docIds.length > 0 ? `${docIds.length} Document${docIds.length > 1 ? 's' : ''}` : 'All Workspace Documents';
 
     // Streaming SSE Path
     if (streamingMode) {
@@ -235,29 +267,49 @@ export const AskPage: React.FC = () => {
       setStreamCitations([]);
 
       try {
-        const doneResponse = await api.streamAsk(
-          {
-            query: q,
-            document_ids: docIds,
-            thinking_mode: thinkingMode,
-            local_model: localModel || undefined,
-            llm_provider: llmProvider
-          },
-          {
-            onToken: (token: string) => {
-              setStreamAnswer((prev) => prev + token);
-            },
-            onThinking: (thinking: string) => {
-              setStreamThinking(thinking);
-            },
-            onCitations: (cits: CitationItem[]) => {
-              setStreamCitations(cits);
-            }
+        const doneResponse = await startTask<AskResponse>({
+          title: q,
+          category: 'ask',
+          targetScope,
+          route: '/ask',
+          initialStage: 'Searching indexed passages...',
+          executor: async (updateProgress) => {
+            updateProgress(15, 'Searching indexed passages...', `Searching for: "${q.slice(0, 45)}..."`);
+
+            const result = await api.streamAsk(
+              {
+                query: q,
+                document_ids: docIds,
+                thinking_mode: thinkingMode,
+                local_model: localModel || undefined,
+                llm_provider: llmProvider
+              },
+              {
+                onToken: (token: string) => {
+                  setStreamAnswer((prev) => prev + token);
+                  updateProgress(65, 'Streaming cited answer...', 'Generating answer text');
+                },
+                onThinking: (thinking: string) => {
+                  setStreamThinking(thinking);
+                  updateProgress(35, 'Local AI reasoning chain...', 'Analyzing retrieved passages');
+                },
+                onCitations: (cits: CitationItem[]) => {
+                  setStreamCitations(cits);
+                  updateProgress(50, `Found ${cits.length} verified citation${cits.length > 1 ? 's' : ''}...`);
+                }
+              }
+            );
+
+            updateProgress(100, 'Answer generated with verified citations', 'Completed');
+            return result;
           }
-        );
+        });
 
         setResponse(doneResponse);
-        setHistory((prev) => [...prev, { query: q, response: doneResponse }]);
+        setHistory((prev) => {
+          if (prev.some((h) => h.query === q && h.response.answer === doneResponse.answer)) return prev;
+          return [...prev, { query: q, response: doneResponse }];
+        });
         setTimeout(() => {
           bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
@@ -274,9 +326,46 @@ export const AskPage: React.FC = () => {
 
     // Standard Non-Streaming Ask
     try {
-      const res = await api.ask(q, docIds, undefined, thinkingMode, localModel || undefined, llmProvider);
+      const res = await startTask<AskResponse>({
+        title: q,
+        category: 'ask',
+        targetScope,
+        route: '/ask',
+        initialStage: 'Searching indexed passages...',
+        executor: async (updateProgress) => {
+          updateProgress(15, 'Searching indexed passages...', `Searching for: "${q.slice(0, 45)}..."`);
+
+          let currentPct = 15;
+          const progressInterval = setInterval(() => {
+            if (currentPct < 85) {
+              currentPct += 7;
+              updateProgress(
+                currentPct,
+                currentPct < 50
+                  ? 'Searching indexed passages and citations...'
+                  : 'Synthesizing verified cited answer...',
+                'Auditing context and citations'
+              );
+            }
+          }, 350);
+
+          let answerRes: AskResponse;
+          try {
+            answerRes = await api.ask(q, docIds, undefined, thinkingMode, localModel || undefined, llmProvider);
+          } finally {
+            clearInterval(progressInterval);
+          }
+
+          updateProgress(100, 'Answer generated with verified citations', 'Completed');
+          return answerRes;
+        }
+      });
+
       setResponse(res);
-      setHistory((prev) => [...prev, { query: q, response: res }]);
+      setHistory((prev) => {
+        if (prev.some((h) => h.query === q && h.response.answer === res.answer)) return prev;
+        return [...prev, { query: q, response: res }];
+      });
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
@@ -995,7 +1084,7 @@ export const AskPage: React.FC = () => {
                 </div>
                 <div className="w-full rounded-md p-5 border border-slate-200/90 shadow-subtle bg-white flex items-center gap-3 text-sm text-slate-600">
                   <span className="w-4 h-4 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin shrink-0" />
-                  <p role="status">Looking for supporting passages…</p>
+                  <p role="status">{activeAskTask?.stage || 'Looking for supporting passages…'}</p>
                 </div>
               </div>
             )}
@@ -1012,7 +1101,7 @@ export const AskPage: React.FC = () => {
             </div>
             <div className="w-full rounded-md p-5 border border-slate-200/90 shadow-subtle bg-white flex items-center gap-3 text-sm text-slate-600">
               <span className="w-4 h-4 border-2 border-slate-300 border-t-clario-navy rounded-full animate-spin shrink-0" />
-              <p role="status">Looking for supporting passages…</p>
+              <p role="status">{activeAskTask?.stage || 'Looking for supporting passages…'}</p>
             </div>
           </div>
         )}
