@@ -149,46 +149,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
                 className="relative w-full min-h-9 flex items-center justify-center rounded-md text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
-                title={`A Task is Running: ${activeTasks[0].title} (${activeTasks[0].progress}%)`}
-                aria-label="A task is running"
+                title={`${activeTasks.length} task${activeTasks.length > 1 ? 's' : ''} running`}
+                aria-label="Task running"
               >
                 <div className="relative flex items-center justify-center">
-                  <Cpu className="w-[17px] h-[17px] animate-spin text-slate-300" />
-                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-slate-400" />
+                  <Loader2 className="w-[17px] h-[17px] animate-spin text-slate-300" />
+                  <span className="absolute -top-1 -right-1 px-1 min-w-3.5 h-3.5 flex items-center justify-center rounded-full text-[9px] font-mono font-bold bg-slate-700 text-slate-200 border border-slate-600">
+                    {activeTasks.length}
+                  </span>
                 </div>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setIsDrawerOpen(true)}
-                className="w-full text-left p-2.5 rounded-md bg-slate-800/90 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 transition-all shadow-sm space-y-1.5 group"
-                title="Click to view live task progress or end task"
+                className="w-full flex items-center justify-between px-2.5 py-2 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-all text-xs"
+                title="Click to view live task progress"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300 shrink-0" />
-                    <span className="text-[11px] font-bold text-slate-200 tracking-wide uppercase font-mono">
-                      A Task is Running
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-mono text-slate-200 bg-slate-900 border border-slate-700 px-1.5 py-0.2 rounded-md font-bold">
-                    {activeTasks[0].progress}%
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-300 shrink-0" />
+                  <span className="text-[11px] font-medium text-slate-200">
+                    {activeTasks.length > 1 ? 'Tasks running' : 'Task running'}
                   </span>
                 </div>
-
-                <div className="text-xs font-semibold text-slate-100 truncate">
-                  {activeTasks[0].title}
-                </div>
-                <div className="text-[10px] text-slate-400 truncate">
-                  {activeTasks[0].stage}
-                </div>
-
-                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-1">
-                  <div
-                    className="h-full bg-slate-400 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.max(10, activeTasks[0].progress)}%` }}
-                  />
-                </div>
+                <span className="text-[10px] font-mono text-slate-200 bg-white/10 border border-white/10 px-1.5 py-0.5 rounded-md font-semibold">
+                  {activeTasks.length}
+                </span>
               </button>
             )
           ) : tasks.length > 0 ? (
@@ -211,7 +197,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-slate-300" />
-                  <span className="text-[11px] font-medium text-slate-200">Tasks Ready</span>
+                  <span className="text-[11px] font-medium text-slate-200">
+                    {tasks.length > 1 ? 'Tasks ready' : 'Task ready'}
+                  </span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded-md">
                   {tasks.length}
