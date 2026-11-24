@@ -305,6 +305,49 @@ class AskService:
                 has_conflicting_evidence=False
             )
 
+        # 6. Conversational Acknowledgements, Thanks & Farewells (instant reply without RAG hallucination)
+        thanks_patterns = [
+            r"^(?:thank\s+you(?:\s+(?:so|very)\s+much)?|thanks(?:\s+(?:a\s+lot|so\s+much|very\s+much))?|thank\s*u|thx|ty|many\s+thanks|much\s+appreciated|appreciate\s+it)(?:\s+(?:clario|bro|team))?$",
+        ]
+        if any(re.match(pat, words) for pat in thanks_patterns):
+            return AskResponse(
+                query=request.query,
+                answer="You're welcome! Let me know if you have any other questions about your documents.",
+                mode="conversational_thanks",
+                citations=[],
+                retrieval_latency_ms=0,
+                synthesis_latency_ms=0,
+                has_conflicting_evidence=False
+            )
+
+        ack_patterns = [
+            r"^(?:ok|okay|k|got\s+it|understood|noted|alright|all\s+right|sounds\s+good|great|awesome|perfect|nice|cool|good\s+job|well\s+done)(?:\s+(?:clario|thanks|thank\s+you))?$",
+        ]
+        if any(re.match(pat, words) for pat in ack_patterns):
+            return AskResponse(
+                query=request.query,
+                answer="Got it! Feel free to ask whenever you'd like to analyze, compare, or verify anything in your documents.",
+                mode="conversational_ack",
+                citations=[],
+                retrieval_latency_ms=0,
+                synthesis_latency_ms=0,
+                has_conflicting_evidence=False
+            )
+
+        farewell_patterns = [
+            r"^(?:bye|goodbye|see\s+(?:you|ya)(?:\s+later)?|take\s+care|good\s+night)(?:\s+(?:clario|bro))?$",
+        ]
+        if any(re.match(pat, words) for pat in farewell_patterns):
+            return AskResponse(
+                query=request.query,
+                answer="Goodbye! Your workspace documents and conversation history will be right here whenever you return.",
+                mode="conversational_farewell",
+                citations=[],
+                retrieval_latency_ms=0,
+                synthesis_latency_ms=0,
+                has_conflicting_evidence=False
+            )
+
         return None
 
     @staticmethod

@@ -154,6 +154,7 @@ it('asks from the pill and opens the source returned by the API', async () => {
   localStorage.clear();
   const docs = ['Policy', 'Contract'].map(title => ({ id: title, title, status: 'READY' })) as DocumentItem[];
   vi.spyOn(api, 'getDocuments').mockResolvedValue(docs);
+  vi.spyOn(api, 'getAnswerHistory').mockResolvedValue([]);
   let finish!: (value: AskResponse) => void;
   const ask = vi.spyOn(api, 'ask').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
   const openSource = vi.fn();
@@ -176,6 +177,8 @@ it('asks from the pill and opens the source returned by the API', async () => {
   expect(ask).toHaveBeenCalledWith('Retention?', ['Policy', 'Contract']);
   finish({ ...answer, citations: [source] });
   await screen.findByRole('heading', { name: 'Evidence summary' });
+  expect(screen.queryByRole('button', { name: /Policy · p. 2/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /1 Sources cited/i }));
   fireEvent.click(screen.getByRole('button', { name: /Policy · p. 2/ }));
   expect(openSource).toHaveBeenCalledWith(source);
 });

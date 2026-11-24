@@ -178,8 +178,8 @@
 .page-header p { max-width: 65ch; margin-top: .375rem; color: theme('colors.clario.text-secondary'); font-size: .875rem; line-height: 1.55; }
 footer a:hover { color: theme('colors.clario.text'); text-decoration: underline; }
 
-.quick-ask { right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); }
-.quick-panel { width: min(24rem, calc(100vw - 2rem)); max-height: min(33rem, calc(100dvh - 6rem)); transform-origin: bottom right; }
+.quick-ask { right: max(1.25rem, env(safe-area-inset-right)); bottom: max(1.25rem, env(safe-area-inset-bottom)); }
+.quick-panel { width: min(26rem, calc(100vw - 2rem)); height: min(36rem, calc(100dvh - 5.5rem)); transform-origin: bottom right; }
 @media (prefers-reduced-motion: no-preference) {
   .side-drawer-panel { animation: side-drawer-slide 280ms cubic-bezier(.22, 1, .36, 1); }
   .side-drawer-backdrop { animation: side-drawer-fade 200ms ease-out; }
