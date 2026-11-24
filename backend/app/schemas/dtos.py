@@ -260,7 +260,16 @@ class FindingResponse(BaseModel):
 
 class ReportCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
-    report_type: Literal["summary", "comparative", "search_benchmark", "contradictions", "research_dossier"]
+    report_type: Literal[
+        "summary",
+        "comparative",
+        "search_benchmark",
+        "contradictions",
+        "contradiction_remediation",
+        "contradiction_executive_matrix",
+        "compliance_governance",
+        "research_dossier"
+    ]
     document_ids: List[str] = []
     include_methodology: bool = True
     custom_notes: Optional[str] = None

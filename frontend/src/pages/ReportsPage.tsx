@@ -7,37 +7,44 @@ import {
   Download,
   Plus,
   Calendar,
-  SearchCheck,
   Layers,
   ShieldCheck,
   Eye,
-  CheckCircle2,
   Trash2,
-  BarChart2,
-  BookOpen,
   FileCheck,
   Cpu,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useBackgroundTasks } from '../context/BackgroundTaskContext';
-import { ReportItem, DocumentItem, WordAnalysisResponse } from '../types';
+import { ReportItem, DocumentItem } from '../types';
 import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Markdown } from '../components/ui/Markdown';
 import { Modal } from '../components/ui/Modal';
-import { WordAnalysisVisualizer } from '../components/analytics/WordAnalysisVisualizer';
+
+const REPORT_TYPE_LABELS: Record<string, string> = {
+  comparative: 'Comparative Version Analysis',
+  summary: 'Document Intelligence Summary',
+  contradictions: 'Contradiction & Compliance Findings',
+  contradiction_remediation: 'Contradiction & Remediation Playbook',
+  contradiction_executive_matrix: 'Executive Risk & Contradiction Matrix',
+  compliance_governance: 'Compliance & Governance Posture Audit',
+  search_benchmark: 'Retrieval & Search Telemetry Benchmark',
+  research_dossier: 'Comprehensive Research Dossier',
+};
+
+const formatReportTypeLabel = (type: string) =>
+  REPORT_TYPE_LABELS[type] || type.replace(/_/g, ' ');
 
 export const ReportsPage: React.FC = () => {
   const { startTask, activeTasks, setIsDrawerOpen } = useBackgroundTasks();
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [wordAnalysis, setWordAnalysis] = useState<WordAnalysisResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<'dossiers' | 'word_analysis'>('dossiers');
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [clearing, setClearing] = useState(false);
+  const [clearing] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
 
@@ -55,16 +62,14 @@ export const ReportsPage: React.FC = () => {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const [reportsData, docsData, wordData] = await Promise.all([
+      const [reportsData, docsData] = await Promise.all([
         api.getReports(),
-        api.getDocuments(),
-        api.getWordAnalysis().catch(() => null)
+        api.getDocuments()
       ]);
       setReports(reportsData);
       setDocuments(docsData);
-      if (wordData) setWordAnalysis(wordData);
       if (docsData.length > 0) {
-        setSelectedDocIds(docsData.slice(0, 2).map((d) => d.id));
+        setSelectedDocIds((prev) => (prev.length > 0 ? prev : docsData.slice(0, 2).map((d) => d.id)));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'The report could not be loaded.');
@@ -219,90 +224,57 @@ export const ReportsPage: React.FC = () => {
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
-              Words Analyzed
+              Indexed Documents
             </span>
             <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
               <FileText className="w-3.5 h-3.5" />
             </div>
           </div>
           <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
-            {wordAnalysis ? wordAnalysis.total_words.toLocaleString() : '—'}
+            {loading ? '—' : documents.length}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            Across {documents.length} verified file(s)
+            Available for report synthesis
           </span>
         </Card>
 
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
-              Vocabulary Diversity
+              Comparative & Risk Audits
             </span>
             <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
-              <BookOpen className="w-3.5 h-3.5" />
+              <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
           <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
-            {wordAnalysis ? `${wordAnalysis.lexical_density_pct}%` : '—'}
+            {loading
+              ? '—'
+              : reports.filter((r) =>
+                  ['comparative', 'research_dossier', 'contradiction_executive_matrix'].includes(r.report_type)
+                ).length}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            {wordAnalysis ? `${wordAnalysis.unique_words.toLocaleString()} unique terms` : 'Vocabulary variety'}
+            Multi-document intelligence dossiers
           </span>
         </Card>
 
         <Card className="p-4 flex flex-col justify-between hover:border-clario-navy/20 transition-all shadow-subtle rounded-md">
           <div className="flex items-center justify-between text-clario-text-secondary mb-3">
             <span className="text-[10.5px] font-bold uppercase tracking-wider">
-              Readability Standard
+              PDF Exports Ready
             </span>
             <div className="p-1.5 rounded-md bg-slate-100 text-slate-700">
-              <BarChart2 className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-3.5 h-3.5" />
             </div>
           </div>
           <span className="text-2xl font-semibold tracking-tight tabular-nums text-clario-navy font-mono">
-            {wordAnalysis ? `${wordAnalysis.flesch_reading_ease}` : '—'}
+            {loading ? '—' : reports.filter((r) => r.pdf_available).length}
           </span>
           <span className="text-[10px] text-clario-text-secondary font-medium mt-1">
-            {wordAnalysis ? wordAnalysis.reading_level : 'Complexity Index'}
+            Clario branded PDF dossiers
           </span>
         </Card>
-      </div>
-
-      {/* View Switcher: Dossiers vs Word Analysis Studio */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('dossiers')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${
-              activeTab === 'dossiers'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Executive Dossiers</span>
-            <Badge variant={activeTab === 'dossiers' ? 'navy' : 'gray'} size="sm">
-              {reports.length}
-            </Badge>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('word_analysis')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${
-              activeTab === 'word_analysis'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <BarChart2 className="w-3.5 h-3.5" />
-            <span>Contract Word Analysis</span>
-            <Badge variant={activeTab === 'word_analysis' ? 'navy' : 'gray'} size="sm">
-              Visual Studio
-            </Badge>
-          </button>
-        </div>
       </div>
 
       {error && !showGenerateModal && <p role="alert" className="rounded-md p-3 text-sm text-rose-800 bg-rose-50">{error}</p>}
@@ -338,10 +310,7 @@ export const ReportsPage: React.FC = () => {
         </Card>
       )}
 
-      {activeTab === 'word_analysis' && wordAnalysis ? (
-        <WordAnalysisVisualizer data={wordAnalysis} onRefresh={fetchReports} />
-      ) : (
-        /* Reports Grid */
+      {/* Reports Grid */}
       <div id="dossiers-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 scroll-mt-6 transition-all duration-300">
         {loading ? (
           <div className="col-span-full text-center py-12 text-xs text-clario-text-secondary">
@@ -367,12 +336,14 @@ export const ReportsPage: React.FC = () => {
               className="flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant="teal" size="sm">
-                    {rep.report_type.replace('_', ' ').toUpperCase()}
-                  </Badge>
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-teal-700 truncate">
+                    {formatReportTypeLabel(rep.report_type)}
+                  </span>
                   {rep.pdf_available && (
-                    <Badge variant="sage" size="sm">PDF Compiled</Badge>
+                    <span className="text-[10.5px] font-semibold text-emerald-700 shrink-0">
+                      PDF Ready
+                    </span>
                   )}
                 </div>
 
@@ -429,7 +400,6 @@ export const ReportsPage: React.FC = () => {
           ))
         )}
       </div>
-      )}
 
       {/* Generation Modal */}
       <Modal
@@ -463,16 +433,40 @@ export const ReportsPage: React.FC = () => {
               <option value="comparative">Comparative Version Analysis</option>
               <option value="summary">Document Intelligence Summary</option>
               <option value="contradictions">Contradiction & Compliance Findings</option>
-              <option value="search_benchmark">Recorded Search Performance</option>
+              <option value="contradiction_remediation">Contradiction & Remediation Playbook</option>
+              <option value="contradiction_executive_matrix">Executive Risk & Contradiction Matrix</option>
+              <option value="compliance_governance">Compliance & Governance Posture Audit</option>
+              <option value="search_benchmark">Recorded Search Performance Benchmark</option>
               <option value="research_dossier">Comprehensive Research Dossier</option>
             </Select>
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-900 uppercase mb-1">
-              Document scope (none selected = all documents)
-            </label>
-            <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-md border border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] font-semibold text-slate-900 uppercase">
+                Document Scope ({selectedDocIds.length > 0 ? `${selectedDocIds.length} selected` : 'all documents'})
+              </label>
+              {documents.length > 0 && (
+                <div className="flex items-center gap-2 text-[11px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDocIds(documents.map((d) => d.id))}
+                    className="text-clario-navy hover:underline"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDocIds([])}
+                    className="text-slate-500 hover:text-slate-800 hover:underline"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 rounded-md border border-slate-200 bg-slate-50">
               {documents.map((d) => {
                 const isChecked = selectedDocIds.includes(d.id);
                 return (
@@ -503,7 +497,7 @@ export const ReportsPage: React.FC = () => {
             <textarea id="customNotes" value={customNotes}
               onChange={(e) => setCustomNotes(e.target.value)}
               rows={2}
-              placeholder="e.g. Conducted ahead of 2024 compliance audit review."
+              placeholder="e.g. Conducted ahead of 2026 compliance audit review."
               className="w-full text-xs px-3 py-2 rounded-md border border-slate-200 bg-white focus:outline-none focus:border-slate-900 text-slate-900"
             />
           </div>
@@ -517,7 +511,7 @@ export const ReportsPage: React.FC = () => {
                 className="rounded-md border-slate-300 text-slate-900 focus:ring-slate-900"
               />
               <Cpu className="w-3.5 h-3.5 text-slate-600" />
-              <span>Synthesize Executive Overview with AI (LLM Analysis)</span>
+              <span>Synthesize Detailed Intelligence & Strategy with AI (Takes extra time for full coverage)</span>
             </label>
           </div>
 
@@ -540,22 +534,30 @@ export const ReportsPage: React.FC = () => {
           title={selectedReport.title}
           maxWidth="2xl"
         >
-          <div className="space-y-4 text-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-clario-border">
-              <div>
-                <Badge variant="teal" size="sm" className="mb-1">
-                  {selectedReport.report_type.replace('_', ' ').toUpperCase()}
-                </Badge>
-                <p className="text-[11px] text-clario-text-secondary">
-                  Compiled on {workspaceDate(selectedReport.created_at).toLocaleString()}
-                </p>
+          <div className="space-y-5 text-xs">
+            {/* Website-Style Branded Header */}
+            <div className="rounded-lg bg-clario-navy text-white p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-3">
+                  <img src="/clario.webp" alt="Clario" className="h-5 w-auto object-contain" />
+                  <span className="text-[10px] text-slate-400 border-l border-slate-700 pl-3">
+                    Every document. A clearer answer.
+                  </span>
+                </div>
+                <div className="pt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-300">
+                  <span className="font-semibold text-teal-300 uppercase tracking-wider">
+                    {formatReportTypeLabel(selectedReport.report_type)}
+                  </span>
+                  <span>•</span>
+                  <span>Compiled {workspaceDate(selectedReport.created_at).toLocaleString()}</span>
+                </div>
               </div>
 
               {selectedReport.pdf_available && (
                 <a
                   href={api.getReportDownloadUrl(selectedReport.id)}
                   download={`Clario_${selectedReport.title}.pdf`}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-clario-navy text-white rounded-md text-xs font-medium hover:bg-clario-navy-light shadow-xs"
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white text-clario-navy rounded-md text-xs font-semibold hover:bg-slate-100 shadow-xs shrink-0"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download PDF</span>
@@ -564,29 +566,182 @@ export const ReportsPage: React.FC = () => {
             </div>
 
             <div>
-              <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider mb-1">
+              <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider mb-1.5">
                 Executive Summary
               </h4>
-              <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-md border border-slate-200">
+              <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-md border border-slate-200 whitespace-pre-line">
                 {selectedReport.executive_summary}
               </p>
             </div>
 
-            {selectedReport.content?.findings_summary && (
+            {/* AI Synthesis Sections */}
+            {selectedReport.content?.ai_sections && (
+              <div className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+                <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider">
+                  AI Strategic Synthesis
+                </h4>
+                {selectedReport.content.ai_sections.cross_document_insights?.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-700 mb-1">Cross-Document Insights</p>
+                    <ul className="list-disc pl-4 space-y-1 text-slate-700">
+                      {selectedReport.content.ai_sections.cross_document_insights.map((ins: string, idx: number) => (
+                        <li key={idx}>{ins}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {selectedReport.content.ai_sections.risk_conclusions && (
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-700 mb-1">Risk & Governance Conclusions</p>
+                    <p className="text-slate-700 leading-relaxed">{selectedReport.content.ai_sections.risk_conclusions}</p>
+                  </div>
+                )}
+                {selectedReport.content.ai_sections.strategic_recommendations?.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-700 mb-1">Strategic Recommendations</p>
+                    <ul className="list-disc pl-4 space-y-1 text-slate-700">
+                      {selectedReport.content.ai_sections.strategic_recommendations.map((rec: string, idx: number) => (
+                        <li key={idx}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Multi-Document Comparative Matrix */}
+            {selectedReport.content?.comparative_matrix?.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider">
+                  Cross-Document Clause Comparison Matrix
+                </h4>
+                <div className="overflow-x-auto rounded-md border border-slate-200">
+                  <table className="w-full text-left border-collapse text-[11px]">
+                    <thead className="bg-clario-navy text-white">
+                      <tr>
+                        <th className="p-2 font-semibold">Document</th>
+                        <th className="p-2 font-semibold">Pages</th>
+                        <th className="p-2 font-semibold">Liability</th>
+                        <th className="p-2 font-semibold">Indemnity</th>
+                        <th className="p-2 font-semibold">Breach SLA</th>
+                        <th className="p-2 font-semibold">AI / Data</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 bg-white">
+                      {selectedReport.content.comparative_matrix.map((row: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="p-2 font-semibold text-clario-navy">{row.document_title}</td>
+                          <td className="p-2 tabular-nums text-slate-600">{row.pages}</td>
+                          <td className="p-2 text-slate-700">{row.liability}</td>
+                          <td className="p-2 text-slate-700">{row.indemnity}</td>
+                          <td className="p-2 text-slate-700">{row.breach_sla}</td>
+                          <td className="p-2 text-slate-700">{row.data_ai}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Knowledge Graph & Risk & Compliance Snapshots */}
+            {(selectedReport.content?.graph_summary || selectedReport.content?.risk_summary || selectedReport.content?.compliance_summary) && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {selectedReport.content?.graph_summary && (
+                  <div className="p-3 rounded-md border border-slate-200 bg-slate-50 space-y-1">
+                    <p className="text-[10.5px] font-bold uppercase tracking-wider text-clario-navy">Knowledge Graph</p>
+                    <p className="text-slate-700">
+                      {selectedReport.content.graph_summary.total_documents} docs · {selectedReport.content.graph_summary.total_topics} topics · {selectedReport.content.graph_summary.total_edges} edges
+                    </p>
+                    {selectedReport.content.graph_summary.top_topics?.length > 0 && (
+                      <p className="text-[11px] text-slate-500">
+                        Core concepts: {selectedReport.content.graph_summary.top_topics.slice(0, 4).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {selectedReport.content?.risk_summary && (
+                  <div className="p-3 rounded-md border border-slate-200 bg-slate-50 space-y-1">
+                    <p className="text-[10.5px] font-bold uppercase tracking-wider text-clario-navy">Portfolio Risk</p>
+                    <p className="text-sm font-bold text-clario-navy tabular-nums">
+                      {selectedReport.content.risk_summary.composite_score}/100 ({selectedReport.content.risk_summary.composite_grade})
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Scored across {selectedReport.content.risk_summary.documents?.length || 0} document(s)
+                    </p>
+                  </div>
+                )}
+                {selectedReport.content?.compliance_summary && (
+                  <div className="p-3 rounded-md border border-slate-200 bg-slate-50 space-y-1">
+                    <p className="text-[10.5px] font-bold uppercase tracking-wider text-clario-navy">Compliance Readiness</p>
+                    <p className="text-sm font-bold text-clario-navy tabular-nums">
+                      {selectedReport.content.compliance_summary.overall_score}% Overall
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      {selectedReport.content.compliance_summary.frameworks?.length || 0} frameworks evaluated
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Remediation Actions Playbook */}
+            {selectedReport.content?.remediation_actions?.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider">
+                  Prioritized Remediation Playbook
+                </h4>
+                <div className="space-y-2">
+                  {selectedReport.content.remediation_actions.map((act: any, idx: number) => (
+                    <div key={idx} className="p-3 rounded-md border border-slate-200 bg-white space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-clario-navy">{act.finding}</span>
+                        <span className="text-[10px] font-bold uppercase text-rose-700">{act.severity} · {act.owner}</span>
+                      </div>
+                      <p className="text-slate-700 leading-relaxed">{act.recommended_redline}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedReport.content?.findings_summary?.length > 0 && (
               <div>
                 <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider mb-2">
-                  Saved findings
+                  Contradiction & Risk Findings
                 </h4>
                 <div className="space-y-2">
                   {selectedReport.content.findings_summary.map((f: any, idx: number) => (
                     <div key={idx} className="p-3 rounded-md border border-clario-border bg-white">
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="font-semibold text-clario-navy">[{f.category}] {f.title}</span>
-                        <Badge variant={f.severity === 'high' ? 'red' : 'gold'} size="sm">{f.severity}</Badge>
+                        <span className="text-[10px] font-bold uppercase text-amber-700 flex items-center gap-1 shrink-0">
+                          <AlertTriangle className="w-3 h-3" />
+                          {f.severity}
+                        </span>
                       </div>
-                      <p className="text-xs text-clario-text-secondary">Review status: {f.status}</p>
-                      {f.evidence_a && <p className="text-sm text-clario-text-secondary">{f.evidence_a}</p>}
-                      {f.evidence_b && <p className="text-sm text-clario-text-secondary">{f.evidence_b}</p>}
+                      <p className="text-[11px] text-clario-text-secondary mb-1">Review status: {f.status}</p>
+                      {f.evidence_a && <p className="text-xs text-slate-600">{f.evidence_a}</p>}
+                      {f.evidence_b && <p className="text-xs text-slate-600 mt-1">{f.evidence_b}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedReport.content?.obligations_summary?.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider">
+                  Key Contractual Obligations & Windows
+                </h4>
+                <div className="divide-y divide-slate-200 rounded-md border border-slate-200 bg-white">
+                  {selectedReport.content.obligations_summary.map((ob: any, idx: number) => (
+                    <div key={idx} className="p-2.5 flex items-center justify-between gap-3 text-[11px]">
+                      <div>
+                        <p className="font-semibold text-clario-navy">{ob.title}</p>
+                        <p className="text-slate-500">{ob.document_title} · {ob.obligated_party}</p>
+                      </div>
+                      <span className="font-mono text-slate-700 shrink-0">{ob.due_date_or_window}</span>
                     </div>
                   ))}
                 </div>
@@ -594,13 +749,37 @@ export const ReportsPage: React.FC = () => {
             )}
 
             <section className="space-y-2">
-              <h4 className="font-semibold text-clario-navy">Documents in this report</h4>
-              <ul className="list-disc pl-5 space-y-1">{selectedReport.content?.documents_analyzed?.map((doc: any) => <li key={doc.id}>{doc.title} · {doc.pages} pages</li>)}</ul>
+              <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider">Documents in this report</h4>
+              <ul className="list-disc pl-5 space-y-1 text-slate-700">
+                {selectedReport.content?.documents_analyzed?.map((doc: any) => (
+                  <li key={doc.id}>{doc.title} · {doc.pages} pages</li>
+                ))}
+              </ul>
             </section>
-            {selectedReport.content?.source_excerpts?.map((item: any, index: number) => <section key={index} className="space-y-2 border-t border-clario-border pt-4"><h4 className="font-semibold text-clario-navy">{item.document_title} · Page {item.page}</h4><Markdown>{item.text}</Markdown></section>)}
-            {selectedReport.content?.comparisons?.map((item: any, index: number) => <section key={index} className="space-y-2 border-t border-clario-border pt-4"><h4 className="font-semibold text-clario-navy">{item.title}</h4><p className="text-sm leading-relaxed">{item.summary}</p></section>)}
-            {selectedReport.content?.retrieval_runs?.map((item: any, index: number) => <section key={index} className="space-y-1 border-t border-clario-border pt-3"><h4 className="font-semibold text-clario-navy">{item.query}</h4><p>{item.mode} · {item.latency_ms} ms · {item.result_count} results</p></section>)}
-            {selectedReport.content?.custom_notes && <section className="space-y-2 border-t border-clario-border pt-4"><h4 className="font-semibold text-clario-navy">Reviewer notes</h4><p className="text-sm whitespace-pre-wrap">{selectedReport.content.custom_notes}</p></section>}
+            {selectedReport.content?.comparisons?.map((item: any, index: number) => (
+              <section key={index} className="space-y-1.5 border-t border-clario-border pt-3">
+                <h4 className="font-semibold text-clario-navy">{item.title}</h4>
+                <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">{item.summary}</p>
+              </section>
+            ))}
+            {selectedReport.content?.source_excerpts?.map((item: any, index: number) => (
+              <section key={index} className="space-y-2 border-t border-clario-border pt-3">
+                <h4 className="font-semibold text-clario-navy">{item.document_title} · Page {item.page}</h4>
+                <Markdown>{item.text}</Markdown>
+              </section>
+            ))}
+            {selectedReport.content?.retrieval_runs?.map((item: any, index: number) => (
+              <section key={index} className="space-y-1 border-t border-clario-border pt-3">
+                <h4 className="font-semibold text-clario-navy">{item.query}</h4>
+                <p>{item.mode} · {item.latency_ms} ms · {item.result_count} results</p>
+              </section>
+            ))}
+            {selectedReport.content?.custom_notes && (
+              <section className="space-y-2 border-t border-clario-border pt-3">
+                <h4 className="font-semibold text-clario-navy">Reviewer notes</h4>
+                <p className="text-xs whitespace-pre-wrap text-slate-700">{selectedReport.content.custom_notes}</p>
+              </section>
+            )}
 
             <div>
               <h4 className="font-semibold text-clario-navy text-xs uppercase tracking-wider mb-1">
@@ -612,8 +791,14 @@ export const ReportsPage: React.FC = () => {
             </div>
 
             <div className="p-3 rounded-md bg-amber-50 border border-amber-200 text-amber-900 text-[11px]">
-              <span className="font-semibold block mb-0.5">Academic Limitations:</span>
+              <span className="font-semibold block mb-0.5">Report Scope & Verification Note:</span>
               {selectedReport.content?.limitations}
+            </div>
+
+            {/* Website-Style Branded Footer */}
+            <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400">
+              <span>© 2026 Clario • Document Intelligence Platform</span>
+              <span>Verified Evidence Dossier</span>
             </div>
           </div>
         </Modal>
