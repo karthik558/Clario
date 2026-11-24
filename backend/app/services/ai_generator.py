@@ -148,6 +148,7 @@ class AIGenerator:
                     "prompt": prompt,
                     "system": system_prompt or "You are Clario, an elite AI document intelligence assistant.",
                     "stream": False,
+                    "think": False,
                     "options": {
                         "temperature": temperature,
                         "num_predict": max_tokens,
@@ -156,7 +157,8 @@ class AIGenerator:
                 }
                 resp = client.post(url, json=payload)
                 if resp.status_code == 200:
-                    return resp.json().get("response", "").strip()
+                    data = resp.json()
+                    return (data.get("response") or data.get("thinking") or "").strip()
         except Exception as exc:
             logger.debug("Ollama generation call failed: %s", exc)
         return None

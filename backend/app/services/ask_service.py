@@ -335,11 +335,13 @@ class AskService:
         else:
             scopes = [[d.id] for d in scope] if comparative else [[d.id for d in scope]]
             keywords = {word.rstrip("s") for word in terms}
+            search_query = subject.strip() if subject.strip() else (" ".join(sorted(terms)) if terms else query)
             for ids in scopes:
-                hits, _ = search_service.search(query=" ".join(sorted(terms)), mode="hybrid", top_k=count,
+                hits, _ = search_service.search(query=search_query, mode="hybrid", top_k=count,
                                                document_ids=ids, db=db)
-                groups.append([hit for hit in hits if keywords.intersection(
-                    word.rstrip("s") for word in tokenize(hit["snippet"]))])
+                matched = [hit for hit in hits if keywords.intersection(
+                    word.rstrip("s") for word in tokenize(hit["snippet"]))]
+                groups.append(matched if matched else hits)
         balanced = [hit for row in zip_longest(*groups) for hit in row if hit]
         return balanced[:count], round((time.perf_counter() - start) * 1000, 2), missing
 
@@ -531,10 +533,12 @@ Direct Cited Answer:"""
 
         with httpx.Client(timeout=120.0) as client:
             model = AskService._get_active_ollama_model(client, model_override)
+            show_thinking = getattr(settings, "THINKING_MODE", False)
             payload = {
                 "model": model,
                 "prompt": prompt,
                 "stream": False,
+                "think": bool(show_thinking),
                 "options": {
                     "temperature": 0.1,
                     "num_predict": num_tokens,
@@ -545,7 +549,7 @@ Direct Cited Answer:"""
             resp = client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()
-            return data.get("response", "").strip()
+            return (data.get("response") or data.get("thinking") or "").strip()
 
     @staticmethod
     def _generate_local_openai_answer(
@@ -687,19 +691,36 @@ Direct Cited Answer:"""
             f"Answer directly and accurately using ONLY the retrieved context below.{len_hint} Cite claims like [1], [2]."
         )
         prompt = f"{system_prompt}\n\nRetrieved Context:\n{context_str}\n\nUser Question: {request.query}\n\nDirect Cited Answer:"
-        model = request.local_model or settings.OLLAMA_MODEL
-
         try:
+            show_thinking = request.thinking_mode if request.thinking_mode is not None else settings.THINKING_MODE
             with httpx.Client(timeout=120.0) as client:
-                with client.stream("POST", url, json={"model": model, "prompt": prompt, "stream": True, "options": {"temperature": 0.1, "num_predict": stream_tokens}}) as resp:
+                model = AskService._get_active_ollama_model(client, request.local_model)
+                payload = {
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": True,
+                    "think": bool(show_thinking),
+                    "options": {
+                        "temperature": 0.1,
+                        "num_predict": stream_tokens
+                    }
+                }
+                with client.stream("POST", url, json=payload) as resp:
                     resp.raise_for_status()
                     for line in resp.iter_lines():
                         if line:
                             try:
                                 chunk_data = json.loads(line)
                                 token = chunk_data.get("response", "")
-                                full_text += token
-                                yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
+                                thinking_chunk = chunk_data.get("thinking", "")
+                                if thinking_chunk and show_thinking:
+                                    yield f"event: thinking\ndata: {json.dumps({'text': thinking_chunk})}\n\n"
+                                if token:
+                                    full_text += token
+                                    yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
+                                elif thinking_chunk and not show_thinking:
+                                    full_text += thinking_chunk
+                                    yield f"event: token\ndata: {json.dumps({'text': thinking_chunk})}\n\n"
                             except Exception:
                                 continue
             if not full_text.strip():
