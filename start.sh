@@ -22,6 +22,16 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 
+# 0. Sync Repository (Pull latest updates)
+echo -e "\n${TEAL}[Sync] Checking for repository updates (git pull)...${NC}"
+if command -v git &>/dev/null; then
+    if git pull; then
+        echo -e "${GREEN}[OK] Repository updated successfully.${NC}"
+    else
+        echo -e "${GOLD}[Notice] Could not pull latest changes. Continuing with local version...${NC}"
+    fi
+fi
+
 # 1. Check Python & Virtual Environment
 echo -e "\n${NAVY}[1/4] Checking Python backend environment...${NC}"
 if ! command -v python3 &>/dev/null; then

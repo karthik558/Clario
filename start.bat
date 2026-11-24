@@ -20,6 +20,23 @@ set "PROJECT_ROOT=%CD%"
 if "%PROJECT_ROOT:~-1%"=="\" set "PROJECT_ROOT=%PROJECT_ROOT:~0,-1%"
 
 REM ==============================================================================
+REM Sync Repository (pull latest updates from main repository)
+REM ==============================================================================
+echo [Sync] Checking for repository updates (git pull)...
+git --version >nul 2>&1
+if !errorlevel! equ 0 (
+    git pull
+    if !errorlevel! equ 0 (
+        echo [OK] Repository updated successfully.
+    ) else (
+        echo [Notice] Could not pull latest changes. Continuing with local version...
+    )
+) else (
+    echo [Notice] Git not detected in PATH. Skipping git pull...
+)
+echo.
+
+REM ==============================================================================
 REM 1. Backend Python Runtime and Virtual Environment
 REM ==============================================================================
 echo [1/4] Checking Python backend environment...
