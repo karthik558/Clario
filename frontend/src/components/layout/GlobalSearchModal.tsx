@@ -52,6 +52,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     { name: 'Findings', path: '/findings' },
     { name: 'Clause Redline', path: '/negotiate' },
     { name: 'Compliance Matrix', path: '/compliance' },
+    { name: 'Policy Checker', path: '/policy-checker' },
+    { name: 'Redaction Studio', path: '/redact' },
     { name: 'Obligations Timeline', path: '/obligations' },
     { name: 'Red Team Critique', path: '/critique' },
     { name: 'Clause Library', path: '/clauses' },
