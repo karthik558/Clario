@@ -989,25 +989,58 @@ export const AskPage: React.FC = () => {
                         )}
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const cleanQ = item.query.replace(/^Tabulate (?:the findings|this) for ["']?([^"']+)["']? into.*$/i, '$1');
-                          handleAsk(`Tabulate the findings for "${cleanQ}" into a comparative table with all metrics, documents, and key terms.`);
-                        }}
-                        disabled={loading || streaming}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Tabulate these findings into a structured table"
-                      >
-                        <Table className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Tabulate data</span>
-                      </button>
+                      {(() => {
+                        const nonTabulatableModes = new Set([
+                          'greeting',
+                          'conversational_thanks',
+                          'conversational_ack',
+                          'conversational_farewell',
+                          'safety_restricted',
+                          'model_identity',
+                          'assistant_identity',
+                          'help_and_instructions',
+                          'document_scope',
+                        ]);
+                        const canTabulate =
+                          item.response.citations.length > 0 &&
+                          !nonTabulatableModes.has(item.response.mode) &&
+                          item.response.answer.trim().length > 60;
+                        if (!canTabulate) return null;
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const cleanQ = item.query.replace(/^Tabulate (?:the findings|this) for ["']?([^"']+)["']? into.*$/i, '$1');
+                              handleAsk(`Tabulate the findings for "${cleanQ}" into a comparative table with all metrics, documents, and key terms.`);
+                            }}
+                            disabled={loading || streaming}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Tabulate these findings into a structured table"
+                          >
+                            <Table className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Tabulate data</span>
+                          </button>
+                        );
+                      })()}
                     </>
                   )}
                 </div>
 
                 {/* Follow-up Questions in Straight Horizontal Strip */}
                 {(() => {
+                  const nonFollowUpModes = new Set([
+                    'greeting',
+                    'conversational_thanks',
+                    'conversational_ack',
+                    'conversational_farewell',
+                    'safety_restricted',
+                    'model_identity',
+                    'assistant_identity',
+                    'help_and_instructions',
+                  ]);
+                  if (nonFollowUpModes.has(item.response.mode)) {
+                    return null;
+                  }
                   const followUps = getFollowUpQuestions(
                     item.query,
                     item.response.answer,

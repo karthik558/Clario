@@ -42,7 +42,10 @@ class AskService:
 
     @staticmethod
     def _handle_conversational_and_meta(request: AskRequest, db: Session) -> Optional[AskResponse]:
-        query_raw = request.query.strip().lower().replace("’", "'")
+        raw_input = request.query.strip()
+        quoted_tab = re.search(r'^tabulate\s+(?:the\s+findings|this)\s+for\s+["\']([^"\']+)["\']', raw_input, re.IGNORECASE)
+        effective_raw = quoted_tab.group(1).strip() if quoted_tab else raw_input
+        query_raw = effective_raw.lower().replace("’", "'")
         words = " ".join(re.findall(r"[\w']+", query_raw))
 
         # 0. Safety Gate: Strict 18+ / adult / NSFW block
